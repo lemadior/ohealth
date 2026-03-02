@@ -38,6 +38,9 @@ use Throwable;
  */
 class PersonUpdate extends PersonComponent
 {
+    public const string AUTH_DRAWER_MODE_CREATE = 'create';
+    public const string AUTH_DRAWER_MODE_DEACTIVATE = 'deactivate';
+
     #[Locked]
     public string $uuid;
 
@@ -917,7 +920,7 @@ class PersonUpdate extends PersonComponent
             return;
         }
 
-        $this->authDrawerMode = 'create';
+        $this->authDrawerMode = self::AUTH_DRAWER_MODE_CREATE;
         $this->showConfidantPersonDrawer = false;
         $this->showAuthDrawer = true;
     }
@@ -948,7 +951,7 @@ class PersonUpdate extends PersonComponent
             return;
         }
 
-        $this->authDrawerMode = 'create';
+        $this->authDrawerMode = self::AUTH_DRAWER_MODE_CREATE;
     }
 
     /**
@@ -959,7 +962,7 @@ class PersonUpdate extends PersonComponent
      */
     public function approveFromRequest(string $requestId): void
     {
-        $this->authDrawerMode = 'create';
+        $this->authDrawerMode = self::AUTH_DRAWER_MODE_CREATE;
         $this->showAuthDrawer = true;
         $this->confidantPersonRelationshipRequestId = $requestId;
 
@@ -1065,9 +1068,13 @@ class PersonUpdate extends PersonComponent
 
             // Save confidant person relationship to database using repository
             try {
-                if ($this->authDrawerMode === 'create') {
+                if ($this->authDrawerMode === self::AUTH_DRAWER_MODE_CREATE) {
                     $personData = collect($this->confidantPerson)->firstWhere('id', $this->selectedConfidantPersonId);
-                    Repository::confidantPerson()->createFromSignedResponse($response->getData(), $this->uuid, $personData);
+                    Repository::confidantPerson()->createFromSignedResponse(
+                        $response->getData(),
+                        $this->uuid,
+                        (array) $personData
+                    );
 
                     $this->showSignatureDrawer = false;
                     $this->showAuthDrawer = false;
@@ -1141,6 +1148,12 @@ class PersonUpdate extends PersonComponent
      */
     public function deactivateConfidantPerson(string $confidantPersonRelationUuid, array $documents): void
     {
+        if (Auth::user()->cannot('create', ConfidantPerson::class)) {
+            Session::flash('error', __('patients.policy.sign_confidant'));
+
+            return;
+        }
+
         try {
             $validated = Validator::make([
                 'confidantPersonRelationUuid' => $confidantPersonRelationUuid,
@@ -1157,8 +1170,11 @@ class PersonUpdate extends PersonComponent
             // Find the main person
             $mainPerson = Person::whereUuid($this->uuid)->firstOrFail();
 
-            // Find suitable authentication method using repository
-            $authResult = Repository::confidantPerson()->findAuthMethodForDeactivation($mainPerson, $confidantPersonRelationUuid);
+            // Find suitable authentication method
+            $authResult = Repository::confidantPerson()->findAuthMethodForDeactivation(
+                $mainPerson,
+                $confidantPersonRelationUuid
+            );
 
             if ($authResult['error']) {
                 Session::flash('error', $authResult['error']);
@@ -1197,7 +1213,7 @@ class PersonUpdate extends PersonComponent
         }
 
         $this->showDeactivateConfidantPersonDrawer = false;
-        $this->authDrawerMode = 'deactivate';
+        $this->authDrawerMode = self::AUTH_DRAWER_MODE_DEACTIVATE;
         $this->showAuthDrawer = true;
     }
 

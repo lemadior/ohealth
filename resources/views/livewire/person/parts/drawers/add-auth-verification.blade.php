@@ -1,3 +1,5 @@
+@use('App\Livewire\Person\PersonUpdate')
+
 {{-- Auth Drawer Overlay --}}
 <div x-show="showAuthDrawer"
      x-transition:enter="transition ease-out duration-300"
@@ -44,9 +46,9 @@
 >
     <div class="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-            @if($authDrawerMode === 'create')
+            @if($authDrawerMode === PersonUpdate::AUTH_DRAWER_MODE_CREATE)
                 {{ __('patients.authentication_SMS') }}
-            @elseif($authDrawerMode === 'deactivate')
+            @elseif($authDrawerMode === PersonUpdate::AUTH_DRAWER_MODE_DEACTIVATE)
                 {{ __('patients.deactivate_relationship') }}
             @else
                 {{ __('patients.authentication_SMS') }}
