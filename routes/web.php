@@ -146,12 +146,6 @@ Route::middleware(['auth:web,ehealth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/', [HomeController::class, 'dashboard'])->name('dashboard');
 
-            Route::get('/dictionary/programs-medications', \App\Livewire\Dictionary\ProgramsMedications::class)
-                ->name('dictionary.programs-medications.index');
-
-            Route::get('/dictionary/programs-services', \App\Livewire\Dictionary\ProgramsServices::class)
-                ->name('dictionary.programs-services.index');
-
             Route::get('/edit', EditLegalEntity::class)
                 ->can('edit', 'legalEntity')
                 ->name('legal-entity.edit');
@@ -270,6 +264,8 @@ Route::middleware(['auth:web,ehealth', 'verified'])->group(function () {
                 Route::get('/{equipment}', EquipmentView::class)->name('view')->can('view', 'equipment');
             });
 
+            include __DIR__ . '/dictionaries.php';
+
             Route::get('/declaration', DeclarationIndex::class)
                 ->name('declaration.index')
                 ->can('viewAny', Declaration::class);
@@ -287,8 +283,6 @@ Route::middleware(['auth:web,ehealth', 'verified'])->group(function () {
                         Route::get('/{patientId}/episodes', PersonEpisodes::class)->name('episodes');
                     });
                 });
-
-
 
                 Route::name('declaration.')->group(static function () {
                     Route::get('/declaration/{declaration}', DeclarationView::class)
