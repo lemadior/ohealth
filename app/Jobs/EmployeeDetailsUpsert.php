@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use Throwable;
+use Carbon\Carbon;
 use App\Core\EHealthJob;
 use App\Enums\JobStatus;
 use App\Models\LegalEntity;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Queue\SerializesModels;
 use App\Classes\eHealth\EHealthResponse;
+use App\Models\Employee\EmployeeRequest;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\Middleware\RateLimited;
@@ -98,7 +100,14 @@ class EmployeeDetailsUpsert extends EHealthJob
 
         setPermissionsTeamId($legalEntityId);
 
+        $userCreatedTime = Carbon::parse($this->user->inserted_at);
+        $employeeRequest = EmployeeRequest::where('employee_id', $this->employee->id)->latest('applied_at')->first();
+
         foreach ($users as $user) {
+            if ($user->id === $this->user->id && $userCreatedTime->greaterThan(Carbon::parse($employeeRequest?->applied_at))) {
+                $this->employee->users()->syncWithoutDetaching([$this->user->id]);
+            }
+
             if (!$user->hasRole($roleName)) {
                 foreach ($this->getGuardsForRole($roleName) as $guard) {
                     Log::info("Assigning role '{$roleName}' to user ID {$user->id} for guard '{$guard}'.");
