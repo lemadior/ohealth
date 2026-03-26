@@ -194,6 +194,26 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Check if the OWNER employee in the user's party has more than one user assigned.
+     *
+     * Determines whether the OWNER employee (for the given legal entity) already has
+     * multiple users linked via the employee_users pivot table.
+     *
+     * @param  int  $legalEntityId
+     *
+     * @return bool True if OWNER employee has more than 1 user assigned, false otherwise
+     */
+    public function hasAlreadyOwner(int $legalEntityId): bool
+    {
+        return ($this->loadMissing('party.employees')->party?->employees()
+            ->where('legal_entity_id', $legalEntityId)
+            ->where('employee_type', 'OWNER')
+            ->first()
+            ?->users()
+            ->count() ?? 0) > 1;
+    }
+
+    /**
      * Retrieves the scopes assigned to a specific user.
      *
      * @return string The concatenated string of user's scopes

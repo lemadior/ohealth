@@ -44,7 +44,15 @@ class FirstLoginOwnerSynchronization implements ShouldQueue
 
         $event->user->load('roles', 'permissions', 'party');
 
-        if (!$event->isFirstLogin || !$event->user->hasRole(Role::OWNER)) {
+        // Check if it's the first login of the user and if the user has OWNER role.
+        // If not, skip synchronization because it should be already performed by the first OWNER employee login in the party.
+        // Also check if the user has an more than one employee with OWNER role in the same party.
+        // If so, skip synchronization because it should be already performed by the first OWNER employee login in the party.
+        if (
+            !$event->isFirstLogin ||
+            !$event->user->hasRole(Role::OWNER) ||
+            $event->user->hasAlreadyOwner($event->legalEntity->id)
+        ) {
             return;
         }
 
