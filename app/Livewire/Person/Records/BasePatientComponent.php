@@ -43,7 +43,8 @@ abstract class BasePatientComponent extends Component
      *
      * @var string
      */
-    protected string $uuid;
+    #[Locked]
+    public string $uuid;
 
     public function mount(LegalEntity $legalEntity, int $id): void
     {
@@ -67,7 +68,7 @@ abstract class BasePatientComponent extends Component
         $this->patientFullName = $patient->fullName;
         $this->verificationStatus = $patient->verificationStatus;
         $this->uuid = $patient->uuid;
-        $this->declarationNumber = $patient->declarations->first()?->declaration_number ?? null;
+        $this->declarationNumber = $patient->declarations->first()?->declarationNumber ?? null;
     }
 
     /**

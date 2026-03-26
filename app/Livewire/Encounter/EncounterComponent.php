@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace App\Livewire\Encounter;
 
-use App\Classes\Cipher\Exceptions\ApiException as CipherApiException;
 use App\Classes\eHealth\EHealth;
 use App\Classes\eHealth\Exceptions\ApiException as eHealthApiException;
 use App\Classes\Cipher\Traits\Cipher;
 use App\Classes\eHealth\Api\PatientApi;
 use App\Classes\eHealth\Api\ServiceRequestApi;
 use App\Enums\User\Role;
+use App\Exceptions\EHealth\EHealthResponseException;
+use App\Exceptions\EHealth\EHealthValidationException;
 use App\Livewire\Encounter\Forms\Api\EncounterRequestApi;
 use App\Models\Division;
 use App\Models\Employee\Employee;
 use App\Models\Person\Person;
 use App\Traits\FormTrait;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -34,6 +36,8 @@ class EncounterComponent extends Component
     use WithFileUploads;
 
     public Form $form;
+
+    public bool $showSignatureModal = false;
 
     /**
      * ID of the patient for which create an encounter.
@@ -316,22 +320,6 @@ class EncounterComponent extends Component
     }
 
     /**
-     * Open modal by provided model name.
-     *
-     * @param  string  $model
-     * @return void
-     */
-    public function create(string $model): void
-    {
-        $this->openModal($model);
-    }
-
-    public function updatedFile(): void
-    {
-        $this->keyContainerUpload = $this->file;
-    }
-
-    /**
      * Initialize the component data based on the patient ID.
      *
      * @param  int  $patientId
@@ -373,12 +361,6 @@ class EncounterComponent extends Component
         $this->setPatientData();
         $this->getDivisionData();
         $this->getEpisodes();
-
-        try {
-            $this->setCertificateAuthority();
-        } catch (CipherApiException) {
-            session()?->flash('error', 'Виникла помилка. Зверніться до адміністратора.');
-        }
     }
 
     /**
@@ -708,22 +690,14 @@ class EncounterComponent extends Component
     protected function getEpisodes(): void
     {
         try {
-            $params = EncounterRequestApi::buildGetEpisodeBySearchParams(managingOrganizationId: legalEntity()->uuid);
-            $this->episodes = PatientApi::getEpisodeBySearchParams($this->patientUuid, $params)['data'];
-        } catch (eHealthApiException) {
-            session()?->flash('error', 'Виникла помилка. Зверніться до адміністратора.');
-        }
-    }
+            $this->episodes = EHealth::patient()
+                ->getEpisodes($this->patientUuid, ['managing_organization_id' => legalEntity()->uuid])
+                ->getData();
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when getting episodes');
 
-    /**
-     * Get Certificate Authority from API.
-     *
-     * @return array
-     * @throws CipherApiException
-     */
-    protected function setCertificateAuthority(): array
-    {
-        return $this->getCertificateAuthority = $this->getCertificateAuthority();
+            return;
+        }
     }
 
     /**

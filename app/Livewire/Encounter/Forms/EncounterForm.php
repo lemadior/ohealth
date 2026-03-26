@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Encounter\Forms;
 
+use App\Core\BaseForm;
 use App\Rules\Cyrillic;
 use App\Rules\InDictionary;
 use App\Rules\OnlyOnePrimaryDiagnosis;
@@ -14,9 +15,8 @@ use Illuminate\Validation\ConditionalRules;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
 use Illuminate\Validation\ValidationException;
-use Livewire\Form;
 
-class EncounterForm extends Form
+class EncounterForm extends BaseForm
 {
     public array $encounter = [
         'status' => 'finished',
@@ -180,10 +180,12 @@ class EncounterForm extends Form
                 'array',
                 $this->requiredIfPrimarySourceAndNotGiven(true, false),
                 $this->requiredIfPrimarySourceAndNotGiven(false, true),
-                Rule::prohibitedIf(fn () => collect($this->immunizations)
-                    ->contains(static fn (array $immunization) => $immunization['primarySource'] === true &&
-                        $immunization['notGiven'] === true
-                    )
+                Rule::prohibitedIf(
+                    fn () => collect($this->immunizations)
+                        ->contains(
+                            static fn (array $immunization) => $immunization['primarySource'] === true &&
+                            $immunization['notGiven'] === true
+                        )
                 )
             ],
             'immunizations.explanation.reasons.*.coding.*.code' => [

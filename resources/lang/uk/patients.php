@@ -132,7 +132,8 @@ return [
         'rejected' => 'Відхилений',
         'active' => 'Діючий',
         'closed' => 'Завершений',
-        'entered_in_error' => 'Внесений помилково'
+        'entered_in_error' => 'Внесений помилково',
+        'valid' => 'Дійсний'
     ],
 
     'source' => [
@@ -419,5 +420,6 @@ return [
         'encounters_synced_successfully' => 'Взаємодії успішно синхронізовані',
         'clinical_impressions_synced_successfully' => 'Клінічні взаємодії успішно синхронізовані',
         'immunizations_synced_successfully' => 'Вакцинації успішно синхронізовані',
+        'observations_synced_successfully' => 'Обстеження успішно синхронізовані',
     ]
 ];

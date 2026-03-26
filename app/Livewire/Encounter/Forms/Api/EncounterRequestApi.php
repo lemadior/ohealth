@@ -146,38 +146,6 @@ class EncounterRequestApi
     }
 
     /**
-     * Build an array of parameters for getting episodes using a search parameters list.
-     *
-     * @param  string|null  $periodFrom  Example: 2017-01-01.
-     * @param  string|null  $periodTo  Example: 2018-01-01.
-     * @param  string|null  $code  Example: R80.
-     * @param  string|null  $status  Example: active.
-     * @param  string|null  $managingOrganizationId  Example: 80a9e15b-b71b-4caf-8f2e-ff247e8a5677.
-     * @param  int|null  $page  Page number. Default: 1.
-     * @param  int|null  $pageSize  A limit on the number of objects to be returned, between 1 and 100. Default: 50.
-     * @return array
-     */
-    public static function buildGetEpisodeBySearchParams(
-        ?string $periodFrom = null,
-        ?string $periodTo = null,
-        ?string $code = null,
-        ?string $status = null,
-        ?string $managingOrganizationId = null,
-        ?int $page = 1,
-        ?int $pageSize = 50
-    ): array {
-        return [
-            'period_from' => $periodFrom,
-            'period_to' => $periodTo,
-            'code' => $code,
-            'status' => $status,
-            'managing_organization_id' => $managingOrganizationId,
-            'page' => $page,
-            'page_size' => $pageSize
-        ];
-    }
-
-    /**
      * Build an array of parameters for getting clinical impressions using a search parameters list.
      *
      * @param  string  $patientUuid  MPI identifier of the patient. Example: 7c3da506-804d-4550-8993-bf17f9ee0402
@@ -352,10 +320,10 @@ class EncounterRequestApi
     {
         return [
             'visit' => (object)[
-                'id' => $data['visit']['identifier']['value'],
+                'id' => $data['encounter']['visit']['identifier']['value'],
                 'period' => (object)[
-                    'start' => $data['period']['start'],
-                    'end' => $data['period']['end']
+                    'start' => $data['encounter']['period']['start'],
+                    'end' => $data['encounter']['period']['end']
                 ]
             ],
             'signed_data' => $signedData

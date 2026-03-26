@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Livewire\Encounter;
 
+use App\Classes\Cipher\Api\CipherRequest;
+use App\Classes\Cipher\Exceptions\CipherApiException;
 use App\Classes\eHealth\Api\PatientApi;
+use App\Classes\eHealth\EHealth;
 use App\Classes\eHealth\Exceptions\ApiException;
 use App\Core\Arr;
+use App\Exceptions\EHealth\EHealthResponseException;
+use App\Exceptions\EHealth\EHealthValidationException;
 use App\Livewire\Encounter\Forms\Api\EncounterRequestApi;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\DiagnosticReport;
@@ -16,10 +21,13 @@ use App\Models\MedicalEvents\Sql\Procedure;
 use App\Repositories\MedicalEvents\Repository;
 use App\Traits\HandlesReasonReferences;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
+use JsonException;
 use Throwable;
 
 class EncounterCreate extends EncounterComponent
@@ -30,8 +38,10 @@ class EncounterCreate extends EncounterComponent
     {
         $this->initializeComponent($id);
 
-        $this->form->encounter['performer']['identifier']['value'] = Auth::user()->uuid;
-        $this->form->episode['careManager']['identifier']['value'] = Auth::user()->uuid;
+        $uuid = Auth::user()->party->employees()->whereStatus('APPROVED')->first()->uuid;
+
+        $this->form->encounter['performer']['identifier']['value'] = $uuid;
+        $this->form->episode['careManager']['identifier']['value'] = $uuid;
 
         $this->setDefaultDate();
     }
@@ -44,11 +54,13 @@ class EncounterCreate extends EncounterComponent
      */
     public function save(): void
     {
-        if (Auth::user()?->cannot('create', Encounter::class)) {
-            session()?->flash('error', 'У вас немає дозволу на створення взаємодії.');
+        if (Auth::user()->cannot('create', Encounter::class)) {
+            Session::flash('error', 'У вас немає дозволу на створення взаємодії.');
 
             return;
         }
+
+
 
         $formattedData = $this->prepareFormattedData();
 
@@ -64,13 +76,23 @@ class EncounterCreate extends EncounterComponent
      */
     public function sign(): void
     {
-        if (Auth::user()?->cannot('create', Encounter::class)) {
-            session()?->flash('error', 'У вас немає дозволу на створення взаємодії.');
+        if (Auth::user()->cannot('create', Encounter::class)) {
+            Session::flash('error', 'У вас немає дозволу на створення взаємодії.');
+
+            return;
+        }
+
+        try {
+            $validated = $this->form->validate($this->form->signingRules());
+        } catch (ValidationException $exception) {
+            Session::flash('error', $exception->validator->errors()->first());
+            $this->setErrorBag($exception->validator->getMessageBag());
 
             return;
         }
 
         $formattedData = $this->prepareFormattedData();
+        $formattedData = Arr::toSnakeCase($formattedData);
 
         $this->validateFormatted($formattedData);
         $this->storeValidatedData($formattedData);
@@ -79,25 +101,31 @@ class EncounterCreate extends EncounterComponent
             $this->createEpisode($formattedData['episode']);
         }
 
-        $base64EncryptedData = $this->sendEncryptedData(
-            Arr::toSnakeCase($formattedData),
-            Auth::user()->party->taxId
-        );
+        try {
+            $signedContent = new CipherRequest()->signData(
+                $formattedData,
+                $validated['knedp'],
+                $validated['keyContainerUpload'],
+                $validated['password'],
+                Auth::user()->party->taxId
+            );
+        } catch (ConnectionException|CipherApiException|JsonException $exception) {
+            $this->handleCipherExceptions($exception, 'Error when signing data with Cipher');
+
+            return;
+        }
 
         $signedSubmitEncounter = EncounterRequestApi::buildSubmitEncounterPackage(
-            $formattedData['encounter'],
-            $base64EncryptedData
+            $formattedData,
+            $signedContent->getBase64Data()
         );
 
         try {
-            PatientApi::submitEncounter($this->patientUuid, $signedSubmitEncounter);
-        } catch (ApiException $e) {
-            Log::channel('e_health_errors')->error('Error while submitting encounter', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-            session()?->flash('error', 'Виникла помилка. Зверніться до адміністратора.');
+            $resp = EHealth::patient()->submitEncounter($this->patientUuid, $signedSubmitEncounter);
+
+            dd($resp->getData());
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while submitting encounter');
 
             return;
         }
@@ -210,7 +238,7 @@ class EncounterCreate extends EncounterComponent
                 }
             }
         } catch (ValidationException $e) {
-            session()?->flash('error', $e->validator->errors()->first());
+            Session::flash('error', $e->validator->errors()->first());
 
             return;
         }
@@ -272,7 +300,7 @@ class EncounterCreate extends EncounterComponent
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            session()?->flash('error', 'Виникла помилка. Зверніться до адміністратора.');
+            Session::flash('error', 'Виникла помилка. Зверніться до адміністратора.');
 
             return;
         }
@@ -289,7 +317,7 @@ class EncounterCreate extends EncounterComponent
         try {
             PatientApi::createEpisode($this->patientUuid, Arr::toSnakeCase($formattedEpisode));
         } catch (ApiException) {
-            session()?->flash('error', 'Виникла помилка при створенні епізоду. Зверніться до адміністратора.');
+            Session::flash('error', 'Виникла помилка при створенні епізоду. Зверніться до адміністратора.');
         }
     }
 
@@ -360,7 +388,7 @@ class EncounterCreate extends EncounterComponent
                 Repository::episode()->store(Arr::toCamelCase($episodeData));
             }
         } catch (ApiException|Throwable $e) {
-            session()?->flash('error', 'Виникла помилка. Зверніться до адміністратора.');
+            Session::flash('error', 'Виникла помилка. Зверніться до адміністратора.');
 
             Log::error('Failed while ensuring episode existence', [
                 'error' => $e->getMessage(),
@@ -389,7 +417,7 @@ class EncounterCreate extends EncounterComponent
                 Repository::procedure()->store([Arr::toCamelCase($procedureData)]);
             }
         } catch (ApiException|Throwable $e) {
-            session()?->flash('error', 'Виникла помилка. Зверніться до адміністратора.');
+            Session::flash('error', 'Виникла помилка. Зверніться до адміністратора.');
 
             Log::error('Failed while ensuring procedure existence', [
                 'error' => $e->getMessage(),
@@ -418,7 +446,7 @@ class EncounterCreate extends EncounterComponent
                 Repository::diagnosticReport()->store([Arr::toCamelCase($diagnosticReportData)]);
             }
         } catch (ApiException|Throwable $e) {
-            session()?->flash('error', 'Виникла помилка. Зверніться до адміністратора.');
+            Session::flash('error', 'Виникла помилка. Зверніться до адміністратора.');
 
             Log::error('Failed while ensuring diagnostic report existence', [
                 'error' => $e->getMessage(),

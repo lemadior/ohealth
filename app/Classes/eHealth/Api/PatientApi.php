@@ -30,23 +30,6 @@ class PatientApi
     }
 
     /**
-     * Submit encounter data package.
-     *
-     * @param  string  $patientId
-     * @param  array  $params
-     * @return array
-     * @throws ApiException
-     */
-    public static function submitEncounter(string $patientId, array $params): array
-    {
-        return new Request(
-            HttpRequest::METHOD_POST,
-            self::ENDPOINT_PATIENT . "/$patientId/encounter_package",
-            $params
-        )->sendRequest();
-    }
-
-    /**
      * Submit diagnostic report data package.
      *
      * @param  string  $patientId
@@ -228,24 +211,6 @@ class PatientApi
         return new Request(
             HttpRequest::METHOD_GET,
             self::ENDPOINT_PATIENT . "/$patientId/episodes/approved",
-            $params
-        )->sendRequest();
-    }
-
-    /**
-     * Use period_from period_to to find episodes that were active in a certain period of time.
-     * Scopes required: episode:read.
-     *
-     * @param  string  $patientId
-     * @param  array  $params
-     * @return array
-     * @throws ApiException
-     */
-    public static function getEpisodeBySearchParams(string $patientId, array $params = []): array
-    {
-        return new Request(
-            HttpRequest::METHOD_GET,
-            self::ENDPOINT_PATIENT . "/$patientId/episodes",
             $params
         )->sendRequest();
     }
