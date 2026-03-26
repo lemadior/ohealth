@@ -322,7 +322,7 @@ class TestUserMigrate extends Seeder
                     'division_id' => null,
                     'user_id' => $ownerUserId,
                     'party_id' => $partyId,
-                    'sync_status' => JobStatus::COMPLETED->value,
+                    'sync_status' => JobStatus::PARTIAL->value,
                     'applied_at' => new Carbon('2024-09-05T19:03:20.918982Z'),
                     'created_at' => new Carbon('2024-09-05T18:56:03.427768Z'),
                     'updated_at' => new Carbon('2024-09-05T18:56:03.427768Z'),

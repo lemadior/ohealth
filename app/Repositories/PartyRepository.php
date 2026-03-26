@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\Status;
 use App\Models\Relations\Party;
 use App\Models\Employee\Employee;
 use Illuminate\Support\Facades\DB;
@@ -9,13 +10,23 @@ use Illuminate\Support\Facades\Auth;
 
 class PartyRepository
 {
-    public function syncUserEmployeesEndRoles(Party $party, int $legalEntityId): void
+    public function syncUserEmployeesAndRoles(Party $party, int $legalEntityId): void
     {
-        $partyEmployees = $party->employees->where('legal_entity_id', $legalEntityId);
+        $partyEmployees = $party->employees
+            ->where('legal_entity_id', $legalEntityId)
+            ->where('status', Status::APPROVED);
+
+        if ($partyEmployees->isEmpty()) {
+            return;
+        }
+
         $employeesWithUser = $partyEmployees->filter(fn(Employee $employee) => $employee->user_id !== null);
 
         $partyUsers = $party->users->whereIn('id', $employeesWithUser->pluck('user_id'));
 
+        if ($partyUsers->isEmpty()) {
+            return;
+        }
 
         $employeesToSync = [];
         $usersToSync = [];

@@ -7,6 +7,7 @@ namespace App\Jobs;
 use Throwable;
 use App\Core\Arr;
 use Carbon\Carbon;
+use App\Models\User;
 use App\Models\Division;
 use App\Core\EHealthJob;
 use App\Enums\JobStatus;
@@ -14,14 +15,10 @@ use App\Models\LegalEntity;
 use App\Repositories\Repository;
 use App\Classes\eHealth\EHealth;
 use App\Models\Employee\Employee;
-use Spatie\Permission\Models\Role;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Queue\SerializesModels;
 use App\Classes\eHealth\EHealthResponse;
 use App\Models\Employee\EmployeeRequest;
-use App\Services\UserRoleSyncService;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\Middleware\RateLimited;
@@ -89,8 +86,6 @@ class EmployeeDetailsUpsert extends EHealthJob
         $this->employee->setSyncStatus(JobStatus::COMPLETED);
         $this->employee->refresh();
 
-        $users = $this->employee->party->users;
-
         $roleName = $this->employee->employee_type;
         $legalEntityId = $this->employee->legal_entity_id;
 
@@ -113,13 +108,18 @@ class EmployeeDetailsUpsert extends EHealthJob
             )
             ->latest('applied_at')->first();
 
+        $userID = User::where('email', $employeeEmployeeRequest?->email)->first()?->id ?? null;
+
+        $employeeEmployeeRequest?->update(['employee_id' => $this->employee->id]);
+
         $this->employee->update([
             'division_uuid' => $divisionUuid,
             'inserted_at' => Carbon::parse($employeeEmployeeRequest?->appliedAt)->format('Y-m-d H:i:s'),
-            'division_id' => $divisionId
+            'division_id' => $divisionId,
+            'user_id' => $employee->userId ?? $userID
         ]);
 
-        Repository::party()->syncUserEmployeesEndRoles($this->employee->party, $this->legalEntity->id);
+        Repository::party()->syncUserEmployeesAndRoles($this->employee->party, $this->legalEntity->id);
     }
 
     /**

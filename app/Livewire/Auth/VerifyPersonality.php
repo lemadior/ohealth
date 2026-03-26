@@ -4,21 +4,25 @@ declare(strict_types=1);
 
 namespace App\Livewire\Auth;
 
-use App\Classes\Cipher\Api\CipherRequest;
-use App\Classes\Cipher\Exceptions\CipherApiException;
-use App\Events\EhealthUserVerified;
-use App\Models\LegalEntity;
-use App\Models\Relations\Party;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use JsonException;
+use App\Enums\Status;
+use Livewire\Component;
+use App\Models\LegalEntity;
+use Livewire\WithFileUploads;
+use App\Models\Relations\Party;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
-use Livewire\Component;
+use App\Events\EhealthUserVerified;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use App\Enums\Employee\RequestStatus;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\Employee\EmployeeRequest;
+use App\Classes\Cipher\Api\CipherRequest;
+use Illuminate\Http\Client\ConnectionException;
+use App\Classes\Cipher\Exceptions\CipherApiException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Livewire\WithFileUploads;
 
 #[Layout('layouts.guest')]
 class VerifyPersonality extends Component
@@ -97,14 +101,60 @@ class VerifyPersonality extends Component
         $legalEntityUuid = Session::pull('selected_legal_entity_uuid');
         $legalEntity = LegalEntity::whereUuid($legalEntityUuid)->firstOrFail();
 
-        $isAlreadyVerified = $party->employees()
-            ->whereLegalEntityId($legalEntity->id)
-            ->exists();
+        // Get all EmployeeRequests for the user's email that are APPROVED and have a start_date, ordered by most recent
+        $employeeRequests = EmployeeRequest::where('email', $user->email)
+            ->where(fn(Builder $query) =>
+                $query->where('status', RequestStatus::APPROVED)
+                    ->whereNotNull('start_date')
+            )
+            ->latest('applied_at')
+            ->get();
 
-        if (!$isAlreadyVerified) {
-            Session::flash('error', 'Для вашого профілю не знайдено активних посад у цьому закладі. Зверніться до адміністратора.');
+        if ($employeeRequests->isEmpty()) {
+            Session::flash('error', 'Для вашого профілю не знайдено записів про посади у цьому закладі. Зверніться до адміністратора.');
 
             return;
+        }
+
+        // Update all employees of the user's party that match the legal entity
+        // and employee request criteria, setting their user_id to the current user's id
+        $affectedRows = $party->employees()
+            ->whereLegalEntityId($legalEntity->id)
+            ->where('status', Status::APPROVED)
+            ->whereNull('user_id')
+            ->where(function (Builder $query) use ($employeeRequests) {
+                foreach ($employeeRequests as $request) {
+                    $query->orWhere(fn(Builder $q) => $q
+                        ->where('employee_type', $request->employee_type)
+                        ->where('position', $request->position)
+                        ->where('start_date', $request->getRawOriginal('start_date'))
+                    );
+                }
+            })
+            ->update(['user_id' => $user->id]);
+
+        if ($affectedRows === 0) {
+            // If no employees were updated, it means there are no matching employee records for this user and legal entity
+            // Or the user is already linked to the party and has no new employee records to link
+            $isAlreadyVerified = $party->employees()
+                ->whereLegalEntityId($legalEntity->id)
+                ->whereUserId($user->id)
+                ->where(function ($query) use ($employeeRequests) {
+                    foreach ($employeeRequests as $request) {
+                        $query->orWhere(fn($q) => $q
+                            ->where('employee_type', $request->employee_type)
+                            ->where('position', $request->position)
+                            ->where('start_date', $request->getRawOriginal('start_date'))
+                        );
+                    }
+                })
+                ->exists();
+
+            if (!$isAlreadyVerified) {
+                Session::flash('error', 'Для вашого профілю не знайдено активних посад у цьому закладі. Зверніться до адміністратора.');
+
+                return;
+            }
         }
 
         EhealthUserVerified::dispatch($user, $legalEntity->id);

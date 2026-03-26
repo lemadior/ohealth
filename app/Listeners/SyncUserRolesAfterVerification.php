@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace App\Listeners;
 
-use App\Models\User;
-use Illuminate\Support\Carbon;
 use App\Events\EhealthUserVerified;
 use App\Repositories\Repository;
-use App\Services\UserRoleSyncService;
 
 class SyncUserRolesAfterVerification
 {
@@ -25,6 +22,6 @@ class SyncUserRolesAfterVerification
         $user = $event->user;
         $legalEntityId = $event->legalEntityId;
 
-        Repository::party()->syncUserEmployeesEndRoles($user->party, $event->legalEntityId);
+        Repository::party()->syncUserEmployeesAndRoles($user->party, $legalEntityId);
     }
 }
