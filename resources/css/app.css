@@ -723,9 +723,6 @@ input:-webkit-autofill {
         @apply flex-1 p-4 md:pl-[72px] flex flex-col justify-center
     }
 
-    .record-inner-grid {
-        @apply grid grid-cols-2 gap-y-4 gap-x-4 w-full [&>div]:min-w-0 [&_div.text-\[13px\]]:break-words
-    }
 
     .record-inner-subvalue {
         @apply text-[13px] font-medium text-gray-800 dark:text-gray-200
