@@ -41,6 +41,8 @@ return [
     'patient_full_name' => 'ПІБ пацієнта',
     'resend_again_in_seconds' => 'Відправити ще раз (через',
     'seconds_short' => 'с)',
+    'was_performed' => 'Чи була проведена',
+    'date_time_entered' => 'Дата та час внесення',
 
     // Summary sections fields
     'status_clinical' => 'Статус клінічний',
@@ -60,14 +62,11 @@ return [
     'created' => 'Створено',
     'clinical_impression_conclusion' => 'Заключення по оцінці',
     'conducted' => 'Проведена',
-    'vaccine' => 'Вакцина',
     'status_done' => 'Виконана',
     'route' => 'Шлях',
     'reactions' => 'Реакції',
-    'manufacturer_and_batch' => 'Виробник та партія',
-    'was_performed' => 'Чи була проведена',
+    'manufacturer_and_lot_number' => 'Виробник та партія',
     'date_time_performed' => 'Дата та час проведення',
-    'date_time_entered' => 'Дата та час внесення',
     'category_and_code' => 'Категорія та код',
     'status_valid' => 'Дійсний',
     'method' => 'Метод',
@@ -251,12 +250,11 @@ return [
     'filter_created_at_range' => 'Створено від - до',
     'filter_icd_diagnosis' => 'Діагноз за МКХ',
     'filter_icpc_diagnosis' => 'Діагноз за ICPC',
-    'filter_type' => 'Тип',
 
     // Diagnoses record
     'diagnoses_search' => 'Пошук діагнозів',
     'diagnostic_reports_search' => 'Пошук діагностичних звітів',
-    'diagnoses' => 'Діагнози',
+
     // Observations record
     'observations' => 'Обстеження',
     'condition_search' => 'Пошук станів',
@@ -269,7 +267,6 @@ return [
     'encounters' => 'Взаємодії',
     'main_data' => 'Основні дані',
     'reasons_for_visit' => 'Причини звернення',
-    'vaccinations' => 'Вакцинації',
     'prescriptions' => 'Рецепти',
     'referrals' => 'Направлення',
     'medical_reports' => 'Медичні висновки',
@@ -315,10 +312,10 @@ return [
     // Immunizations
     'immunizations' => 'Вакцинації',
     'immunization' => 'Вакцинація',
+    'vaccine' => 'Вакцина',
     'dosage' => 'Дозування',
     'execution_state' => 'Стан проведення',
     'reason' => 'Причина',
-    'has_it_been_done' => 'Чи була проведена',
     'reasons' => 'Причини',
     'data' => 'Дані',
     'time' => 'Час',
@@ -365,7 +362,6 @@ return [
     'observation_method' => 'Метод спостереження',
     'interpretation_of_observation' => 'Інтерпретація спостереження',
     'date_and_time_of_receiving_the_indicators' => 'Дата та час отримання показників',
-    'date_and_time_of_entry' => 'Дата та час внесення',
 
     // Procedures
     'procedure' => 'Процедура',

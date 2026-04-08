@@ -29,7 +29,7 @@ class PatientSummary extends BasePatientComponent
 
     public array $clinicalImpressions = [];
 
-    public array $immunizations;
+    public array $immunizations = [];
 
     public array $observations;
 
@@ -52,6 +52,10 @@ class PatientSummary extends BasePatientComponent
         'eHealth/encounter_types',
         'SPECIALITY_TYPE',
         'eHealth/clinical_impression_patient_categories',
+        'eHealth/vaccine_codes',
+        'eHealth/vaccination_routes',
+        'eHealth/reason_explanations',
+        'eHealth/immunization_body_sites',
     ];
 
     protected function initializeComponent(): void
@@ -177,7 +181,7 @@ class PatientSummary extends BasePatientComponent
             }
 
             // Refresh data for display
-            $this->immunizations = $validatedData;
+            $this->immunizations = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
             $this->handleEHealthExceptions($exception, 'Error when getting immunizations');
 
