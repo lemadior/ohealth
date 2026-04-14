@@ -156,10 +156,10 @@ return [
             'OWNER', 'HR', 'DOCTOR', 'ADMIN', 'RECEPTIONIST', 'LABORANT'
         ],
         'MSP_LIMITED' => [
-            'OWNER', 'ADMIN', 'DOCTOR'
+            'REORGANIZATION_OWNER', 'OWNER', 'ADMIN', 'DOCTOR'
         ],
         'PRIMARY_CARE' => [
-            'OWNER', 'HR', 'DOCTOR', 'ASSISTANT', 'ADMIN', 'RECEPTIONIST', 'MED_ADMIN', 'LABORANT'
+            'REORGANIZATION_OWNER', 'OWNER', 'HR', 'DOCTOR', 'ASSISTANT', 'ADMIN', 'RECEPTIONIST', 'MED_ADMIN', 'LABORANT'
         ],
         // 'MSP_PHARMACY' => [
         //     'OWNER', 'HR', 'DOCTOR', 'ADMIN', 'PHARMACIST', 'RECEPTIONIST'
@@ -168,10 +168,10 @@ return [
             'PHARMACY_OWNER', 'OWNER', 'PHARMACIST', 'HR'
         ],
         'OUTPATIENT' => [
-            'OWNER', 'HR', 'ASSISTANT', 'SPECIALIST', 'ADMIN', 'RECEPTIONIST', 'MED_ADMIN', 'LABORANT', 'MED_COORDINATOR'
+            'REORGANIZATION_OWNER', 'OWNER', 'HR', 'ASSISTANT', 'SPECIALIST', 'ADMIN', 'RECEPTIONIST', 'MED_ADMIN', 'LABORANT', 'MED_COORDINATOR'
         ],
         'EMERGENCY' => [
-            'OWNER', 'HR', 'SPECIALIST', 'ASSISTANT', 'ADMIN'
+            'REORGANIZATION_OWNER', 'OWNER', 'HR', 'SPECIALIST', 'ASSISTANT', 'ADMIN'
         ],
     ],
 
@@ -769,6 +769,12 @@ return [
             'related_legal_entities:read', 'contract:read', 'contract:write', 'equipment:write', 'equipment:read', 'medical_program_provision:write', 'medical_program_provision:read', 'license:details',
             'license:read', 'license:write', 'rule_engine_rule:read', 'party_verification:details', 'party_verification:write', 'person_verification:details', 'device_definition:read',
             'device_request:read', 'device_dispense:read', 'medication_dispense:read_pharm', 'party_verification:read', 'care_team:read'
+        ],
+        'REORGANIZATION_OWNER' => [
+            'capitation_report:read', 'client:read', 'connection:read', 'contract:read', 'contract_request:read', 'declaration:read', 'declaration_request:read', 'division:details', 'division:read',
+            'employee:details', 'employee:read', 'employee_request:read', 'employee_role:read', 'healthcare_service:read', 'legal_entity:read', 'license:details', 'license:read', 'otp:read',
+            'party_verification:details', 'party_verification:read', 'party_verification:write', 'person:read', 'person_verification:details', 'reimbursement_report:read', 'related_legal_entities:read',
+            'secret:refresh'
         ],
         'PHARMACY_OWNER' => [
             'employee_role:write', 'employee_role:read', 'healthcare_service:write', 'healthcare_service:read', 'division:activate', 'division:deactivate', 'division:details', 'division:read',

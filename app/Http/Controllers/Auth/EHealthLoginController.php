@@ -30,6 +30,8 @@ use Illuminate\Validation\Rule;
 
 class EHealthLoginController extends Controller
 {
+    protected const string LOGIN_GUARD = 'ehealth';
+
     protected bool $isFirstLogin = false;
 
     /**
@@ -101,7 +103,7 @@ class EHealthLoginController extends Controller
 
         $legalEntity = LegalEntity::whereUuid($authLegalEntityUUID)->firstOrFail();
 
-        Auth::shouldUse('ehealth');
+        Auth::shouldUse(self::LOGIN_GUARD);
 
         $user = $this->findOrCreateUser($legalEntity, $authUserUUID);
 
@@ -117,7 +119,7 @@ class EHealthLoginController extends Controller
             return $this->breakAuth('auth.login.error.test_user_email');
         }
 
-        Auth::guard('ehealth')->login($user);
+        Auth::guard(self::LOGIN_GUARD)->login($user);
 
         $ehealthScopes = explode(
             ' ',
@@ -126,7 +128,7 @@ class EHealthLoginController extends Controller
 
         $user->syncPermissions($ehealthScopes);
 
-        EHealthUserLogin::dispatch($user, $legalEntity, $authUserUUID, $this->isFirstLogin);
+        EHealthUserLogin::dispatch($user, $legalEntity, $authUserUUID, isFirstLogin: $this->isFirstLogin, guard: self::LOGIN_GUARD);
 
         $user->refresh();
 
@@ -150,7 +152,7 @@ class EHealthLoginController extends Controller
             );
         }
 
-        Auth::guard('ehealth')->logout();
+        Auth::guard(self::LOGIN_GUARD)->logout();
 
         return Redirect::route('login')->with('error', __('auth.login.error.legal_entity.wrong_request'));
     }
