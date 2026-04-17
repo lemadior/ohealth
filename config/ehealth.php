@@ -186,6 +186,7 @@ return [
         'encounter' => 50,
         'clinical_impression' => 50,
         'immunization' => 50,
+        'observations' => 50,
         'employee_role' => 50,
         'party_request' => 30,
         'declaration' => 10,

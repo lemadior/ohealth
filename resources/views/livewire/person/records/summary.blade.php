@@ -36,7 +36,7 @@
                 ['id' => 'encounters', 'action' => 'getEncounters', 'syncAction' => 'syncEncounters', 'label' => __('patients.encounters'), 'icon' => 'users', 'syncEntity' => PatientSummary::ENTITY_TYPE_ENCOUNTER],
                 ['id' => 'clinicalImpressions', 'action' => 'getClinicalImpressions', 'syncAction' => 'syncClinicalImpressions', 'label' => __('patients.clinical_impressions'), 'icon' => 'check', 'syncEntity' => PatientSummary::ENTITY_TYPE_CLINICAL_IMPRESSION],
                 ['id' => 'immunizations', 'action' => 'getImmunizations', 'syncAction' => 'syncImmunizations', 'label' => __('patients.immunizations'), 'icon' => 'shield', 'syncEntity' => PatientSummary::ENTITY_TYPE_IMMUNIZATION],
-                ['id' => 'observations', 'action' => 'getObservations', 'syncAction' => 'syncObservations', 'label' => __('patients.observation'), 'icon' => 'heart', 'syncEntity' => ''],
+                ['id' => 'observations', 'action' => 'getObservations', 'syncAction' => 'syncObservations', 'label' => __('patients.observation'), 'icon' => 'heart', 'syncEntity' => PatientSummary::ENTITY_TYPE_OBSERVATION],
                 ['id' => 'diagnoses', 'action' => 'getDiagnoses', 'syncAction' => 'syncDiagnoses', 'label' => __('patients.diagnoses'), 'icon' => 'file', 'syncEntity' => ''],
                 ['id' => 'conditions', 'action' => 'getConditions', 'syncAction' => 'syncConditions', 'label' => __('patients.conditions'), 'icon' => 'file-minus', 'syncEntity' => ''],
                 ['id' => 'diagnosticReports', 'action' => 'getDiagnosticReports', 'syncAction' => 'syncDiagnosticReports', 'label' => __('patients.diagnostic_reports'), 'icon' => 'activity', 'syncEntity' => ''],

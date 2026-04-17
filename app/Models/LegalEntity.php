@@ -50,6 +50,7 @@ class LegalEntity extends Model
     public const string ENTITY_ENCOUNTER = 'encounter_';
     public const string ENTITY_CLINICAL_IMPRESSION = 'clinical_impression_';
     public const string ENTITY_IMMUNIZATION = 'immunization_';
+    public const string ENTITY_OBSERVATION = 'observation_';
 
     protected $fillable = [
         'uuid',
@@ -94,6 +95,7 @@ class LegalEntity extends Model
         'encounter_sync_status' => JobStatus::class,
         'clinical_impression_sync_status' => JobStatus::class,
         'immunization_sync_status' => JobStatus::class,
+        'observation_sync_status' => JobStatus::class,
     ];
 
     protected $attributes = [

@@ -13,6 +13,7 @@ use App\Jobs\EpisodeSync;
 use App\Jobs\EncounterSync;
 use App\Jobs\ClinicalImpressionSync;
 use App\Jobs\ImmunizationSync;
+use App\Jobs\ObservationSync;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\ClinicalImpression;
 use App\Models\MedicalEvents\Sql\Condition;
@@ -44,6 +45,7 @@ class PatientSummary extends BasePatientComponent
     public const string ENTITY_TYPE_ENCOUNTER = 'encounter';
     public const string ENTITY_TYPE_CLINICAL_IMPRESSION = 'clinical_impression';
     public const string ENTITY_TYPE_IMMUNIZATION = 'immunization';
+    public const string ENTITY_TYPE_OBSERVATION = 'observation';
 
     public array $episodes = [];
 
@@ -124,6 +126,7 @@ class PatientSummary extends BasePatientComponent
             self::ENTITY_TYPE_ENCOUNTER => legalEntity()->getEntityStatus(LegalEntity::ENTITY_ENCOUNTER),
             self::ENTITY_TYPE_CLINICAL_IMPRESSION => legalEntity()->getEntityStatus(LegalEntity::ENTITY_CLINICAL_IMPRESSION),
             self::ENTITY_TYPE_IMMUNIZATION => legalEntity()->getEntityStatus(LegalEntity::ENTITY_IMMUNIZATION),
+            self::ENTITY_TYPE_OBSERVATION => legalEntity()->getEntityStatus(LegalEntity::ENTITY_OBSERVATION),
         ];
     }
 
@@ -323,30 +326,45 @@ class PatientSummary extends BasePatientComponent
 
     public function syncObservations(): void
     {
+        if ($this->cannotStartSync(self::ENTITY_TYPE_OBSERVATION)) {
+            return;
+        }
+
+        if ($this->shouldResumeSync(self::ENTITY_TYPE_OBSERVATION)) {
+            $this->handleResumeLogic(self::ENTITY_TYPE_OBSERVATION, LegalEntity::ENTITY_OBSERVATION);
+
+            return;
+        }
+
         try {
             $response = EHealth::observation()->getBySearchParams(
                 $this->uuid,
                 ['managing_organization_id' => legalEntity()->uuid]
             );
-            $validatedData = $response->validate();
-
-            try {
-                Repository::observation()->sync($this->id, $validatedData);
-                Session::flash('success', __('patients.messages.observations_synced_successfully'));
-            } catch (Throwable $exception) {
-                $this->logDatabaseErrors($exception, 'Error while synchronizing observations');
-                Session::flash('error', __('messages.database_error'));
-
-                return;
-            }
-
-            // Refresh data for display
-            $this->observations = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
-            $this->handleEHealthExceptions($exception, 'Error when getting observations');
+            $this->handleEHealthExceptions($exception, 'Error while synchronizing observations');
 
             return;
         }
+
+        try {
+            $validatedData = $response->validate();
+            Repository::observation()->sync($this->id, $validatedData);
+        } catch (Throwable $exception) {
+            $this->logDatabaseErrors($exception, 'Error while synchronizing observations');
+            Session::flash('error', __('patients.messages.observation_sync_database_error'));
+
+            return;
+        }
+
+        if ($response->isNotLast()) {
+            $this->dispatchRemainingPages(self::ENTITY_TYPE_OBSERVATION);
+        } else {
+            legalEntity()->setEntityStatus(JobStatus::COMPLETED, LegalEntity::ENTITY_OBSERVATION);
+            Session::flash('success', __('patients.messages.observations_synced_successfully'));
+        }
+
+        $this->observations = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
     }
 
     public function getObservations(): void
@@ -651,6 +669,7 @@ class PatientSummary extends BasePatientComponent
             self::ENTITY_TYPE_ENCOUNTER => EncounterSync::BATCH_NAME,
             self::ENTITY_TYPE_CLINICAL_IMPRESSION => ClinicalImpressionSync::BATCH_NAME,
             self::ENTITY_TYPE_IMMUNIZATION => ImmunizationSync::BATCH_NAME,
+            self::ENTITY_TYPE_OBSERVATION => ObservationSync::BATCH_NAME,
             default => throw new InvalidArgumentException('Unknown entity type: ' . $entityType),
         };
     }
@@ -668,6 +687,7 @@ class PatientSummary extends BasePatientComponent
             self::ENTITY_TYPE_ENCOUNTER => EncounterSync::class,
             self::ENTITY_TYPE_CLINICAL_IMPRESSION => ClinicalImpressionSync::class,
             self::ENTITY_TYPE_IMMUNIZATION => ImmunizationSync::class,
+            self::ENTITY_TYPE_OBSERVATION => ObservationSync::class,
             default => throw new InvalidArgumentException('Unknown entity type: ' . $entityType),
         };
     }
@@ -685,6 +705,7 @@ class PatientSummary extends BasePatientComponent
             self::ENTITY_TYPE_ENCOUNTER => LegalEntity::ENTITY_ENCOUNTER,
             self::ENTITY_TYPE_CLINICAL_IMPRESSION => LegalEntity::ENTITY_CLINICAL_IMPRESSION,
             self::ENTITY_TYPE_IMMUNIZATION => LegalEntity::ENTITY_IMMUNIZATION,
+            self::ENTITY_TYPE_OBSERVATION => LegalEntity::ENTITY_OBSERVATION,
             default => throw new InvalidArgumentException('Unknown entity type: ' . $entityType),
         };
     }
