@@ -11,6 +11,8 @@ use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
 use App\Jobs\EpisodeSync;
 use App\Jobs\EncounterSync;
+use App\Jobs\ClinicalImpressionSync;
+use App\Jobs\ImmunizationSync;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\ClinicalImpression;
 use App\Models\MedicalEvents\Sql\Condition;
@@ -40,6 +42,8 @@ class PatientSummary extends BasePatientComponent
 
     public const string ENTITY_TYPE_EPISODE = 'episode';
     public const string ENTITY_TYPE_ENCOUNTER = 'encounter';
+    public const string ENTITY_TYPE_CLINICAL_IMPRESSION = 'clinical_impression';
+    public const string ENTITY_TYPE_IMMUNIZATION = 'immunization';
 
     public array $episodes = [];
 
@@ -118,6 +122,8 @@ class PatientSummary extends BasePatientComponent
         $this->syncStatuses = [
             self::ENTITY_TYPE_EPISODE => legalEntity()->getEntityStatus(LegalEntity::ENTITY_EPISODE),
             self::ENTITY_TYPE_ENCOUNTER => legalEntity()->getEntityStatus(LegalEntity::ENTITY_ENCOUNTER),
+            self::ENTITY_TYPE_CLINICAL_IMPRESSION => legalEntity()->getEntityStatus(LegalEntity::ENTITY_CLINICAL_IMPRESSION),
+            self::ENTITY_TYPE_IMMUNIZATION => legalEntity()->getEntityStatus(LegalEntity::ENTITY_IMMUNIZATION),
         ];
     }
 
@@ -221,27 +227,42 @@ class PatientSummary extends BasePatientComponent
 
     public function syncClinicalImpressions(): void
     {
-        try {
-            $response = EHealth::clinicalImpression()->getSummary($this->uuid);
-            $validatedData = $response->validate();
+        if ($this->cannotStartSync(self::ENTITY_TYPE_CLINICAL_IMPRESSION)) {
+            return;
+        }
 
-            try {
-                Repository::clinicalImpression()->sync($this->id, $validatedData);
-                Session::flash('success', __('patients.messages.clinical_impressions_synced_successfully'));
-            } catch (Throwable $exception) {
-                $this->logDatabaseErrors($exception, 'Error while synchronizing clinical impressions');
-                Session::flash('error', __('messages.database_error'));
-
-                return;
-            }
-
-            // Refresh data for display
-            $this->clinicalImpressions = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
-        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
-            $this->handleEHealthExceptions($exception, 'Error when getting clinical impressions');
+        if ($this->shouldResumeSync(self::ENTITY_TYPE_CLINICAL_IMPRESSION)) {
+            $this->handleResumeLogic(self::ENTITY_TYPE_CLINICAL_IMPRESSION, LegalEntity::ENTITY_CLINICAL_IMPRESSION);
 
             return;
         }
+
+        try {
+            $response = EHealth::clinicalImpression()->getSummary($this->uuid);
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while synchronizing clinical impressions');
+
+            return;
+        }
+
+        try {
+            $validatedData = $response->validate();
+            Repository::clinicalImpression()->sync($this->id, $validatedData);
+        } catch (Throwable $exception) {
+            $this->logDatabaseErrors($exception, 'Error while synchronizing clinical impressions');
+            Session::flash('error', __('patients.messages.clinical_impression_sync_database_error'));
+
+            return;
+        }
+
+        if ($response->isNotLast()) {
+            $this->dispatchRemainingPages(self::ENTITY_TYPE_CLINICAL_IMPRESSION);
+        } else {
+            legalEntity()->setEntityStatus(JobStatus::COMPLETED, LegalEntity::ENTITY_CLINICAL_IMPRESSION);
+            Session::flash('success', __('patients.messages.clinical_impressions_synced_successfully'));
+        }
+
+        $this->clinicalImpressions = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
     }
 
     public function getClinicalImpressions(): void
@@ -254,27 +275,42 @@ class PatientSummary extends BasePatientComponent
 
     public function syncImmunizations(): void
     {
-        try {
-            $response = EHealth::immunization()->getSummary($this->uuid);
-            $validatedData = $response->validate();
+        if ($this->cannotStartSync(self::ENTITY_TYPE_IMMUNIZATION)) {
+            return;
+        }
 
-            try {
-                Repository::immunization()->sync($this->id, $validatedData);
-                Session::flash('success', __('patients.messages.immunizations_synced_successfully'));
-            } catch (Throwable $exception) {
-                $this->logDatabaseErrors($exception, 'Error while synchronizing immunizations');
-                Session::flash('error', __('messages.database_error'));
-
-                return;
-            }
-
-            // Refresh data for display
-            $this->immunizations = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
-        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
-            $this->handleEHealthExceptions($exception, 'Error when getting immunizations');
+        if ($this->shouldResumeSync(self::ENTITY_TYPE_IMMUNIZATION)) {
+            $this->handleResumeLogic(self::ENTITY_TYPE_IMMUNIZATION, LegalEntity::ENTITY_IMMUNIZATION);
 
             return;
         }
+
+        try {
+            $response = EHealth::immunization()->getSummary($this->uuid);
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while synchronizing immunizations');
+
+            return;
+        }
+
+        try {
+            $validatedData = $response->validate();
+            Repository::immunization()->sync($this->id, $validatedData);
+        } catch (Throwable $exception) {
+            $this->logDatabaseErrors($exception, 'Error while synchronizing immunizations');
+            Session::flash('error', __('patients.messages.immunization_sync_database_error'));
+
+            return;
+        }
+
+        if ($response->isNotLast()) {
+            $this->dispatchRemainingPages(self::ENTITY_TYPE_IMMUNIZATION);
+        } else {
+            legalEntity()->setEntityStatus(JobStatus::COMPLETED, LegalEntity::ENTITY_IMMUNIZATION);
+            Session::flash('success', __('patients.messages.immunizations_synced_successfully'));
+        }
+
+        $this->immunizations = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
     }
 
     public function getImmunizations(): void
@@ -613,6 +649,8 @@ class PatientSummary extends BasePatientComponent
         return match ($entityType) {
             self::ENTITY_TYPE_EPISODE => EpisodeSync::BATCH_NAME,
             self::ENTITY_TYPE_ENCOUNTER => EncounterSync::BATCH_NAME,
+            self::ENTITY_TYPE_CLINICAL_IMPRESSION => ClinicalImpressionSync::BATCH_NAME,
+            self::ENTITY_TYPE_IMMUNIZATION => ImmunizationSync::BATCH_NAME,
             default => throw new InvalidArgumentException('Unknown entity type: ' . $entityType),
         };
     }
@@ -628,6 +666,8 @@ class PatientSummary extends BasePatientComponent
         return match ($entityType) {
             self::ENTITY_TYPE_EPISODE => EpisodeSync::class,
             self::ENTITY_TYPE_ENCOUNTER => EncounterSync::class,
+            self::ENTITY_TYPE_CLINICAL_IMPRESSION => ClinicalImpressionSync::class,
+            self::ENTITY_TYPE_IMMUNIZATION => ImmunizationSync::class,
             default => throw new InvalidArgumentException('Unknown entity type: ' . $entityType),
         };
     }
@@ -643,6 +683,8 @@ class PatientSummary extends BasePatientComponent
         return match ($entityType) {
             self::ENTITY_TYPE_EPISODE => LegalEntity::ENTITY_EPISODE,
             self::ENTITY_TYPE_ENCOUNTER => LegalEntity::ENTITY_ENCOUNTER,
+            self::ENTITY_TYPE_CLINICAL_IMPRESSION => LegalEntity::ENTITY_CLINICAL_IMPRESSION,
+            self::ENTITY_TYPE_IMMUNIZATION => LegalEntity::ENTITY_IMMUNIZATION,
             default => throw new InvalidArgumentException('Unknown entity type: ' . $entityType),
         };
     }

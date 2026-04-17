@@ -184,6 +184,8 @@ return [
         'equipment' => 50,
         'episode' => 50,
         'encounter' => 50,
+        'clinical_impression' => 50,
+        'immunization' => 50,
         'employee_role' => 50,
         'party_request' => 30,
         'declaration' => 10,

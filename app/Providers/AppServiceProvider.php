@@ -121,5 +121,15 @@ class AppServiceProvider extends ServiceProvider
             'ehealth-encounter-get',
             static fn (EncounterSync $job) => Limit::perMinute(config('ehealth.rate_limit.encounter'))->by($job->user->id)
         );
+
+        RateLimiter::for(
+            'ehealth-clinical-impression-get',
+            static fn (EncounterSync $job) => Limit::perMinute(config('ehealth.rate_limit.clinical_impression'))->by($job->user->id)
+        );
+
+        RateLimiter::for(
+            'ehealth-immunization-get',
+            static fn (EncounterSync $job) => Limit::perMinute(config('ehealth.rate_limit.immunization'))->by($job->user->id)
+        );
     }
 }
