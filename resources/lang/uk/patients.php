@@ -526,6 +526,16 @@ return [
         'observation_sync_database_error' => 'Виникла помилка під час синхронізації обстежень',
         'observation_sync_background_dispatch_error' => 'Помилка запуску фонової синхронізації обстежень',
         'conditions_synced_successfully' => 'Стани успішно синхронізовані',
+        'conditions_first_page_synced_successfully' => 'Перша сторінка станів синхронізована, решта обробляється у фоні',
+        'condition_sync_already_running' => 'Синхронізація станів вже запущена. Будь ласка, зачекайте її завершення.',
+        'condition_sync_resume_started' => 'Відновлення попередньої синхронізації станів розпочато',
+        'condition_sync_database_error' => 'Виникла помилка під час синхронізації станів',
+        'condition_sync_background_dispatch_error' => 'Помилка запуску фонової синхронізації станів',
         'diagnostic_reports_synced_successfully' => 'Діагностичні звіти успішно синхронізовані',
+        'diagnostic_reports_first_page_synced_successfully' => 'Перша сторінка діагностичних звітів синхронізована, решта обробляється у фоні',
+        'diagnostic_report_sync_already_running' => 'Синхронізація діагностичних звітів вже запущена. Будь ласка, зачекайте її завершення.',
+        'diagnostic_report_sync_resume_started' => 'Відновлення попередньої синхронізації діагностичних звітів розпочато',
+        'diagnostic_report_sync_database_error' => 'Виникла помилка під час синхронізації діагностичних звітів',
+        'diagnostic_report_sync_background_dispatch_error' => 'Помилка запуску фонової синхронізації діагностичних звітів',
     ]
 ];
