@@ -71,8 +71,22 @@ class EmployeePolicy
 
     /**
      * Determine whether the user can sync the employee with eHealth.
+     * This allows users with 'employee:read' permission only to sync employees
+     * (read an employees data from eHealth and save it to MIS database).
      */
-    public function sync(User $user, Employee $employee): Response
+    public function sync(User $user): Response
+    {
+        return $user->can('employee:read')
+            ? Response::allow()
+            : Response::deny(__('employees.policy.emp.update_denied'));
+    }
+
+    /**
+     * Determine whether the user can sync the employee with eHealth.
+     * This allows users with 'employee:write' permission to sync employees
+     * (update an employee data on the eHealth side).
+     */
+    public function syncEmployee(User $user, Employee $employee): Response
     {
         // 1. Verification of affiliation with the current institution
         if ((int) $employee->legalEntityId !== (int) legalEntity()->id) {
@@ -85,7 +99,7 @@ class EmployeePolicy
         }
 
         // 3. PERMISSIONS
-        return $user->can('employee:write')
+        return $user->can('employee:read')
             ? Response::allow()
             : Response::deny(__('employees.policy.emp.update_denied'));
     }

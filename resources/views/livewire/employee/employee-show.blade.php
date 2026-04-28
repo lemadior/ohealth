@@ -14,9 +14,8 @@
 
         {{-- SYNC button --}}
         <div class="flex items-center gap-2">
-
             @if($employee instanceof \App\Models\Employee\Employee)
-                @can('sync', $employee)
+                @can('syncEmployee', $employee)
                     <button
                         wire:click="sync"
                         wire:loading.attr="disabled"

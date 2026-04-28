@@ -143,7 +143,7 @@ abstract class EmployeeComponent extends Component
     protected function syncEmployeeData(Employee $employee): bool
     {
         // 1. Validation
-        if (Gate::denies('sync', $employee)) {
+        if (Gate::denies('syncEmployee', $employee)) {
             $this->dispatch('flashMessage', [
                 'message' => 'Синхронізація недоступна для цього співробітника.',
                 'type' => 'error'
