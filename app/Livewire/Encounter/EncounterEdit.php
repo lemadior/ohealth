@@ -15,6 +15,7 @@ use App\Models\MedicalEvents\Sql\Encounter;
 use App\Repositories\MedicalEvents\Repository;
 use App\Services\MedicalEvents\Mappers\ConditionMapper;
 use App\Services\MedicalEvents\Mappers\EncounterMapper;
+use App\Services\MedicalEvents\Mappers\ImmunizationMapper;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -56,9 +57,13 @@ class EncounterEdit extends EncounterComponent
             ->map(fn (array $condition) => app(ConditionMapper::class)->fromFhir($condition, $detailsMap))
             ->toArray();
 
-        //        $this->form->immunizations = Repository::immunization()->get($this->encounterId);
-        //        $this->form->immunizations = Repository::immunization()->formatForView($this->form->immunizations);
-        //
+        $immunizations = Repository::immunization()->get($encounter['uuid']);
+        if ($immunizations) {
+            $this->form->immunizations = collect($immunizations)
+                ->map(fn (array $immunization) => app(ImmunizationMapper::class)->fromFhir($immunization))
+                ->toArray();
+        }
+
         //        $this->form->diagnosticReports = Repository::diagnosticReport()->get($this->encounterId);
         //        $this->form->diagnosticReports = Repository::diagnosticReport()->formatForView($this->form->diagnosticReports);
         //
@@ -99,24 +104,20 @@ class EncounterEdit extends EncounterComponent
             ->map(fn (array $condition) => app(ConditionMapper::class)->toFhir($condition, $uuids))
             ->values()
             ->toArray();
+        $fhirImmunizations = collect($validated['immunizations'] ?? [])
+            ->map(fn (array $immunization) => app(ImmunizationMapper::class)->toFhir($immunization, $uuids))
+            ->values()
+            ->toArray();
         $fhirEncounter = app(EncounterMapper::class)->toFhir(
             $validated['encounter'],
             $fhirConditions,
             $uuids
         );
 
-        // map id to uuid for using sync method
-        $conditionsSyncData = collect($fhirConditions)->map(
-            fn (array $item) => collect($item)->put('uuid', $item['id'])->forget(['id'])->all()
-        )->toArray();
-        $encounterSyncData = collect($fhirEncounter)
-            ->put('uuid', $fhirEncounter['id'])
-            ->forget(['id'])
-            ->all();
-
         try {
-            Repository::encounter()->sync($this->personId, [Arr::toSnakeCase($encounterSyncData)]);
-            Repository::condition()->sync($this->personId, Arr::toSnakeCase($conditionsSyncData));
+            Repository::encounter()->sync($this->personId, [$this->fhirToSync($fhirEncounter)]);
+            Repository::condition()->sync($this->personId, array_map($this->fhirToSync(...), $fhirConditions));
+            Repository::immunization()->sync($this->personId, array_map($this->fhirToSync(...), $fhirImmunizations));
         } catch (Throwable $exception) {
             $this->logDatabaseErrors($exception, 'Failed to sync encounter package data');
             Session::flash('error', __('messages.database_error'));
@@ -128,8 +129,22 @@ class EncounterEdit extends EncounterComponent
 
         return [
             'encounter' => $fhirEncounter,
-            'conditions' => $fhirConditions
+            'conditions' => $fhirConditions,
+            'immunizations' => $fhirImmunizations,
         ];
+    }
+
+    /**
+     * Rename 'id' to 'uuid' and convert keys to snake_case for sync methods.
+     *
+     * @param  array  $fhirItem
+     * @return array
+     */
+    private function fhirToSync(array $fhirItem): array
+    {
+        return Arr::toSnakeCase(
+            collect($fhirItem)->put('uuid', $fhirItem['id'])->forget(['id'])->all()
+        );
     }
 
     /**
