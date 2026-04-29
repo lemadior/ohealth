@@ -1,5 +1,6 @@
 <div>
     @php
+        use App\Enums\Status;
         use App\Enums\User\Role;
         use App\Enums\JobStatus;
         use App\Models\Employee\Employee;
@@ -81,7 +82,7 @@
                             <button type="button"
                                     class="button-minor flex items-center justify-center gap-2 w-full lg:w-auto self-stretch lg:self-auto lg:-translate-y-[9px]"
                                     @click="showFilter = !showFilter">
-                                @icon('adjustments', 'w-4 h-4')
+                                    @icon('adjustments', 'w-4 h-4')
                                 <span>{{ __('forms.additional_search_parameters') }}</span>
                             </button>
                         </div>
@@ -158,7 +159,7 @@
                                                    if (s === 'NEW') return '{{ __('forms.draft') }}';
                                                    if (s === 'SIGNED') return '{{ __('forms.status.sent') }}';
                                                    if (s === 'DISMISSED') return '{{ __('forms.dismissed') }}';
-
+                                                   if (s === 'REORGANIZED') return '{{ __('forms.reorganized') }}';
 {{--                                                   if (s === 'VERIFIED') return '{{ __('forms.verified') ';--}}
 {{--                                                   if (s === 'NOT_VERIFIED') return '{{ __('forms.not_verified') ';--}}
 
@@ -183,14 +184,14 @@
                                             <ul class="py-2 px-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
                                                 <li>
                                                     <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="APPROVED" wire:model="status"
+                                                        <input type="checkbox" value="{{ Status::APPROVED->value }}" wire:model="status"
                                                                class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
                                                         <span>{{ __('forms.active') }}</span>
                                                     </label>
                                                 </li>
                                                 <li>
                                                     <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="NEW" wire:model="status"
+                                                        <input type="checkbox" value="{{ Status::NEW->value }}" wire:model="status"
                                                                class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
                                                         <span>{{ __('forms.draft') }}</span>
                                                     </label>
@@ -198,7 +199,7 @@
 
                                                 <li>
                                                     <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="SIGNED" wire:model="status"
+                                                        <input type="checkbox" value="{{ Status::SIGNED->value }}" wire:model="status"
                                                                class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
                                                         <span>{{ __('forms.status.sent') }}</span>
                                                     </label>
@@ -206,9 +207,17 @@
 
                                                 <li>
                                                     <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="DISMISSED" wire:model="status"
+                                                        <input type="checkbox" value="{{ Status::DISMISSED->value }}" wire:model="status"
                                                                class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
                                                         <span>{{ __('forms.dismissed') }}</span>
+                                                    </label>
+                                                </li>
+
+                                                <li>
+                                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                                        <input type="checkbox" value="{{ Status::REORGANIZED->value }}" wire:model="status"
+                                                               class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
+                                                        <span>{{ __('forms.reorganized') }}</span>
                                                     </label>
                                                 </li>
                                             </ul>
@@ -242,7 +251,7 @@
                         // We use strict filtering on the collection to avoid showing historical processed requests.
                         $drafts = $party->employeeRequests->reject(function ($request) {
                             $status = $request->status instanceof \UnitEnum ? $request->status->value : $request->status;
-                            return $status === 'APPROVED';
+                            return $status === Status::APPROVED->value;
                         });
 
                         $employees = $party->employees;
@@ -259,7 +268,7 @@
                             if ($isEmp) {
                                 return $permissions['employee_view'] ||
                                        $permissions['employee_write'] ||
-                                       ($status === 'APPROVED' && $permissions['employee_deactivate']);
+                                       ($status === Status::APPROVED->value && $permissions['employee_deactivate']);
                             }
 
                             // Request checks
@@ -434,15 +443,17 @@
                                             <td class="td-input break-words whitespace-nowrap align-middle">
                                                 @php $isEmployee = $position instanceof \App\Models\Employee\Employee; @endphp
                                                 @if($isEmployee)
-                                                    @if($position->status?->value === 'APPROVED')
+                                                    @if($position->status?->value === Status::APPROVED->value)
                                                         <span class="badge-green">{{__('forms.status.active')}}</span>
-                                                    @else
+                                                    @elseif($position->status?->value === Status::DISMISSED->value)
                                                         <span class="badge-red">{{__('forms.status.dismissed')}}</span>
+                                                    @elseif($position->status?->value === Status::REORGANIZED->value)
+                                                        <span class="badge-yellow">{{__('forms.status.reorganized')}}</span>
                                                     @endif
                                                 @else
-                                                    @if($position->status?->value === 'NEW')
+                                                    @if($position->status?->value === Status::NEW->value)
                                                         <span class="badge-red">{{__('forms.status.draft')}}</span>
-                                                    @elseif($position->status?->value === 'SIGNED')
+                                                    @elseif($position->status?->value === Status::SIGNED->value)
                                                         <span class="badge-yellow">{{__('forms.status.sent')}}</span>
                                                     @endif
                                                 @endif
