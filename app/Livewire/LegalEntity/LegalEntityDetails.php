@@ -7,6 +7,7 @@ namespace App\Livewire\LegalEntity;
 use Arr;
 use Throwable;
 use App\Models\User;
+use App\Enums\Status;
 use App\Enums\JobStatus;
 use App\Traits\FormTrait;
 use App\Models\LegalEntity;
@@ -20,6 +21,7 @@ use App\Notifications\SyncNotification;
 use Illuminate\Support\Facades\Session;
 use App\Repositories\AddressRepository;
 use App\Traits\BatchLegalEntityQueries;
+use App\Livewire\Employee\EmployeeIndex;
 use Spatie\Permission\PermissionRegistrar;
 use App\Enums\License\Type as LicenseType;
 use App\Exceptions\EHealth\EHealthResponseException;
@@ -374,6 +376,8 @@ class LegalEntityDetails extends LegalEntityComponent
             return;
         }
 
+        $infomsg = __('forms.sync_successfull');
+
         if ($legalEntityData['data']['status'] !== $oldStatus) {
             Log::channel('e_health_warnings')->warning(
                 static::class . ': [syncLegalEntity]: Legal Entity type changed',
@@ -389,11 +393,17 @@ class LegalEntityDetails extends LegalEntityComponent
             Auth::user()->unsetRelation('roles')->unsetRelation('permissions');
 
             Auth::user()->syncPermissions(Auth::user()->getAllPermissions()->pluck('name')->toArray());
+
+            if ($legalEntityData['data']['status'] === Status::REORGANIZED->value) {
+                $infomsg .= PHP_EOL . __('forms.warn_reorganized') . PHP_EOL . __('forms.access_read_only');
+
+                // app(EmployeeIndex::class)->sync();
+            }
         }
 
         $this->redirect(route('legal-entity.details', [legalEntity()]), navigate: true);
 
-        session()->flash('success', __('forms.sync_successfull'));
+        session()->flash('success', $infomsg);
 
         legalEntity()?->setEntityStatus(JobStatus::COMPLETED);
 

@@ -2,6 +2,8 @@
     @php
         use App\Enums\User\Role;
         use App\Enums\JobStatus;
+        use App\Models\Employee\Employee;
+        use App\Models\Employee\EmployeeRequest;
 
         $currentUser = auth()->user();
         // We cache the hospital ID so as not to call the legalEntity() function 100 times in a loop
@@ -24,21 +26,24 @@
             {{ __('forms.employees') }}
         </x-slot>
 
-        @can('create', \App\Models\Employee\EmployeeRequest::class)
-            <div class="mt-3 ml-0 flex flex-col sm:flex-row sm:flex-wrap gap-2 self-start">
-                <a href="{{ route('employee-request.create', ['legalEntity' => $currentLegalEntityId]) }}"
-                   class="button-primary">{{ __('forms.new_employee') }}</a>
-                <button
-                    wire:click="{{ !$this->isSync ? 'sync' : '' }}"
-                    type="button"
-                    class="{{ $this->isSync ? 'button-sync-disabled' : 'button-sync' }} flex items-center gap-2 whitespace-nowrap"
-                    {{ $this->isSync ? 'disabled' : '' }}
-                >
-                    @icon('refresh', 'w-4 h-4')
-                    <span>{{ ($syncStatus === JobStatus::PAUSED->value || $syncStatus === JobStatus::FAILED->value) ? __('forms.sync_retry') : __('forms.synchronise_with_eHealth') }}</span>
-                </button>
-            </div>
-        @endcan
+        <div class="mt-3 ml-0 flex flex-col sm:flex-row sm:flex-wrap gap-2 self-start">
+            @can('create', EmployeeRequest::class)
+            <a href="{{ route('employee-request.create', ['legalEntity' => $currentLegalEntityId]) }}"
+                class="button-primary">{{ __('forms.new_employee') }}</a>
+            @endcan
+
+            @can('sync', Employee::class)
+            <button
+                wire:click="{{ !$this->isSync ? 'sync' : '' }}"
+                type="button"
+                class="{{ $this->isSync ? 'button-sync-disabled' : 'button-sync' }} flex items-center gap-2 whitespace-nowrap"
+                {{ $this->isSync ? 'disabled' : '' }}
+            >
+                @icon('refresh', 'w-4 h-4')
+                <span>{{ ($syncStatus === JobStatus::PAUSED->value || $syncStatus === JobStatus::FAILED->value) ? __('forms.sync_retry') : __('forms.synchronise_with_eHealth') }}</span>
+            </button>
+            @endcan
+        </div>
 
         <x-slot name="navigation">
             <div class="flex flex-col -my-4">
