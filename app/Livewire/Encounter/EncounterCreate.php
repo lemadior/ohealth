@@ -10,7 +10,6 @@ use App\Classes\eHealth\EHealth;
 use App\Core\Arr;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
-use App\Livewire\Encounter\Forms\Api\EncounterRequestApi;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\DiagnosticReport;
 use App\Models\MedicalEvents\Sql\Encounter;
@@ -51,12 +50,11 @@ class EncounterCreate extends EncounterComponent
      * Validate and save data.
      *
      * @return void
-     * @throws Throwable
      */
     public function save(): void
     {
         if (Auth::user()->cannot('create', Encounter::class)) {
-            Session::flash('error', 'У вас немає дозволу на створення взаємодії.');
+            Session::flash('error', __('patients.policy.create_encounter'));
 
             return;
         }
@@ -84,12 +82,11 @@ class EncounterCreate extends EncounterComponent
      * Submit encrypted data about person encounter.
      *
      * @return void
-     * @throws Throwable
      */
     public function sign(): void
     {
         if (Auth::user()->cannot('create', Encounter::class)) {
-            Session::flash('error', 'У вас немає дозволу на створення взаємодії.');
+            Session::flash('error', __('patients.policy.create_encounter'));
 
             return;
         }
@@ -137,13 +134,14 @@ class EncounterCreate extends EncounterComponent
             return;
         }
 
-        $signedSubmitEncounter = EncounterRequestApi::buildSubmitEncounterPackage(
-            $formattedData,
-            $signedContent->getBase64Data()
-        );
-
         try {
-            $resp = EHealth::encounter()->submit($this->patientUuid, $signedSubmitEncounter);
+            $resp = EHealth::encounter()->submit($this->patientUuid, [
+                'visit' => [
+                    'id' => data_get($formattedData, 'encounter.visit.identifier.value'),
+                    'period' => data_get($formattedData, 'encounter.period')
+                ],
+                'signed_data' => $signedContent->getBase64Data()
+            ]);
 
             logger()->debug('Job ID to further debug', $resp->getData());
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
