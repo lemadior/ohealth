@@ -307,6 +307,7 @@ return [
     'additional_info' => 'Додаткова інформація',
     'qualificationType' => 'Тип кваліфікації',
     'dismissed' => 'Звільнений',
+    'reorganized' => 'Реорганізований',
     'addEducation' => 'Додати освіту',
     'addSpeciality' => 'Додати спеціальність',
     'addQualification' => 'Додати кваліфікацію',

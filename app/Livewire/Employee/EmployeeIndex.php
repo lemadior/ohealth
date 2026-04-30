@@ -48,7 +48,12 @@ class EmployeeIndex extends EmployeeComponent
 
     // --- Component State for Filters ---
     public string $search = '';
-    public array $status = ['APPROVED', 'NEW', 'SIGNED'];
+    public array $status = [
+        Status::APPROVED->value,
+        Status::NEW->value,
+        Status::SIGNED->value,
+        Status::REORGANIZED->value
+    ];
     public array $filter = [
         'phone' => '',
         'email' => '',
