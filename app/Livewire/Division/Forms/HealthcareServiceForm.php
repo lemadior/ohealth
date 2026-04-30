@@ -112,25 +112,25 @@ class HealthcareServiceForm extends Form
             'availableTime.*.daysOfWeek' => ['required', 'array', 'min:1', 'max:7'],
             'availableTime.*.allDay' => ['required', 'boolean'],
             'availableTime.*.availableStartTime' => [
-                'nullable',
                 'required_unless:availableTime.*.allDay,true',
+                'regex:/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/',
                 'date_format:H:i:s'
             ],
             'availableTime.*.availableEndTime' => [
-                'nullable',
                 'required_unless:availableTime.*.allDay,true',
+                'regex:/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/',
                 'date_format:H:i:s',
                 'after:availableTime.*.availableStartTime'
             ],
             'notAvailable' => ['array', 'nullable'],
             'notAvailable.*.during.startDate' => ['required', 'date_format:d.m.Y'],
-            'notAvailable.*.during.startTime' => ['required', 'date_format:H:i'],
+            'notAvailable.*.during.startTime' => ['regex:/^[0-9]{2}:[0-9]{2}$/', 'date_format:H:i'],
             'notAvailable.*.during.endDate' => [
                 'required',
                 'date_format:d.m.Y',
                 'after_or_equal:notAvailable.*.during.startDate'
             ],
-            'notAvailable.*.during.endTime' => ['required', 'date_format:H:i'],
+            'notAvailable.*.during.endTime' => ['regex:/^[0-9]{2}:[0-9]{2}$/', 'date_format:H:i'],
             'notAvailable.*.description' => ['required', 'string']
         ];
     }
@@ -142,7 +142,16 @@ class HealthcareServiceForm extends Form
      */
     protected function validationAttributes(): array
     {
-        return ['divisionId' => __('forms.division_name')];
+        return [
+            'divisionId' => __('forms.division_name'),
+            'availableTime.*.availableStartTime' => mb_strtolower(__('forms.start_time')),
+            'availableTime.*.availableEndTime' => mb_strtolower(__('forms.end')),
+            'notAvailable.*.during.startDate' => mb_strtolower(__('forms.date')),
+            'notAvailable.*.during.startTime' => mb_strtolower(__('healthcare-services.start_non_working_time')),
+            'notAvailable.*.during.endDate' => mb_strtolower(__('forms.date')),
+            'notAvailable.*.during.endTime' => mb_strtolower(__('healthcare-services.end_non_working_time')),
+            'notAvailable.*.description' => mb_strtolower(__('healthcare-services.comment_non_working_hours')),
+        ];
     }
 
     /**
