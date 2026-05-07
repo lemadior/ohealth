@@ -17,16 +17,21 @@ use Illuminate\Validation\Rules\RequiredIf;
 
 class EncounterForm extends BaseForm
 {
-    public array $encounter = ['diagnoses' => [], 'reasons' => [], 'actions' => []];
-    public bool $isReferralAvailable = false;
-    public string $referralType = '';
-    public string $referralNumber = '';
-    public string $paperReferralNumber = '';
-    public string $paperReferralAuthor = '';
-    public string $paperReferralEdrpou = '';
-    public string $paperReferralInstitutionName = '';
-    public string $paperReferralDate = '';
-    public string $paperReferralNotes = '';
+    public array $encounter = [
+        'diagnoses' => [],
+        'reasons' => [],
+        'actions' => [],
+        'referralType' => '',
+        'referralNumber' => '',
+        'paperReferral' => [
+            'requisition' => '',
+            'requesterEmployeeName' => '',
+            'requesterLegalEntityEdrpou' => '',
+            'requesterLegalEntityName' => '',
+            'serviceRequestDate' => '',
+            'note' => '',
+        ]
+    ];
 
     public array $episode = ['id' => '', 'typeCode' => '', 'name' => ''];
 

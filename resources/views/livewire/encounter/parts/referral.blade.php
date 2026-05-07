@@ -4,8 +4,8 @@
     </legend>
 
     <div x-data="{
-        isReferralAvailable: $wire.entangle('form.isReferralAvailable'),
-        referralType: $wire.entangle('form.referralType')
+        isReferralAvailable: false,
+        referralType: $wire.entangle('form.encounter.referralType')
     }">
         <div class="mb-8">
             <div class="form-group group">
@@ -45,11 +45,11 @@
                             <div class="absolute inset-y-0 start-0 flex items-center pointer-events-none">
                                 @icon('search', 'w-4 h-4 text-gray-400')
                             </div>
-                            <input wire:model="form.referralNumber"
+                            <input wire:model="form.encounter.referralNumber"
                                    type="text"
                                    name="requisitionNumber"
                                    id="requisitionNumber"
-                                   class="input !pl-7 !pr-7 peer @error('form.referralNumber') input-error @enderror"
+                                   class="input !pl-7 !pr-7 peer @error('form.encounter.referralNumber') input-error @enderror"
                                    placeholder=" "
                                    autocomplete="off"
                             />
@@ -57,12 +57,12 @@
                                 {{ __('patients.referral_number') }}
                             </label>
                             <div class="absolute inset-y-0 end-0 flex items-center">
-                                <button type="button" @click="$wire.set('form.referralNumber', '')" class="text-gray-400 hover:text-gray-600">
+                                <button type="button" @click="$wire.set('form.encounter.referralNumber', '')" class="text-gray-400 hover:text-gray-600">
                                     @icon('close', 'w-4 h-4')
                                 </button>
                             </div>
                         </div>
-                        @error('form.referralNumber')
+                        @error('form.encounter.referralNumber')
                             <p class="text-error">{{ $message }}</p>
                         @enderror
                     </div>
@@ -74,92 +74,104 @@
                     <div class="form-row-2">
                         <div class="form-group group">
                             <div class="relative">
-                                <input wire:model="form.paperReferralNumber"
+                                <input wire:model="form.encounter.paperReferral.requisition"
                                        type="text"
                                        id="paperReferralNumber"
-                                       class="input !pr-7 peer"
+                                       class="input !pr-7 peer @error('form.encounter.paperReferral.requisition') input-error @enderror"
                                        placeholder=" "
                                 />
                                 <label for="paperReferralNumber" class="label">
                                     {{ __('patients.referral_number') }}*
                                 </label>
                                 <div class="absolute inset-y-0 end-0 flex items-center">
-                                    <button type="button" @click="$wire.set('form.paperReferralNumber', '')" class="text-gray-400 hover:text-gray-600">
+                                    <button type="button" @click="$wire.set('form.encounter.paperReferral.requisition', '')" class="text-gray-400 hover:text-gray-600">
                                         @icon('close', 'w-4 h-4')
                                     </button>
                                 </div>
                             </div>
+                            @error('form.encounter.paperReferral.requisition')
+                                <p class="text-error">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div class="form-group group">
                             <div class="relative">
-                                <input wire:model="form.paperReferralAuthor"
+                                <input wire:model="form.encounter.paperReferral.requesterEmployeeName"
                                        type="text"
                                        id="paperReferralAuthor"
-                                       class="input !pr-7 peer"
+                                       class="input !pr-7 peer @error('form.encounter.paperReferral.requesterEmployeeName') input-error @enderror"
                                        placeholder=" "
                                 />
                                 <label for="paperReferralAuthor" class="label">
                                     {{ __('patients.paper_referral_author') }}*
                                 </label>
                                 <div class="absolute inset-y-0 end-0 flex items-center">
-                                    <button type="button" @click="$wire.set('form.paperReferralAuthor', '')" class="text-gray-400 hover:text-gray-600">
+                                    <button type="button" @click="$wire.set('form.encounter.paperReferral.requesterEmployeeName', '')" class="text-gray-400 hover:text-gray-600">
                                         @icon('close', 'w-4 h-4')
                                     </button>
                                 </div>
                             </div>
+                            @error('form.encounter.paperReferral.requesterEmployeeName')
+                                <p class="text-error">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
 
                     <div class="form-row-2">
                         <div class="form-group group">
                             <div class="relative">
-                                <input wire:model="form.paperReferralEdrpou"
+                                <input wire:model="form.encounter.paperReferral.requesterLegalEntityEdrpou"
                                        type="text"
                                        id="paperReferralEdrpou"
-                                       class="input !pr-7 peer"
+                                       class="input !pr-7 peer @error('form.encounter.paperReferral.requesterLegalEntityEdrpou') input-error @enderror"
                                        placeholder=" "
                                 />
                                 <label for="paperReferralEdrpou" class="label">
                                     {{ __('patients.paper_referral_edrpou_short') }}*
                                 </label>
                                 <div class="absolute inset-y-0 end-0 flex items-center">
-                                    <button type="button" @click="$wire.set('form.paperReferralEdrpou', '')" class="text-gray-400 hover:text-gray-600">
+                                    <button type="button" @click="$wire.set('form.encounter.paperReferral.requesterLegalEntityEdrpou', '')" class="text-gray-400 hover:text-gray-600">
                                         @icon('close', 'w-4 h-4')
                                     </button>
                                 </div>
                             </div>
+                            @error('form.encounter.paperReferral.requesterLegalEntityEdrpou')
+                                <p class="text-error">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div class="form-group group">
                             <div class="relative">
-                                <input wire:model="form.paperReferralInstitutionName"
+                                <input wire:model="form.encounter.paperReferral.requesterLegalEntityName"
                                        type="text"
                                        id="paperReferralInstitutionName"
-                                       class="input !pr-7 peer"
+                                       class="input !pr-7 peer @error('form.encounter.paperReferral.requesterLegalEntityName') input-error @enderror"
                                        placeholder=" "
                                 />
                                 <label for="paperReferralInstitutionName" class="label">
                                     {{ __('patients.paper_referral_institution_short') }}
                                 </label>
                                 <div class="absolute inset-y-0 end-0 flex items-center">
-                                    <button type="button" @click="$wire.set('form.paperReferralInstitutionName', '')" class="text-gray-400 hover:text-gray-600">
+                                    <button type="button" @click="$wire.set('form.encounter.paperReferral.requesterLegalEntityName', '')" class="text-gray-400 hover:text-gray-600">
                                         @icon('close', 'w-4 h-4')
                                     </button>
                                 </div>
                             </div>
+                            @error('form.encounter.paperReferral.requesterLegalEntityName')
+                                <p class="text-error">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
 
                     <div class="form-row-2">
                         <div class="form-group group">
                             <div class="datepicker-wrapper">
-                                <input wire:model="form.paperReferralDate"
+                                <input wire:model="form.encounter.paperReferral.serviceRequestDate"
                                        type="text"
                                        datepicker
                                        datepicker-format="dd.mm.yyyy"
                                        id="paperReferralDate"
-                                       class="datepicker-input with-leading-icon input peer"
+                                       class="datepicker-input with-leading-icon input peer @error('form.encounter.paperReferral.serviceRequestDate') input-error @enderror"
                                        placeholder=" "
                                        autocomplete="off"
                                 />
@@ -167,25 +179,31 @@
                                     {{ __('patients.paper_referral_date') }}*
                                 </label>
                             </div>
+                            @error('form.encounter.paperReferral.serviceRequestDate')
+                                <p class="text-error">{{ $message }}</p>
+                            @enderror
                         </div>
 
                         <div class="form-group group">
                             <div class="relative">
-                                <input wire:model="form.paperReferralNotes"
+                                <input wire:model="form.encounter.paperReferral.note"
                                        type="text"
                                        id="paperReferralNotes"
-                                       class="input !pr-7 peer"
+                                       class="input !pr-7 peer @error('form.encounter.paperReferral.note') input-error @enderror"
                                        placeholder=" "
                                 />
                                 <label for="paperReferralNotes" class="label">
                                     {{ __('patients.paper_referral_notes') }}
                                 </label>
                                 <div class="absolute inset-y-0 end-0 flex items-center">
-                                    <button type="button" @click="$wire.set('form.paperReferralNotes', '')" class="text-gray-400 hover:text-gray-600">
+                                    <button type="button" @click="$wire.set('form.encounter.paperReferral.note', '')" class="text-gray-400 hover:text-gray-600">
                                         @icon('close', 'w-4 h-4')
                                     </button>
                                 </div>
                             </div>
+                            @error('form.encounter.paperReferral.note')
+                                <p class="text-error">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
                 </div>
