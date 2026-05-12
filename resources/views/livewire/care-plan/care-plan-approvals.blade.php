@@ -94,4 +94,6 @@
             @endif
         </div>
     </div>
+
+    <x-modals.sms-verification />
 </div>
