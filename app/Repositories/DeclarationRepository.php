@@ -212,6 +212,8 @@ class DeclarationRepository
 
         $party = Party::where('id', $employee->party_id)->first();
 
+        $declarationRequest = DeclarationRequest::where('uuid', $data['declaration_request_uuid'])->first();
+
         $declarationData = [
             'legal_entity_id' => $legalEntity->id,
             'legal_entity_uuid' => $data['legal_entity']['uuid'],
@@ -224,7 +226,9 @@ class DeclarationRepository
             'declaration_id' => Declaration::where('uuid', $data['uuid'])->value('id') ?? null,
             'declaration_uuid' => $data['uuid'],
             'declaration_number' => $data['declaration_number'],
-            'authorize_with' => DeclarationRequest::where('uuid', $data['declaration_request_uuid'])->value('authorize_with') ?? null,
+            'declaration_request_id' => $declarationRequest?->id,
+            'declaration_request_uuid' => $declarationRequest?->uuid,
+            'authorize_with' => $declarationRequest?->authorize_with,
             'updated_at'=> now(),
         ];
 

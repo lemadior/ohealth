@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\Declaration\Status;
 use App\Enums\JobStatus;
-use App\Models\Employee\Employee;
 use App\Models\Person\Person;
-use Eloquence\Behaviours\HasCamelCasing;
+use App\Enums\Declaration\Status;
+use App\Models\Employee\Employee;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Attributes\Scope;
+use Eloquence\Behaviours\HasCamelCasing;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DeclarationRequest extends Model
 {
@@ -56,5 +57,10 @@ class DeclarationRequest extends Model
     public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class);
+    }
+
+    public function declaration(): HasOne
+    {
+        return $this->hasOne(Declaration::class, 'declaration_request_id');
     }
 }

@@ -363,7 +363,7 @@ trait BatchLegalEntityQueries
         $job = null;
 
         // The incoming $nextEntity will be executed after the whole chain
-        $previousJob = $this->getDeclarationDataStartJob($legalEntity, $nextEntity);
+        $nextJob = $this->getDeclarationDataStartJob($legalEntity, $nextEntity);
 
         $models = DeclarationRequest::with(['employee', 'division', 'person'])
             ->filterByLegalEntityId(legalEntityId: $legalEntity->id)
@@ -374,14 +374,14 @@ trait BatchLegalEntityQueries
             $job = new DeclarationRequestDetailsSync(
                 declarationRequest: $model,
                 legalEntity: $legalEntity,
-                nextEntity: $previousJob
+                nextEntity: $nextJob
             );
 
-            $previousJob = $job;
+            $nextJob = $job;
         }
 
         // Here $job is the first job in the chain (or null if no declarationRequests)
-        return $job ?? $previousJob;
+        return $job ?? $nextJob;
     }
 
     /**

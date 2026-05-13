@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\Declaration;
 
-use App\Enums\User\Role;
 use Throwable;
 use Exception;
 use App\Models\User;
 use Livewire\Component;
+use App\Enums\User\Role;
 use App\Enums\JobStatus;
 use Illuminate\View\View;
 use Illuminate\Bus\Batch;
@@ -23,7 +23,6 @@ use App\Classes\eHealth\EHealth;
 use App\Enums\Declaration\Status;
 use App\Models\Employee\Employee;
 use Livewire\Attributes\Computed;
-use Illuminate\Support\Facades\DB;
 use App\Models\DeclarationRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
@@ -35,6 +34,7 @@ use Illuminate\Support\Facades\Session;
 use App\Notifications\SyncNotification;
 use App\Traits\BatchLegalEntityQueries;
 use Illuminate\Database\Eloquent\Builder;
+use App\Enums\Declaration\ReorganizedStatus;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Client\ConnectionException;
 use App\Notifications\DeclarationSyncCompleted;
@@ -85,6 +85,8 @@ class DeclarationIndex extends Component
      * @var array|string[]
      */
     public array $statusFilter = ['active', 'CANCELLED'];
+
+    public array $reorganizationFilter = [ReorganizedStatus::TO_BE_RESIGNED->value];
 
     /**
      * Filter for multiselect doctors
@@ -187,12 +189,24 @@ class DeclarationIndex extends Component
     {
         $user = Auth::user();
 
-        $this->employeeIds = $user->party->employees()->filterByLegalEntityId($legalEntity->id)->pluck('id')->all();
+        $this->employeeIds = $user->party->employees()->where('legal_entity_id', $legalEntity->id)->pluck('id')->all();
+
+        // Select employee_ids from reorganization_employee_declarations where legal_entity_uuid is in legators of current legal entity
+        $reorganizedEmployeeIds = $user->party->reorganizedEmployeeDeclarations()
+            ->hasConnectionTo($legalEntity)
+            ->pluck('employee_id')
+            ->all();
+
+        $this->employeeIds = array_values(array_unique(array_merge($this->employeeIds, $reorganizedEmployeeIds)));
 
         if ($user->hasAllowedRole(Role::OWNER)) {
             $this->doctors = $this->getDoctors();
         } else {
-            $this->countActive = Declaration::query()->forEmployees($this->employeeIds)->count();
+            $this->countActive = Declaration::query()
+                ->forEmployees($this->employeeIds)
+                ->where('status', Status::ACTIVE)
+                ->filterByLegalEntityId(legalEntity()->id)
+                ->count();
         }
 
         $this->syncStatus = $this->getSyncStatus();
@@ -210,7 +224,10 @@ class DeclarationIndex extends Component
         $this->searchByNumber = '';
         $this->typeFilter = ['request', 'declaration'];
         $this->statusFilter = ['active', 'CANCELLED'];
+        $this->reorganizationFilter = [ReorganizedStatus::TO_BE_RESIGNED->value, ReorganizedStatus::RESIGNED->value];
         $this->doctorFilter = [];
+
+        $this->isFiltersApplied = false;
 
         $this->resetPage();
     }
@@ -225,16 +242,17 @@ class DeclarationIndex extends Component
 
         if ($user->can('viewAny', Declaration::class)) {
             $declarations = Declaration::with([
+                'reorganizedEmployeeDeclaration',
                 'person:id,first_name,last_name,second_name,birth_date',
                 'employee:id,uuid,party_id',
                 'employee.party:id,first_name,last_name,second_name'
             ])
                 ->when(
                     !$user->hasAllowedRole(Role::OWNER),
-                    fn (Builder $query) => $query->forEmployees($this->employeeIds)
+                    fn (Builder $query) => $query->forEmployees($this->employeeIds),
+                    fn ($query) => $query->filterByLegalEntityId(legalEntity()->id)
                 )
-                ->filterByLegalEntityId(legalEntity()->id)
-                ->get(['id', 'person_id', 'employee_id', 'legal_entity_id', 'declaration_number', 'status'])
+                ->get(['id', 'person_id', 'employee_id', 'legal_entity_id', 'declaration_number', 'declaration_request_id', 'status'])
                 ->each->setAttribute('type', 'declaration');
         }
 
@@ -245,10 +263,9 @@ class DeclarationIndex extends Component
                 'employee:id,party_id',
                 'employee.party:id,first_name,last_name,second_name'
             ])
-                ->filterByLegalEntityId(legalEntity()->id)
                 ->forEmployees($this->employeeIds)
                 ->whereNotIn('status', [Status::SIGNED->value])
-                ->get(['id', 'uuid', 'person_id', 'employee_id', 'declaration_number', 'status'])
+                ->get(['id', 'uuid', 'person_id', 'employee_id', 'declaration_number', 'status', 'parent_declaration_id'])
                 ->each->setAttribute('type', 'request');
         }
 
@@ -258,7 +275,7 @@ class DeclarationIndex extends Component
             // Filter by type
             if (!empty($this->typeFilter)) {
                 $allItems = $allItems->filter(
-                    fn (DeclarationRequest|Declaration $item) => in_array($item->type, $this->typeFilter, true)
+                    fn (DeclarationRequest|Declaration $item) => \in_array($item->type, $this->typeFilter, true)
                 );
             }
 
@@ -266,10 +283,29 @@ class DeclarationIndex extends Component
             if (!empty($this->statusFilter)) {
                 $allItems = $allItems->filter(function (DeclarationRequest|Declaration $item) {
                     if ($item instanceof Declaration) {
-                        return in_array($item->status->value, $this->statusFilter, true);
+                        return \in_array($item->status->value, $this->statusFilter, true);
                     }
 
                     return true;
+                });
+            }
+
+            // Filter by reorganization type
+            if (!empty($this->reorganizationFilter)) {
+                $allItems = $allItems->filter(function (DeclarationRequest|Declaration $item) {
+                    if ($item instanceof DeclarationRequest) {
+                        return false;
+                    }
+
+                    if ($item->reorganizedEmployeeDeclaration) {
+                        if ($item->hasParentDeclaration()) {
+                            return \in_array(ReorganizedStatus::RESIGNED->value, $this->reorganizationFilter, true);
+                        } else {
+                            return \in_array(ReorganizedStatus::TO_BE_RESIGNED->value, $this->reorganizationFilter, true);
+                        }
+                    }
+
+                    return false;
                 });
             }
 
@@ -300,7 +336,7 @@ class DeclarationIndex extends Component
             if (!empty($this->doctorFilter)) {
                 $allItems = $allItems->filter(function (DeclarationRequest|Declaration $item) {
                     if ($item instanceof Declaration) {
-                        return in_array($item->employee->uuid, $this->doctorFilter, true);
+                        return \in_array($item->employee->uuid, $this->doctorFilter, true);
                     }
 
                     return false;
@@ -468,7 +504,7 @@ class DeclarationIndex extends Component
                 // If there were no declarations to sync, mark the status as completed
                 legalEntity()?->setEntityStatus(JobStatus::COMPLETED, LegalEntity::ENTITY_DECLARATION);
 
-                session()->flash('success', __('declarations.sync.completed'));
+                Session::flash('success', __('declarations.sync.completed'));
             }
         }
     }

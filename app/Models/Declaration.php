@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\Declaration\Status;
 use App\Enums\JobStatus;
-use App\Models\Employee\Employee;
 use App\Models\Person\Person;
-use Eloquence\Behaviours\HasCamelCasing;
+use App\Models\Employee\Employee;
+use App\Enums\Declaration\Status;
 use Illuminate\Database\Eloquent\Model;
+use Eloquence\Behaviours\HasCamelCasing;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Declaration extends Model
 {
@@ -95,24 +95,20 @@ class Declaration extends Model
     }
 
     /**
-     * Get the employees associated with this declaration through the reorganization process.
-     *
-     * @return BelongsToMany<Employee, ReorganizationEmployeeDeclaration>
+     * @return HasOne<ReorganizationEmployeeDeclaration, $this>
      */
-    public function reorganizedEmployees(): BelongsToMany
+    public function reorganizedEmployeeDeclaration(): HasOne
     {
-        return $this->belongsToMany(
-            Employee::class,
-            'reorganization_employee_declarations'
-        )
-            ->using(ReorganizationEmployeeDeclaration::class)
-            ->withPivot([
-                'legal_entity_uuid',
-                'employee_uuid',
-                'declaration_uuid',
-                'person_uuid',
-                'declaration_number',
-                'authorize_with'
-            ]);
+        return $this->hasOne(ReorganizationEmployeeDeclaration::class, 'declaration_id');
+    }
+
+    /**
+     * Determines whether this declaration is linked to a declaration request that has a parent declaration.
+     *
+     * @return bool
+     */
+    public function hasParentDeclaration(): bool
+    {
+        return $this->declarationRequest()->whereNotNull('parent_declaration_id')->exists();
     }
 }

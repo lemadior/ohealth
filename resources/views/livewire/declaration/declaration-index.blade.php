@@ -3,6 +3,10 @@
 @use('Carbon\CarbonImmutable')
 @use('\App\Enums\User\Role')
 
+@php
+    $hasLegators = legalEntity()->legators->isNotEmpty();
+@endphp
+
 <div>
     <livewire:components.x-message :key="now()->timestamp"/>
 
@@ -97,6 +101,9 @@
                                 <th scope="col" class="th-input w-[15%]">{{ __('forms.birth_date_abbreviated') }}</th>
                                 <th scope="col" class="th-input w-[25%]">{{ __('employees.doctor') }}</th>
                                 <th scope="col" class="th-input w-[15%]">{{ __('forms.status.label') }}</th>
+                                @if ($hasLegators)
+                                    <th scope="col" class="th-input w-[15%]">{{ __('forms.status.reorganization_status') }}</th>
+                                @endif
                                 <th scope="col" class="th-input w-[5%]">{{ __('forms.action') }}</th>
                             </tr>
                             </thead>
@@ -107,19 +114,35 @@
                                     <td class="td-input">{{ $declaration->declarationNumber }}</td>
                                     <td class="td-input">{{ CarbonImmutable::parse($declaration->person->birth_date)->format('d.m.Y') }}</td>
                                     <td class="td-input">{{ $declaration->employee->fullName }}</td>
+
                                     <td class="td-input">
-                                <span class="{{
-                                    match($declaration->status) {
-                                        Status::DRAFT => 'badge-dark',
-                                        Status::NEW, Status::APPROVED => 'badge-yellow',
-                                        Status::ACTIVE => 'badge-green',
-                                        Status::REJECTED, Status::CANCELLED, Status::TERMINATED => 'badge-red',
-                                        default => ''
-                                    }
-                                }}">
-                                    {{ $declaration->status->label() }}
-                                </span>
+                                        <span class="{{
+                                            match($declaration->status) {
+                                                Status::DRAFT => 'badge-dark',
+                                                Status::NEW, Status::APPROVED => 'badge-yellow',
+                                                Status::ACTIVE => 'badge-green',
+                                                Status::REJECTED, Status::CANCELLED, Status::TERMINATED => 'badge-red',
+                                                default => ''
+                                            }
+                                        }}">
+                                            {{ $declaration->status->label() }}
+                                        </span>
                                     </td>
+
+                                    @if ($hasLegators)
+                                        <td class="td-input">
+                                            @if ($declaration->type === 'declaration')
+                                                @if ($declaration->reorganizedEmployeeDeclaration)
+                                                    {{ $declaration->status == Status::ACTIVE && !$declaration->hasParentDeclaration() ? __('declarations.to_be_resigned') : __('forms.not_applicable') }}
+                                                @else
+                                                    {{ $declaration->hasParentDeclaration() ? __('patients.status.resigned') : __('forms.not_applicable') }}
+                                                @endif
+                                            @else
+                                                {{ __('forms.not_applicable') }}
+                                            @endif
+                                        </td>
+                                    @endif
+
                                     <td x-data="{ openDropdown: false }"
                                         class="relative td-input text-center overflow-visible"
                                     >

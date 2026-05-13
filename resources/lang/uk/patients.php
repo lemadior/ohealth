@@ -191,7 +191,11 @@ return [
         'differential' => 'диференціальний',
         'provisional' => 'попередній',
         'refuted' => 'спростований',
-        'not_done' => 'Не виконана'
+        'not_done' => 'Не виконана',
+
+        // Statuses for reorganized declarations
+        'to_be_resigned' => 'Потребує переукладання',
+        'resigned' => 'Переукладена'
     ],
 
     'source' => [
