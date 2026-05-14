@@ -13,7 +13,6 @@ use App\Exceptions\EHealth\EHealthValidationException;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\Encounter;
 use App\Repositories\MedicalEvents\Repository;
-use App\Services\MedicalEvents\EncounterPackageBuilder;
 use App\Services\MedicalEvents\Fhir;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
@@ -70,7 +69,7 @@ class EncounterEdit extends EncounterComponent
             'episode' => $validated['episode']['id']
         ];
 
-        $fhir = app(EncounterPackageBuilder::class)->toFhir($validated, $uuids);
+        $fhir = Fhir::encounterPackage()->toFhir($validated, $uuids);
         $fhirEncounter = $fhir['encounter'];
         $fhirConditions = $fhir['conditions'];
         $fhirImmunizations = $fhir['immunizations'];

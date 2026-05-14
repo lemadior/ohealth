@@ -48,4 +48,9 @@ final class Fhir
     {
         return app(ProcedureMapper::class);
     }
+
+    public static function encounterPackage(): EncounterPackageBuilder
+    {
+        return app(EncounterPackageBuilder::class);
+    }
 }
