@@ -50,6 +50,14 @@ class User extends Authenticatable implements MustVerifyEmail
     private static array $emailVerificationSent = [];
 
     /**
+     * Request-scoped cache for allowedRoles keyed by "teamId:guard".
+     * Avoids persistent cache issues when team/guard context changes within a request.
+     *
+     * @var array
+     */
+    protected array $allowedRolesCache = [];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -452,32 +460,27 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $guard = Auth::getDefaultDriver();
         $teamId = getPermissionsTeamId();
+        $cacheKey = "$teamId:$guard";
 
-        return cache()->memo()->rememberForever(
-            "allowed_roles:$this->id:$teamId:$guard",
-            function () use ($guard) {
-                // If $this->permissions was already eager-loaded before getAllowedRolesAttribute is called (e.g., via $this->load('permissions')
-                // or $this->with = ['permissions'] in a different team context), the cached relation won't re-query —
-                // it will return whatever was loaded earlier, which may not match the current team.
-                $this->unsetRelation('permissions');
+        if (isset($this->allowedRolesCache[$cacheKey])) {
+            return $this->allowedRolesCache[$cacheKey];
+        }
 
-                // Direct permissions from model_has_permissions only
-                $permissions = $this->getDirectPermissions()->pluck('name')->unique();
+        // Direct permissions from model_has_permissions only
+        $permissions = $this->getDirectPermissions()->pluck('name')->unique();
 
-                // Roles whose full permission set fits within those direct permissions
-                $possibleAllowedRoles = ModelsRole::coveredByPermissions($permissions)
-                    ->whereHas('permissions') // only consider roles that actually have permissions
-                    ->get()
-                    ->pluck('name')
-                    ->unique();
+        // Roles whose full permission set fits within those direct permissions
+        $possibleAllowedRoles = ModelsRole::coveredByPermissions($permissions)
+            ->whereHas('permissions') // only consider roles that actually have permissions
+            ->get()
+            ->pluck('name')
+            ->unique();
 
-                // Roles actually assigned to the user (model_has_roles)
-                $modelAllowedRoles = $this->roles->where('guard_name', $guard)->pluck('name')->unique();
+        // Roles actually assigned to the user (model_has_roles)
+        $modelAllowedRoles = $this->roles->where('guard_name', $guard)->pluck('name')->unique();
 
-                // Intersection: roles the user HAS that are also justified by their direct permissions
-                return $possibleAllowedRoles->intersect($modelAllowedRoles)->values();
-            }
-        );
+        // Intersection: roles the user HAS that are also justified by their direct permissions
+        return $this->allowedRolesCache[$cacheKey] = $possibleAllowedRoles->intersect($modelAllowedRoles)->values();
     }
 
     /**
