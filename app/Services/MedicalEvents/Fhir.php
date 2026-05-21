@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\MedicalEvents;
 
+use App\Services\MedicalEvents\Mappers\ClinicalImpressionMapper;
 use App\Services\MedicalEvents\Mappers\ConditionMapper;
 use App\Services\MedicalEvents\Mappers\DiagnosticReportMapper;
 use App\Services\MedicalEvents\Mappers\EncounterMapper;
@@ -14,6 +15,11 @@ use App\Services\MedicalEvents\Mappers\ProcedureMapper;
 
 final class Fhir
 {
+    public static function clinicalImpression(): ClinicalImpressionMapper
+    {
+        return app(ClinicalImpressionMapper::class);
+    }
+
     public static function condition(): ConditionMapper
     {
         return app(ConditionMapper::class);

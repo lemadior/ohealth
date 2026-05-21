@@ -90,7 +90,6 @@
                     <div class="datepicker-wrapper">
                         <input type="text"
                                datepicker-max-date="{{ now()->format('d.m.Y') }}"
-                               datepicker-format="dd.mm.yyyy"
                                name="documentIssueDate"
                                id="documentIssueDate"
                                class="datepicker-input with-leading-icon input peer"
@@ -109,7 +108,6 @@
                     <div class="datepicker-wrapper">
                         <input type="text"
                                datepicker-min-date="{{ now()->format('d.m.Y') }}"
-                               datepicker-format="dd.mm.yyyy"
                                name="documentExpiryDate"
                                id="documentExpiryDate"
                                class="datepicker-input with-leading-icon input peer"

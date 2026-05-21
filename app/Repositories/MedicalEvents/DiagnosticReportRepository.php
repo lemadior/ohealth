@@ -268,16 +268,22 @@ class DiagnosticReportRepository extends BaseRepository
     /**
      * Get the diagnostic report for the clinical impression based on the provided UUID to display the selected supporting info.
      *
-     * @param  string  $uuid
-     * @return array|null
+     * @param  array  $uuids
+     * @return array
      */
-    public function getForClinicalImpression(string $uuid): ?array
+    public function getDetailsMapByUuids(array $uuids): array
     {
-        return DiagnosticReport::whereUuid($uuid)
-            ->select(['id', 'issued', 'code_id'])
-            ->with(['code.coding'])
-            ->first()
-            ?->toArray();
+        return $this->model->whereIn('uuid', $uuids)
+            ->with('code')
+            ->get()
+            ->mapWithKeys(fn (DiagnosticReport $diagnosticReport) => [
+                $diagnosticReport->uuid => [
+                    'ehealthInsertedAt' => $diagnosticReport->ehealthInsertedAt,
+                    'codeCode' => $diagnosticReport->code?->value,
+                    'type' => 'diagnostic_report',
+                ],
+            ])
+            ->toArray();
     }
 
     /**

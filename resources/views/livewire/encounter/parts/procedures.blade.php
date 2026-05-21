@@ -193,6 +193,11 @@
         constructor(obj = null) {
             const now = new Date();
             const startTime = new Date(now.getTime() - 15 * 60 * 1000);
+            const toFormattedDate = (date) => {
+                const [yyyy, mm, dd] = date.toISOString().split('T')[0].split('-');
+                return `${dd}.${mm}.${yyyy}`;
+            };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
 
             this.categoryCode = '';
             this.codeValue = '';
@@ -213,10 +218,10 @@
             this.reasonReferences = [];
             this.usedCodes = [];
             this.complicationDetails = [];
-            this.performedPeriodStartDate = startTime.toISOString().split('T')[0];
-            this.performedPeriodStartTime = startTime.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
-            this.performedPeriodEndDate = now.toISOString().split('T')[0];
-            this.performedPeriodEndTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
+            this.performedPeriodStartDate = toFormattedDate(startTime);
+            this.performedPeriodStartTime = startTime.toLocaleTimeString('uk-UA', timeOptions);
+            this.performedPeriodEndDate = toFormattedDate(now);
+            this.performedPeriodEndTime = now.toLocaleTimeString('uk-UA', timeOptions);
 
             if (obj) {
                 Object.assign(this, JSON.parse(JSON.stringify(obj)));

@@ -29,6 +29,7 @@ use App\Traits\BatchLegalEntityQueries;
 use App\Traits\HandlesSyncBatch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use InvalidArgumentException;
 use Throwable;
@@ -96,7 +97,6 @@ class PatientSummary extends BasePatientComponent
         'eHealth/body_sites',
         'eHealth/ICPC2/condition_codes',
         'eHealth/ICD10/condition_codes',
-        'eHealth/ICD10_AM/condition_codes',
         'eHealth/condition_severities',
         'eHealth/diagnostic_report_categories',
     ];
@@ -443,6 +443,7 @@ class PatientSummary extends BasePatientComponent
         }
 
         $this->conditions = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
+        $this->populateIcd10Descriptions($this->conditions);
     }
 
     public function getConditions(): void
@@ -451,6 +452,8 @@ class PatientSummary extends BasePatientComponent
             ->withAllRelations()
             ->get()
             ->toArray();
+
+        $this->populateIcd10Descriptions($this->conditions);
     }
 
     public function syncDiagnosticReports(): void
@@ -550,6 +553,26 @@ class PatientSummary extends BasePatientComponent
 
             return;
         }
+    }
+
+    private function populateIcd10Descriptions(array $conditions): void
+    {
+        $icd10Codes = collect($conditions)
+            ->filter(fn (array $condition) => data_get($condition, 'code.coding.0.system') === 'eHealth/ICD10_AM/condition_codes')
+            ->map(fn (array $condition) => data_get($condition, 'code.coding.0.code'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($icd10Codes)) {
+            return;
+        }
+
+        $this->dictionaries['eHealth/ICD10_AM/condition_codes'] = DB::table('icd_10')
+            ->whereIn('code', $icd10Codes)
+            ->pluck('description', 'code')
+            ->toArray();
     }
 
     /**

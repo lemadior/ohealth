@@ -6,6 +6,8 @@ namespace App\Livewire\Person\Records;
 
 use App\Classes\eHealth\EHealth;
 use App\Core\Arr;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 use App\Enums\JobStatus;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
@@ -36,7 +38,9 @@ class PatientEpisodes extends BasePatientComponent
 
     public bool $showAdditionalParams = false;
 
-    protected array $dictionaryNames = ['eHealth/ICD10_AM/condition_codes', 'eHealth/ICPC2/condition_codes'];
+    protected array $dictionaryNames = ['eHealth/ICPC2/condition_codes'];
+
+    public array $icd10Results = [];
 
     protected function initializeComponent(): void
     {
@@ -109,6 +113,19 @@ class PatientEpisodes extends BasePatientComponent
         }
 
         $this->episodes = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
+    }
+
+    public function searchICD10(string $value): void
+    {
+        $this->icd10Results = DB::table('icd_10')
+            ->select(['code', 'description'])
+            ->where(function (Builder $query) use ($value): void {
+                $query->where('code', 'ILIKE', "%$value%")
+                    ->orWhere('description', 'ILIKE', "%$value%");
+            })
+            ->limit(50)
+            ->get()
+            ->toArray();
     }
 
     public function search(): void

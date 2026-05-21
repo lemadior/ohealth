@@ -46,9 +46,7 @@ class EncounterMapper implements FhirMapperContract
 
         if ($data['referralType'] === 'paper') {
             $result['paperReferral'] = $data['paperReferral'];
-            $result['paperReferral']['serviceRequestDate'] = convertToEHealthISO8601(
-                $data['paperReferral']['serviceRequestDate']
-            );
+            $result['paperReferral']['serviceRequestDate'] = convertToYmd($data['paperReferral']['serviceRequestDate']);
         }
 
         if (!empty($data['priorityCode'])) {
@@ -57,10 +55,11 @@ class EncounterMapper implements FhirMapperContract
         }
 
         if (!empty($data['reasons'])) {
-            $result['reasons'] = collect($data['reasons'])
-                ->map(fn (array $cc) => FhirResource::make()->coding('eHealth/ICPC2/reasons', $cc['code'])
-                    ->toCodeableConcept())
-                ->toArray();
+            $result['reasons'] = array_map(
+                static fn (array $cc) => FhirResource::make()->coding('eHealth/ICPC2/reasons', $cc['code'])
+                    ->toCodeableConcept($cc['text'] ?? ''),
+                $data['reasons']
+            );
         }
 
         $result['diagnoses'] = array_map(
@@ -83,10 +82,11 @@ class EncounterMapper implements FhirMapperContract
         );
 
         if (!empty($data['actions'])) {
-            $result['actions'] = collect($data['actions'])
-                ->map(fn (array $cc) => FhirResource::make()->coding('eHealth/ICPC2/actions', $cc['code'])
-                    ->toCodeableConcept())
-                ->toArray();
+            $result['actions'] = array_map(
+                static fn (array $cc) => FhirResource::make()->coding('eHealth/ICPC2/actions', $cc['code'])
+                    ->toCodeableConcept($cc['text'] ?? ''),
+                $data['actions']
+            );
         }
 
         // todo: action_references
@@ -111,7 +111,7 @@ class EncounterMapper implements FhirMapperContract
      * Populate flat form keys from a nested FHIR encounter. Used when loading an existing encounter for editing.
      *
      * @param  array  $data  FHIR encounter data
-     * @param  mixed  ...$context
+     * @param  array  $context
      * @return array
      */
     public function fromFhir(array $data, mixed ...$context): array
@@ -121,27 +121,30 @@ class EncounterMapper implements FhirMapperContract
             'typeCode' => data_get($data, 'type.coding.0.code'),
             'divisionId' => data_get($data, 'division.identifier.value', ''),
             'priorityCode' => data_get($data, 'priority.coding.0.code', ''),
-            'periodDate' => CarbonImmutable::parse(data_get($data, 'period.start'))->format('Y-m-d'),
+            'periodDate' => convertToAppDateFormat(data_get($data, 'period.start')),
             'periodStart' => CarbonImmutable::parse(data_get($data, 'period.start'))->format('H:i'),
             'periodEnd' => CarbonImmutable::parse(data_get($data, 'period.end'))->format('H:i'),
-            'actions' => collect(data_get($data, 'actions', []))
-                ->map(fn (array $action) => [
-                    'code' => data_get($action, 'coding.0.code', ''),
+            'actions' => array_map(
+                static fn (array $action) => [
+                    'code' => data_get($action, 'coding.0.code'),
                     'text' => data_get($action, 'text', '')
-                ])
-                ->toArray(),
-            'reasons' => collect(data_get($data, 'reasons', []))
-                ->map(fn (array $reason) => [
-                    'code' => data_get($reason, 'coding.0.code', ''),
+                ],
+                data_get($data, 'actions', [])
+            ),
+            'reasons' => array_map(
+                static fn (array $reason) => [
+                    'code' => data_get($reason, 'coding.0.code'),
                     'text' => data_get($reason, 'text', '')
-                ])
-                ->toArray(),
-            'diagnoses' => collect(data_get($data, 'diagnoses', []))
-                ->map(fn (array $diagnosis) => [
-                    'roleCode' => data_get($diagnosis, 'role.coding.0.code', ''),
+                ],
+                data_get($data, 'reasons', [])
+            ),
+            'diagnoses' => array_map(
+                static fn (array $diagnosis) => [
+                    'roleCode' => data_get($diagnosis, 'role.coding.0.code'),
                     'rank' => data_get($diagnosis, 'rank', '')
-                ])
-                ->toArray(),
+                ],
+                data_get($data, 'diagnoses', [])
+            ),
             'referralType' => match (true) {
                 !empty(data_get($data, 'incoming_referral')) => 'electronic',
                 !empty(data_get($data, 'paper_referral')) => 'paper',
@@ -149,7 +152,7 @@ class EncounterMapper implements FhirMapperContract
             },
             'referralNumber' => data_get($data, 'incoming_referral.identifier.value', ''),
             'paperReferral' => [
-                ...data_get($data, 'paper_referral', []),
+                ...(data_get($data, 'paper_referral') ?? []),
                 'serviceRequestDate' => convertToAppDateFormat(data_get($data, 'paper_referral.serviceRequestDate'))
             ]
         ];

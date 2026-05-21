@@ -1,21 +1,15 @@
-@use('Carbon\CarbonImmutable')
 
 <div class="relative"> {{-- This required for table overflow scrolling --}}
     <fieldset class="fieldset"
-              {{-- Binding Finding to Alpine, it will be re-used in the modal.
-                Note that it's necessary for modal to work properly --}}
               x-data="{
                   openModal: false,
-                  modalSupportingInfo: new SupportingInfo(),
-                  newSupportingInfo: false,
-                  item: 0
+                  selectedSupportingInfoType: '',
+                  selectedSupportingInfoIds: []
               }"
     >
         <legend class="legend">
             <h2>{{ __('patients.supporting_medical_information') }}</h2>
         </legend>
-
-        @include('livewire.encounter.clinical-impression-parts.supporting-info-episodes')
 
         <table class="table-input w-inherit">
             <thead class="thead-input">
@@ -29,20 +23,21 @@
             <template x-for="(supporting, index) in modalClinicalImpression.supportingInfo">
                 <tr>
                     <td class="td-input"
-                        x-text="new Date(supporting.inserted_at).toLocaleDateString('uk-UA')"
+                        x-text="supporting.ehealthInsertedAt || ''"
                     ></td>
                     <td class="td-input"
                         x-text="(() => {
                             const dictName = $wire.dictionaries['eHealth/LOINC/observation_codes'][supporting.code] ||
                                              $wire.dictionaries['eHealth/ICF/classifiers'][supporting.code] ||
-                                             $wire.dictionaries['eHealth/ICPC2/condition_codes'][supporting.code];
+                                             $wire.dictionaries['eHealth/ICPC2/condition_codes'][supporting.code] ||
+                                             supporting.code;
 
                             if (dictName) {
-                                return `${ supporting.type } : ${ supporting.code } - ${ dictName }`;
+                                return `${ supporting.code } - ${ dictName }`;
                             }
 
-                            const service = Object.values($wire.dictionaries['custom/services']).find(service => service.id === supporting.code);
-                            return service ? `${ supporting.type } : ${ service.code } / ${ service.name }` : `${ supporting.type } : ${ supporting.code }`;
+                            const service = Object.values($wire.dictionaries['custom/services']).find(s => s.id === supporting.code);
+                            return service ? `${ service.code } / ${ service.name }` : supporting.code;
                         })()"
                     ></td>
                     <td class="td-input">
@@ -98,23 +93,8 @@
                                      class="dropdown-panel relative"
                                      style="left: -50%" {{-- Center a dropdown panel --}}
                                 >
-
-                                    <button @click="
-                                                openModal = true; {{-- Open the modal --}}
-                                                item = index; {{-- Identify the item we are corrently editing --}}
-                                                {{-- Replace the previous finding with the current, don't assign object directly (modalSupportingInfo = finding) to avoid reactiveness --}}
-                                                modalSupportingInfo = new SupportingInfo(supporting);
-                                                newSupportingInfo = false; {{-- This finding is already created --}}
-                                            "
-                                            @click.prevent
-                                            class="dropdown-button"
-                                    >
-                                        {{ __('forms.edit') }}
-                                    </button>
-
-                                    <button
-                                        @click.prevent="modalClinicalImpression.supportingInfo.splice(index, 1); close($refs.button);"
-                                        class="dropdown-button dropdown-delete"
+                                    <button @click.prevent="modalClinicalImpression.supportingInfo.splice(index, 1); close($refs.button);"
+                                            class="dropdown-button dropdown-delete"
                                     >
                                         {{ __('forms.delete') }}
                                     </button>
@@ -130,17 +110,14 @@
         <div>
             {{-- Button to trigger the modal --}}
             <button @click.prevent="
-                        openModal = true; {{-- Open the Modal --}}
-                        newSupportingInfo = true; {{-- We are adding a new finding --}}
-                        modalSupportingInfo = new SupportingInfo(); {{-- Replace the data of the previous finding with a new one--}}
-                        {{-- Set to empty to hide previously found data --}}
-                        $wire.encounters = [];
-                        $wire.procedures = [];
-                        $wire.diagnosticReports = [];
+                        openModal = true;
+                        selectedSupportingInfoType = '';
+                        selectedSupportingInfoIds = [];
+                        $wire.supportingInfoResults = [];
                     "
                     class="item-add my-5"
             >
-                {{ __('forms.add') }} {{ mb_strtolower(__('patients.medical_record')) }}
+                {{ __('forms.add') }}
             </button>
 
             {{-- Modal --}}
@@ -151,7 +128,7 @@
                      role="dialog"
                      aria-modal="true"
                      x-id="['modal-title']"
-                     :aria-labelledby="$id('modal-title')" {{-- This associates the modal with unique ID --}}
+                     :aria-labelledby="$id('modal-title')"
                      class="modal"
                 >
 
@@ -172,49 +149,28 @@
                             <h3 class="modal-header" :id="$id('modal-title')">{{ __('forms.add') }}</h3>
 
                             {{-- Content --}}
-                            <form x-data="{ selectedSupportingInfoIds: [] }">
-                                {{-- Episode info in which the search happens --}}
-                                <div class="form-row-3">
-                                    {{-- Choose for what search --}}
+                            <form>
+                                <div class="form-row-modal">
                                     <div class="form-group group">
-                                        <select x-model="modalSupportingInfo.medicalRecordType"
+                                        <select x-model="selectedSupportingInfoType"
+                                                @change="$wire.supportingInfoResults = []; selectedSupportingInfoIds = [];"
                                                 class="input-modal peer"
-                                                name="recordType"
-                                                id="recordType"
                                         >
                                             <option value="" selected>
                                                 {{ __('forms.select') }} {{ __('patients.medical_records_type') }}
                                             </option>
-                                            <option value="encounter">{{ __('patients.interaction') }}</option>
-                                            <option value="procedure">{{ __('patients.procedure') }}</option>
-                                            <option value="diagnosticReport">
-                                                {{ __('patients.diagnostic_report') }}
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group group">
-                                        <select x-model="modalSupportingInfo.selectedEpisodeId"
-                                                id="episodeId"
-                                                class="input-modal peer"
-                                        >
-                                            <option value="" selected>
-                                                {{ __('forms.select') }} {{ mb_strtolower(__('care-plan.episode')) }}
-                                            </option>
-                                            @foreach($episodes as $key => $episode)
-                                                <option value="{{ $episode['uuid'] }}">
-                                                    {{ $episode['name'] }} ({{ __('patients.' . $episode['status']) }})
-                                                    {{ __('forms.start') }} {{ CarbonImmutable::parse($episode['ehealth_inserted_at'])->format('d.m.Y') }}
-                                                </option>
-                                            @endforeach
+                                            <option value="episodes">{{ __('patients.episodes') }}</option>
+                                            <option value="encounter">{{ __('patients.encounters') }}</option>
+                                            <option value="procedure">{{ __('patients.procedures') }}</option>
+                                            <option value="diagnosticReport">{{ __('patients.diagnostic_reports') }}</option>
                                         </select>
                                     </div>
 
                                     {{-- Search button --}}
                                     <div>
-                                        <button class="flex items-center gap-2 button-primary"
-                                                @click.prevent="$wire.searchSupportingInfo(modalSupportingInfo.medicalRecordType, modalSupportingInfo.selectedEpisodeId)"
-                                                :disabled="!(modalSupportingInfo.medicalRecordType && modalSupportingInfo.selectedEpisodeId)"
+                                        <button @click.prevent="$wire.searchSupportingInfo(selectedSupportingInfoType)"
+                                                class="flex items-center gap-2 button-primary"
+                                                :disabled="!selectedSupportingInfoType"
                                         >
                                             @icon('search', 'w-4 h-4')
                                             <span>{{ __('patients.search') }}</span>
@@ -224,55 +180,53 @@
                                     <x-forms.loading/>
                                 </div>
 
-                                {{-- A table that shows the results of founded encounters --}}
-                                <template x-if="$wire.encounters.length">
+                                <template x-if="$wire.supportingInfoResults.length > 0">
                                     <div class="table-container">
                                         <div class="overflow-visible">
                                             <table class="table-base">
                                                 <thead class="table-header">
                                                 <tr>
                                                     <th scope="col" class="th-input">{{ __('forms.date') }}</th>
-                                                    <th scope="col" class="th-input">
-                                                        {{ __('patients.code_and_name') }}
-                                                    </th>
+                                                    <th scope="col" class="th-input">{{ __('patients.code_and_name') }}</th>
                                                     <th scope="col" class="th-input">{{ __('forms.action') }}</th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
-                                                <template x-for="encounter in $wire.encounters" :key="encounter.id">
+                                                <template x-for="result in $wire.supportingInfoResults" :key="result.id">
                                                     <tr class="border-b dark:border-gray-700">
                                                         <th scope="row" class="table-cell-primary">
                                                             <div class="text-base"
-                                                                 x-text="new Date(encounter.inserted_at).toLocaleDateString('uk-UA')"
+                                                                 x-text="result.ehealthInsertedAt || ''"
                                                             ></div>
                                                         </th>
+                                                        <td class="td-input"
+                                                            x-text="(() => {
+                                                                const dictName = $wire.dictionaries['eHealth/LOINC/observation_codes'][result.code] ||
+                                                                                 $wire.dictionaries['eHealth/ICF/classifiers'][result.code] ||
+                                                                                 $wire.dictionaries['eHealth/ICPC2/condition_codes'][result.code] ||
+                                                                                 result.code;
 
-                                                        <td class="td-input">
-                                                            <ul>
-                                                                <template
-                                                                    x-for="(diagnosis, index) in encounter.diagnoses.filter(diagnose => diagnose.role?.coding?.[0]?.code === 'primary')"
-                                                                    :key="index"
-                                                                >
-                                                                    <li x-text="`${ diagnosis.code.coding[0].code} - ${
-                                                                            $wire.dictionaries['eHealth/ICPC2/condition_codes'][diagnosis.code.coding[0].code] ||
-                                                                            $wire.dictionaries['eHealth/ICD10_AM/condition_codes'][diagnosis.code.coding[0].code]
-                                                                        }`"
-                                                                    ></li>
-                                                                </template>
-                                                            </ul>
-                                                        </td>
+                                                                if (dictName) {
+                                                                    return `${ result.code } - ${ dictName }`;
+                                                                }
 
+                                                                const service = Object.values($wire.dictionaries['custom/services']).find(service => service.id === result.code);
+                                                                return service ? `${ service.code } / ${ service.name }` : result.code;
+                                                            })()"
+                                                        ></td>
                                                         <td class="td-input">
                                                             <button @click.prevent="
-                                                                    const id = encounter.id;
-                                                                    const index = selectedSupportingInfoIds.indexOf(id);
-                                                                    if (index === -1) {
-                                                                        selectedSupportingInfoIds.push(id);
-                                                                    } else {
-                                                                        selectedSupportingInfoIds.splice(index, 1); // toggle off
-                                                                    }"
+                                                                        const id = result.id;
+                                                                        const index = selectedSupportingInfoIds.indexOf(id);
+
+                                                                        if (index === -1) {
+                                                                            selectedSupportingInfoIds.push(id);
+                                                                        } else {
+                                                                            selectedSupportingInfoIds.splice(index, 1);
+                                                                        }
+                                                                    "
                                                                     class="button-primary w-28"
-                                                                    x-text="selectedSupportingInfoIds.includes(encounter.id)
+                                                                    x-text="selectedSupportingInfoIds.includes(result.id)
                                                                         ? '{{ __('patients.added') }}'
                                                                         : '{{ __('forms.add') }}'"
                                                             >
@@ -286,108 +240,8 @@
                                     </div>
                                 </template>
 
-                                {{-- A table that shows the results of founded procedures --}}
-                                <template x-if="$wire.procedures.length > 0">
-                                    <div class="table-container">
-                                        <div class="overflow-visible">
-                                            <table class="table-base">
-                                                <thead class="table-header">
-                                                <tr>
-                                                    <th scope="col" class="th-input">{{ __('forms.date') }}</th>
-                                                    <th scope="col" class="th-input">
-                                                        {{ __('patients.code_and_name') }}
-                                                    </th>
-                                                    <th scope="col" class="th-input">{{ __('forms.action') }}</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                <template x-for="procedure in $wire.procedures" :key="procedure.id">
-                                                    <tr class="border-b dark:border-gray-700">
-                                                        <th scope="row" class="table-cell-primary">
-                                                            <div class="text-base"
-                                                                 x-text="new Date(procedure.inserted_at).toLocaleDateString('uk-UA')"
-                                                            ></div>
-                                                        </th>
-                                                        <td class="td-input"
-                                                            x-text="`${ procedure.code.display_value }`"
-                                                        ></td>
-                                                        <td class="td-input">
-                                                            <button @click.prevent="
-                                                                        const id = procedure.id;
-                                                                        const index = selectedSupportingInfoIds.indexOf(id);
-
-                                                                        if (index === -1) {
-                                                                            selectedSupportingInfoIds.push(id);
-                                                                        } else {
-                                                                            selectedSupportingInfoIds.splice(index, 1); // toggle off
-                                                                        }
-                                                                    "
-                                                                    class="button-primary w-28"
-                                                                    x-text="selectedSupportingInfoIds.includes(procedure.id)
-                                                                        ? '{{ __('patients.added') }}'
-                                                                        : '{{ __('forms.add') }}'"
-                                                            >
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </template>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                {{-- A table that shows the results of founded diagnosticReports --}}
-                                <template x-if="$wire.diagnosticReports.length > 0">
-                                    <div class="table-container">
-                                        <div class="overflow-visible">
-                                            <table class="table-base">
-                                                <thead class="table-header">
-                                                <tr>
-                                                    <th scope="col" class="th-input">{{ __('forms.date') }}</th>
-                                                    <th scope="col" class="th-input">
-                                                        {{ __('patients.code_and_name') }}
-                                                    </th>
-                                                    <th scope="col" class="th-input">{{ __('forms.action') }}</th>
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                <template x-for="diagnosticReport in $wire.diagnosticReports"
-                                                          :key="diagnosticReport.id"
-                                                >
-                                                    <tr class="border-b dark:border-gray-700">
-                                                        <th scope="row" class="table-cell-primary">
-                                                            <div class="text-base"
-                                                                 x-text="new Date(diagnosticReport.inserted_at).toLocaleDateString('uk-UA')"
-                                                            ></div>
-                                                        </th>
-                                                        <td class="td-input"
-                                                            x-text="`${ diagnosticReport.code.display_value }`"
-                                                        ></td>
-                                                        <td class="td-input">
-                                                            <button @click.prevent="
-                                                                        const id = diagnosticReport.id;
-                                                                        const index = selectedSupportingInfoIds.indexOf(id);
-
-                                                                        if (index === -1) {
-                                                                            selectedSupportingInfoIds.push(id);
-                                                                        } else {
-                                                                            selectedSupportingInfoIds.splice(index, 1); // toggle off
-                                                                        }
-                                                                    "
-                                                                    class="button-primary w-28"
-                                                                    x-text="selectedSupportingInfoIds.includes(diagnosticReport.id)
-                                                                        ? '{{ __('patients.added') }}'
-                                                                        : '{{ __('forms.add') }}'"
-                                                            >
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </template>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
+                                <template x-if="$wire.supportingInfoResults.length <= 0">
+                                    <p class="default-p">{{ __('forms.nothing_found') }}</p>
                                 </template>
 
                                 {{-- Action buttons --}}
@@ -402,47 +256,12 @@
 
                                     <button @click.prevent
                                             @click="
-                                                {{-- Add encounters --}}
-                                                $wire.encounters
-                                                    .filter(encounter => selectedSupportingInfoIds.includes(encounter.id))
-                                                    .map(encounter => {
-                                                        const primaryDiagnosis = encounter.diagnoses.find(diagnosis =>
-                                                            diagnosis.role.coding[0].code === 'primary'
-                                                        );
+                                                const existingIds = modalClinicalImpression.supportingInfo.map(supportingInfo => supportingInfo.id);
 
-                                                        return {
-                                                            id: encounter.id,
-                                                            inserted_at: encounter.inserted_at,
-                                                            code: primaryDiagnosis.code.coding[0].code,
-                                                            type: 'encounter',
-                                                            ...modalSupportingInfo
-                                                        };
-                                                    })
-                                                    .forEach(item => modalClinicalImpression.supportingInfo.push(item));
+                                                const newItems = $wire.supportingInfoResults
+                                                    .filter(result => selectedSupportingInfoIds.includes(result.id) && !existingIds.includes(result.id));
 
-                                                {{-- Add procedures --}}
-                                                $wire.procedures
-                                                    .filter(procedure => selectedSupportingInfoIds.includes(procedure.id))
-                                                    .map(procedure => ({
-                                                        id: procedure.id,
-                                                        inserted_at: procedure.inserted_at,
-                                                        code: procedure.code.identifier.value,
-                                                        type: 'procedure',
-                                                        ...modalSupportingInfo
-                                                    }))
-                                                    .forEach(item => modalClinicalImpression.supportingInfo.push(item));
-
-                                                {{-- Add diagnostic reports --}}
-                                                $wire.diagnosticReports
-                                                    .filter(diagnosticReport => selectedSupportingInfoIds.includes(diagnosticReport.id))
-                                                    .map(diagnosticReport => ({
-                                                        id: diagnosticReport.id,
-                                                        inserted_at: diagnosticReport.inserted_at,
-                                                        code: diagnosticReport.code.identifier.value,
-                                                        type: 'diagnostic_report',
-                                                        ...modalSupportingInfo
-                                                    }))
-                                                    .forEach(item => modalClinicalImpression.supportingInfo.push(item));
+                                                modalClinicalImpression.supportingInfo = modalClinicalImpression.supportingInfo.concat(newItems);
 
                                                 openModal = false;
                                             "
@@ -459,19 +278,3 @@
         </div>
     </fieldset>
 </div>
-
-<script>
-    /**
-     * Representation of the user's personal SupportingInfo
-     */
-    class SupportingInfo {
-        medicalRecordType = '';
-        selectedEpisodeId = '';
-
-        constructor(obj = null) {
-            if (obj) {
-                Object.assign(this, JSON.parse(JSON.stringify(obj)));
-            }
-        }
-    }
-</script>

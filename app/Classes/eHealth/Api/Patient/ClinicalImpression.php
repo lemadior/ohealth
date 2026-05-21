@@ -133,5 +133,4 @@ class ClinicalImpression extends PatientApiBase
             ValidationRuleBuilder::identifierCollectionRules('supporting_info')
         );
     }
-
 }

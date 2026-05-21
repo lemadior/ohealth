@@ -186,7 +186,6 @@
                             <div class="datepicker-wrapper">
                                 <input wire:model="form.encounter.paperReferral.serviceRequestDate"
                                        type="text"
-                                       datepicker-format="dd.mm.yyyy"
                                        id="paperReferralDate"
                                        class="datepicker-input with-leading-icon input peer @error('form.encounter.paperReferral.serviceRequestDate') input-error @enderror"
                                        placeholder=" "

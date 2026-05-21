@@ -7,9 +7,9 @@ namespace App\Livewire\Encounter;
 use App\Classes\eHealth\EHealth;
 use App\Classes\eHealth\Exceptions\ApiException as eHealthApiException;
 use App\Classes\Cipher\Traits\Cipher;
-use App\Classes\eHealth\Api\PatientApi;
 use App\Classes\eHealth\Api\ServiceRequestApi;
 use App\Core\Arr;
+use App\Enums\Person\ClinicalImpressionStatus;
 use App\Enums\Person\EpisodeStatus;
 use App\Enums\Person\ObservationStatus;
 use App\Enums\Status;
@@ -25,7 +25,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use App\Livewire\Encounter\Forms\EncounterForm as Form;
@@ -78,25 +77,11 @@ class EncounterComponent extends Component
     public array $clinicalImpressions = [];
 
     /**
-     * List of existing patient encounters.
+     * List of found encounters, procedures, or diagnostic reports for clinical impression supporting info.
      *
      * @var array
      */
-    public array $encounters = [];
-
-    /**
-     * List of existing patient procedures.
-     *
-     * @var array
-     */
-    public array $procedures = [];
-
-    /**
-     * List of existing patient diagnostic reports.
-     *
-     * @var array
-     */
-    public array $diagnosticReports = [];
+    public array $supportingInfoResults = [];
 
     /**
      * Episode type, new or existing.
@@ -191,11 +176,32 @@ class EncounterComponent extends Component
     public array $conditionsAndObservations = [];
 
     /**
+     * List of founded conditions or observations for clinical impression findings.
+     *
+     * @var array
+     */
+    public array $findingResults = [];
+
+    /**
+     * List of founded conditions for procedure complication details.
+     *
+     * @var array
+     */
+    public array $complicationDetailResults = [];
+
+    /**
+     * List of founded conditions or observations for procedure reason references.
+     *
+     * @var array
+     */
+    public array $reasonReferenceResults = [];
+
+    /**
      * List of founded problems for current episode.
      *
      * @var array
      */
-    public array $problems;
+    public array $problems = [];
 
     /**
      * List of dictionary names.
@@ -209,7 +215,6 @@ class EncounterComponent extends Component
         'eHealth/encounter_priority',
         'eHealth/episode_types',
         'eHealth/ICPC2/condition_codes',
-        'eHealth/ICD10_AM/condition_codes',
         'eHealth/ICPC2/reasons',
         'eHealth/ICPC2/actions',
         'eHealth/diagnosis_roles',
@@ -311,6 +316,22 @@ class EncounterComponent extends Component
     }
 
     /**
+     * Batch-fetch ICD-10 descriptions for given codes into $results.
+     * Used by Alpine init() to populate icd10Descriptions without blocking the UI.
+     *
+     * @param  array  $codes
+     * @return void
+     */
+    public function fetchIcd10Descriptions(array $codes): void
+    {
+        $this->results = DB::table('icd_10')
+            ->whereIn('code', $codes)
+            ->select(['code', 'description'])
+            ->get()
+            ->toArray();
+    }
+
+    /**
      * Search for ICD-10 in DB by the provided value.
      *
      * @param  string  $value
@@ -387,131 +408,190 @@ class EncounterComponent extends Component
     public function searchConditionsOrObservations(string $type): void
     {
         try {
-            $api = $type === 'observation' ? EHealth::observation() : EHealth::condition();
-
-            $response = $api->getBySearchParams(
-                $this->patientUuid,
-                ['managing_organization_id' => legalEntity()->uuid]
-            );
-
-            $this->evidenceDetails = collect($response->validate())
-                ->when($type === 'observation', fn ($collection) => $collection->filter(
-                    static fn (array $item) => data_get($item, 'status') !== ObservationStatus::ENTERED_IN_ERROR->value
-                ))
-                ->map(static fn (array $item) => [
-                    'id' => data_get($item, 'uuid'),
-                    'insertedAt' => data_get($item, 'ehealth_inserted_at'),
-                    'codeCode' => data_get($item, 'code.coding.0.code'),
-                    'type' => $type
-                ])->values()->all();
+            $this->evidenceDetails = $this->fetchConditionsOrObservations($type);
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
             $this->handleEHealthExceptions($exception, 'Error while getting evidence details');
-
-            return;
         }
+    }
+
+    /**
+     * Search conditions or observations to use as clinical impression findings.
+     *
+     * @param  string  $type  'condition' or 'observation'
+     * @return void
+     */
+    public function searchFindings(string $type): void
+    {
+        try {
+            $this->findingResults = $this->fetchConditionsOrObservations($type);
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while getting findings');
+        }
+    }
+
+    /**
+     * Search conditions to use as procedure complication details.
+     *
+     * @return void
+     */
+    public function searchComplicationDetails(): void
+    {
+        try {
+            $this->complicationDetailResults = $this->fetchConditionsOrObservations('condition');
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while getting complication details');
+        }
+    }
+
+    /**
+     * Search conditions or observations to use as procedure reason references.
+     *
+     * @param  string  $type  'condition' or 'observation'
+     * @return void
+     */
+    public function searchReasonReferences(string $type): void
+    {
+        try {
+            $this->reasonReferenceResults = $this->fetchConditionsOrObservations($type);
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while getting reason references');
+        }
+    }
+
+    /**
+     * @param  string  $type  'condition' or 'observation'
+     * @return array
+     * @throws ConnectionException|EHealthValidationException|EHealthResponseException
+     */
+    private function fetchConditionsOrObservations(string $type): array
+    {
+        $api = $type === 'observation' ? EHealth::observation() : EHealth::condition();
+
+        $response = $api->getBySearchParams(
+            $this->patientUuid,
+            ['managing_organization_id' => legalEntity()->uuid]
+        );
+
+        return collect($response->validate())
+            ->when($type === 'observation', fn ($collection) => $collection->filter(
+                static fn (array $item) => data_get($item, 'status') !== ObservationStatus::ENTERED_IN_ERROR->value
+            ))
+            ->map(static fn (array $item) => [
+                'id' => data_get($item, 'uuid'),
+                'ehealthInsertedAt' => data_get($item, 'ehealth_inserted_at'),
+                'codeCode' => data_get($item, 'code.coding.0.code'),
+                'type' => $type
+            ])
+            ->values()
+            ->all();
     }
 
     /**
      * Search for clinical impressions in episodes.
      *
-     * @param  string  $episodeId
      * @return void
      */
-    public function searchClinicalImpressions(string $episodeId): void
+    public function searchClinicalImpressions(): void
     {
-        // Validate that an episode ID is provided
-        if (empty($episodeId)) {
-            $this->addError('episode', 'Please select an episode first.');
-
+        if (!empty($this->clinicalImpressions)) {
             return;
         }
 
         try {
-            $params = EncounterRequestApi::buildGetClinicalImpressionBySearchParams(
+            $this->clinicalImpressions = EHealth::clinicalImpression()->getSummary(
                 $this->patientUuid,
-                episodeUuid: $episodeId
-            );
-            $this->clinicalImpressions = PatientApi::getClinicalImpressionBySearchParams(
-                $this->patientUuid,
-                $params
-            )['data'];
-        } catch (eHealthApiException) {
-            Log::channel('e_health_errors')
-                ->error('Error while searching for clinical impressions in Encounter Component');
+                ['status' => ClinicalImpressionStatus::COMPLETED->value]
+            )->validate();
+            $this->clinicalImpressions = Arr::toCamelCase($this->clinicalImpressions);
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while getting clinical impressions');
 
-            session()?->flash('error', __('messages.database_error'));
+            return;
         }
     }
 
     /**
      * Search for complication details in conditions for selected episode.
      *
-     * @param  string  $episodeId
      * @return void
      */
-    public function searchProblems(string $episodeId): void
+    public function searchProblems(): void
     {
-        // If the episode is not selected, don't perform a search.
-        if (!isset($episodeId)) {
+        if (!empty($this->problems)) {
             return;
         }
 
-        $buildGetConditions = EncounterRequestApi::buildGetConditionsInEpisodeContext($this->patientUuid, $episodeId);
-
         try {
-            $this->problems = PatientApi::getConditionsInEpisodeContext(
-                $this->patientUuid,
-                $episodeId,
-                $buildGetConditions
-            )['data'];
-        } catch (eHealthApiException) {
-            Log::channel('e_health_errors')
-                ->error('Error while searching for problems in Encounter Component');
-
-            session()?->flash('error', __('messages.database_error'));
+            $this->problems = collect(
+                EHealth::condition()->getBySearchParams(
+                    $this->patientUuid,
+                    ['managing_organization_id' => legalEntity()->uuid]
+                )->validate()
+            )->map(static fn (array $item) => [
+                'id' => data_get($item, 'uuid'),
+                'ehealthInsertedAt' => data_get($item, 'ehealth_inserted_at'),
+                'codeCode' => data_get($item, 'code.coding.0.code')
+            ])
+                ->values()
+                ->all();
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error while searching for problems');
         }
     }
 
     /**
-     * Search for complication details in conditions for selected episode.
-     *
-     * @param  string  $type  Example: encounter, procedure, diagnosticReport.
-     * @param  string  $episodeId
+     * @param  string  $type  One of: episodes, encounter, procedure, diagnostic_report.
      * @return void
      */
-    public function searchSupportingInfo(string $type, string $episodeId): void
+    public function searchSupportingInfo(string $type): void
     {
-        // If the episode is not selected, don't perform a search.
-        if (!isset($episodeId)) {
-            return;
-        }
-
         try {
-            switch ($type) {
-                case 'encounter':
-                    $this->encounters = EHealth::encounter()->getBySearchParams(
-                        $this->patientUuid,
-                        ['episode_id' => $episodeId, 'managing_organization_id' => legalEntity()->uuid]
-                    )->getData();
-                    break;
+            $params = ['managing_organization_id' => legalEntity()->uuid];
 
-                case 'procedure':
-                    $this->procedures = EHealth::procedure()->getBySearchParams(
-                        $this->patientUuid,
-                        ['episode_id' => $episodeId, 'managing_organization_id' => legalEntity()->uuid]
-                    )->getData();
-                    break;
+            $this->supportingInfoResults = match ($type) {
+                'episodes' => collect($this->episodes)
+                    ->map(fn (array $episode) => [
+                        'id' => data_get($episode, 'uuid'),
+                        'ehealthInsertedAt' => data_get($episode, 'ehealthInsertedAt'),
+                        'code' => data_get($episode, 'name'),
+                        'type' => 'episode_of_care',
+                    ])
+                    ->values()
+                    ->all(),
+                'encounter' => collect(EHealth::encounter()->getBySearchParams($this->patientUuid, $params)->getData())
+                    ->map(function (array $encounter) {
+                        $primaryDiagnosis = collect(data_get($encounter, 'diagnoses', []))
+                            ->first(fn (array $diagnosis) => data_get($diagnosis, 'role.coding.0.code') === 'primary');
 
-                case 'diagnosticReport':
-                    $this->diagnosticReports = EHealth::diagnosticReport()->getBySearchParams(
-                        $this->patientUuid,
-                        ['origin_episode_id' => $episodeId, 'managing_organization_id' => legalEntity()->uuid]
-                    )->getData();
-                    break;
-
-                default:
-                    break;
-            }
+                        return [
+                            'id' => data_get($encounter, 'id'),
+                            'ehealthInsertedAt' => data_get($encounter, 'inserted_at'),
+                            'code' => data_get($primaryDiagnosis, 'code.coding.0.code', ''),
+                            'type' => 'encounter',
+                        ];
+                    })
+                    ->values()
+                    ->all(),
+                'procedure' => collect(EHealth::procedure()->getBySearchParams($this->patientUuid, $params)->getData())
+                    ->map(fn (array $procedure) => [
+                        'id' => data_get($procedure, 'id'),
+                        'ehealthInsertedAt' => data_get($procedure, 'inserted_at'),
+                        'code' => data_get($procedure, 'code.identifier.value', ''),
+                        'type' => 'procedure',
+                    ])
+                    ->values()
+                    ->all(),
+                'diagnosticReport' => collect(EHealth::diagnosticReport()->getBySearchParams($this->patientUuid, $params)->getData())
+                    ->map(fn (array $report) => [
+                        'id' => data_get($report, 'id'),
+                        'ehealthInsertedAt' => data_get($report, 'inserted_at'),
+                        'code' => data_get($report, 'code.identifier.value', ''),
+                        'type' => 'diagnostic_report',
+                    ])
+                    ->values()
+                    ->all(),
+                default => [],
+            };
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
             $this->handleEHealthExceptions($exception, "Error while searching for $type in Encounter Component");
         }
@@ -589,6 +669,7 @@ class EncounterComponent extends Component
                     ['managing_organization_id' => legalEntity()->uuid, 'status' => EpisodeStatus::ACTIVE->value]
                 )
                 ->validate();
+            $this->episodes = Arr::toCamelCase($this->episodes);
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
             $this->handleEHealthExceptions($exception, 'Error when getting episodes');
 

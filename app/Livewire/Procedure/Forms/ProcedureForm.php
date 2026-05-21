@@ -29,7 +29,7 @@ class ProcedureForm extends Form
             'procedures.paperReferral.requesterEmployeeName' => ['nullable', 'string', 'max:255'],
             'procedures.paperReferral.requesterLegalEntityEdrpou' => [
                 Rule::requiredIf(data_get($this->procedures, 'referralType') === 'paper'),
-                'regex:/^[0-9]{8,10}$/',
+                'digits_between:8,10',
                 'string',
                 'max:255'
             ],

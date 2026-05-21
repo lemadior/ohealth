@@ -12,6 +12,7 @@ use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\Encounter;
+use App\Models\MedicalEvents\Sql\Episode;
 use App\Repositories\MedicalEvents\Repository;
 use App\Services\MedicalEvents\Fhir;
 use Illuminate\Http\Client\ConnectionException;
@@ -27,6 +28,11 @@ class EncounterEdit extends EncounterComponent
     #[Locked]
     public int $encounterId;
 
+    public function getEpisodes(): void
+    {
+        $this->episodes = Episode::wherePersonId($this->personId)->get()->toArray();
+    }
+
     public function mount(LegalEntity $legalEntity, int $personId, int $encounterId): void
     {
         $this->initializeComponent($personId);
@@ -36,13 +42,14 @@ class EncounterEdit extends EncounterComponent
 
         $this->form->encounter = Fhir::encounter()->fromFhir($encounter);
         $this->episodeType = 'existing';
-        $this->form->episode['id'] = data_get($encounter, 'episode.identifier.value', '');
+        $this->form->episode = array_merge($this->form->episode, Fhir::episode()->fromFhir($encounter));
 
         $this->loadConditions($encounter);
         $this->loadImmunizations($encounter['uuid']);
         $this->loadDiagnosticReports($encounter['uuid']);
         $this->loadObservations($encounter['uuid']);
         $this->loadProcedures($encounter['uuid']);
+        $this->loadClinicalImpressions($encounter['uuid']);
     }
 
     /**
@@ -76,6 +83,7 @@ class EncounterEdit extends EncounterComponent
         $fhirDiagnosticReports = $fhir['diagnosticReports'];
         $fhirObservations = $fhir['observations'];
         $fhirProcedures = $fhir['procedures'];
+        $fhirClinicalImpressions = $fhir['clinicalImpressions'];
 
         try {
             Repository::encounter()->sync($this->personId, [$this->fhirToSync($fhirEncounter)]);
@@ -90,9 +98,10 @@ class EncounterEdit extends EncounterComponent
                 array_map($this->fhirToSync(...), $fhirObservations),
                 $uuids['encounter']
             );
-            Repository::procedure()->sync(
+            Repository::procedure()->sync($this->personId, array_map($this->fhirToSync(...), $fhirProcedures));
+            Repository::clinicalImpression()->sync(
                 $this->personId,
-                array_map($this->fhirToSync(...), $fhirProcedures)
+                array_map($this->fhirToSync(...), $fhirClinicalImpressions)
             );
         } catch (Throwable $exception) {
             $this->logDatabaseErrors($exception, 'Failed to sync encounter package data');
@@ -107,9 +116,10 @@ class EncounterEdit extends EncounterComponent
             'encounter' => $fhirEncounter,
             'conditions' => $fhirConditions,
             'immunizations' => $fhirImmunizations,
-            'diagnostic_reports' => $fhirDiagnosticReports,
+            'diagnosticReports' => $fhirDiagnosticReports,
             'observations' => $fhirObservations,
-            'procedures' => $fhirProcedures
+            'procedures' => $fhirProcedures,
+            'clinicalImpressions' => $fhirClinicalImpressions
         ];
     }
 
@@ -175,20 +185,7 @@ class EncounterEdit extends EncounterComponent
         $this->redirectRoute('persons.index', [legalEntity()], navigate: true);
     }
 
-    /**
-     * Rename 'id' to 'uuid' and convert keys to snake_case for sync methods.
-     *
-     * @param  array  $fhirItem
-     * @return array
-     */
-    private function fhirToSync(array $fhirItem): array
-    {
-        return Arr::toSnakeCase(
-            collect($fhirItem)->put('uuid', $fhirItem['id'])->forget(['id'])->all()
-        );
-    }
-
-    private function loadConditions(array $encounter): void
+    protected function loadConditions(array $encounter): void
     {
         $conditions = Repository::condition()->getByUuids(
             collect(data_get($encounter, 'diagnoses', []))
@@ -209,7 +206,7 @@ class EncounterEdit extends EncounterComponent
             ->toArray();
     }
 
-    private function loadImmunizations(string $encounterUuid): void
+    protected function loadImmunizations(string $encounterUuid): void
     {
         $immunizations = Repository::immunization()->get($encounterUuid);
 
@@ -222,7 +219,7 @@ class EncounterEdit extends EncounterComponent
             ->toArray();
     }
 
-    private function loadDiagnosticReports(string $encounterUuid): void
+    protected function loadDiagnosticReports(string $encounterUuid): void
     {
         $diagnosticReports = Repository::diagnosticReport()->get($encounterUuid);
 
@@ -235,7 +232,7 @@ class EncounterEdit extends EncounterComponent
             ->toArray();
     }
 
-    private function loadObservations(string $encounterUuid): void
+    protected function loadObservations(string $encounterUuid): void
     {
         $observations = Repository::observation()->get($encounterUuid);
 
@@ -248,7 +245,7 @@ class EncounterEdit extends EncounterComponent
             ->toArray();
     }
 
-    private function loadProcedures(string $encounterUuid): void
+    protected function loadProcedures(string $encounterUuid): void
     {
         $procedures = Repository::procedure()->get($encounterUuid);
 
@@ -259,7 +256,7 @@ class EncounterEdit extends EncounterComponent
         $conditionUuids = collect($procedures)
             ->flatMap(fn (array $procedure) => array_merge(
                 collect(data_get($procedure, 'reasonReferences', []))
-                    ->filter(fn ($ref) => data_get($ref, 'identifier.type.coding.0.code') === 'condition')
+                    ->filter(fn (array $reference) => data_get($reference, 'identifier.type.coding.0.code') === 'condition')
                     ->pluck('identifier.value')
                     ->toArray(),
                 collect(data_get($procedure, 'complicationDetails', []))
@@ -271,7 +268,7 @@ class EncounterEdit extends EncounterComponent
         $observationUuids = collect($procedures)
             ->flatMap(
                 fn (array $procedure) => collect(data_get($procedure, 'reasonReferences', []))
-                    ->filter(fn ($ref) => data_get($ref, 'identifier.type.coding.0.code') === 'observation')
+                    ->filter(fn (array $reference) => data_get($reference, 'identifier.type.coding.0.code') === 'observation')
                     ->pluck('identifier.value')
                     ->toArray()
             )
@@ -285,5 +282,74 @@ class EncounterEdit extends EncounterComponent
         $this->form->procedures = collect($procedures)
             ->map(fn (array $procedure) => Fhir::procedure()->fromFhir($procedure, $detailsMap))
             ->toArray();
+    }
+
+    protected function loadClinicalImpressions(string $encounterUuid): void
+    {
+        $clinicalImpressions = Repository::clinicalImpression()->get($encounterUuid);
+
+        if (!$clinicalImpressions) {
+            return;
+        }
+
+        $allSupportingInfo = collect($clinicalImpressions)
+            ->flatMap(fn (array $ci) => data_get($ci, 'supportingInfo', []))
+            ->filter();
+
+        $conditionUuids = collect($clinicalImpressions)
+            ->flatMap(fn (array $clinicalImpression) => array_merge(
+                collect(data_get($clinicalImpression, 'problems', []))
+                    ->pluck('identifier.value')
+                    ->toArray(),
+                collect(data_get($clinicalImpression, 'findings', []))
+                    ->filter(fn (array $finding) => data_get($finding, 'itemReference.identifier.type.coding.0.code') === 'condition')
+                    ->pluck('itemReference.identifier.value')
+                    ->toArray()
+            ))
+            ->filter()->unique()->values()->toArray();
+
+        $observationUuids = collect($clinicalImpressions)
+            ->flatMap(
+                fn (array $clinicalImpression) => collect(data_get($clinicalImpression, 'findings', []))
+                    ->filter(fn (array $finding) => data_get($finding, 'itemReference.identifier.type.coding.0.code') === 'observation')
+                    ->pluck('itemReference.identifier.value')
+                    ->toArray()
+            )
+            ->filter()->unique()->values()->toArray();
+
+        $previousUuids = collect($clinicalImpressions)
+            ->pluck('previous.identifier.value')
+            ->filter()->unique()->values()->toArray();
+
+        $uuidsByType = $allSupportingInfo
+            ->groupBy(fn (array $item) => data_get($item, 'identifier.type.coding.0.code'))
+            ->map(fn ($group) => $group->pluck('identifier.value')->filter()->unique()->values()->toArray());
+
+        $detailsMap = array_merge(
+            Repository::condition()->getDetailsMapByUuids($conditionUuids),
+            Repository::observation()->getDetailsMapByUuids($observationUuids),
+            Repository::clinicalImpression()->getDetailsMapByUuids($previousUuids),
+            Repository::diagnosticReport()->getDetailsMapByUuids($uuidsByType->get('diagnostic_report', [])),
+            Repository::procedure()->getDetailsMapByUuids($uuidsByType->get('procedure', [])),
+            Repository::encounter()->getDetailsMapByUuids($uuidsByType->get('encounter', [])),
+            Repository::episode()->getDetailsMapByUuids($uuidsByType->get('episode_of_care', [])),
+        );
+
+        $this->form->clinicalImpressions = collect($clinicalImpressions)
+            ->map(fn (array $clinicalImpression) => Fhir::clinicalImpression()->fromFhir($clinicalImpression, $detailsMap))
+            ->toArray();
+    }
+
+    /**
+     * Rename 'id' to 'uuid' and convert keys to snake_case for sync methods.
+     *
+     * @param  array  $fhirItem
+     * @return array
+     */
+    private function fhirToSync(array $fhirItem): array
+    {
+        return Arr::toSnakeCase(
+            collect($fhirItem)->put('uuid', $fhirItem['id'])->forget(['id'])->all()
+        );
     }
 }

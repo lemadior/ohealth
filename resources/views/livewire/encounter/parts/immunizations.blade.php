@@ -257,8 +257,10 @@
     class Immunization {
         constructor(obj = null) {
             const now = new Date();
+            const [yyyy, mm, dd] = now.toISOString().split('T')[0].split('-');
+            const formattedDate = `${dd}.${mm}.${yyyy}`;
 
-            this.date = now.toISOString().split('T')[0];
+            this.date = formattedDate;
             this.time = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
             this.notGiven = false;
             this.vaccineCode = '';

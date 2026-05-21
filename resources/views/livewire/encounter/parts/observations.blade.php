@@ -282,10 +282,10 @@
         valueQuantitySystem = '';
         valueQuantityCode = '';
         comment = '';
-        issuedDate = new Date().toISOString().split('T')[0];
-        issuedTime = new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
-        effectiveDate = new Date().toISOString().split('T')[0];
-        effectiveTime = new Date().toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
+        issuedDate = '';
+        issuedTime = '';
+        effectiveDate = '';
+        effectiveTime = '';
         components = [
             {
                 codeCode: '',
@@ -297,6 +297,16 @@
         ];
 
         constructor(obj = null) {
+            const now = new Date();
+            const [yyyy, mm, dd] = now.toISOString().split('T')[0].split('-');
+            const formattedDate = `${dd}.${mm}.${yyyy}`;
+            const formattedTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            this.issuedDate = formattedDate;
+            this.issuedTime = formattedTime;
+            this.effectiveDate = formattedDate;
+            this.effectiveTime = formattedTime;
+
             if (obj) {
                 Object.assign(this, JSON.parse(JSON.stringify(obj)));
             }

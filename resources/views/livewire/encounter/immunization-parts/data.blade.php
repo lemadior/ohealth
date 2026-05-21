@@ -13,7 +13,7 @@
             <div class="relative flex items-center">
                 @icon('calendar-week', 'svg-input absolute left-2.5 pointer-events-none')
                 <input x-model="modalImmunization.date"
-                       datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                       datepicker-max-date="{{ now()->format('d.m.Y') }}"
                        type="text"
                        name="immunizationDate"
                        id="immunizationDate"
@@ -37,7 +37,7 @@
                 @icon('mingcute-time-fill', 'svg-input left-2.5')
                 <input x-model="modalImmunization.time"
                        @input="$event.target.blur()"
-                       datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                       datepicker-max-date="{{ now()->format('d.m.Y') }}"
                        type="time"
                        name="immunizationTime"
                        id="immunizationTime"

@@ -210,12 +210,11 @@
                                 type="text"
                                 name="filterIssuedFrom"
                                 id="filterIssuedFrom"
-                                datepicker-format="dd.mm.yyyy"
                                 class="datepicker-input with-leading-icon input peer w-full"
                                 placeholder=" "
                                 autocomplete="off"
                             />
-                    
+
                             <label for="filterIssuedFrom" class="wrapped-label">
                                 {{ __('patients.date_from') }}
                             </label>
@@ -228,12 +227,11 @@
                                 type="text"
                                 name="filterIssuedTo"
                                 id="filterIssuedTo"
-                                datepicker-format="dd.mm.yyyy"
                                 class="datepicker-input with-leading-icon input peer w-full"
                                 placeholder=" "
                                 autocomplete="off"
                             />
-                    
+
                             <label for="filterIssuedTo" class="wrapped-label">
                                 {{ __('patients.date_to') }}
                             </label>
@@ -245,48 +243,48 @@
                             open: false,
                             search: '',
                             selected: $wire.entangle('filterEpisodeId'),
-                    
+
                             get options() {
                                 return $wire.get('filterEpisodeOptions') ?? [];
                             },
-                    
+
                             get filteredOptions() {
                                 if (!this.search.trim()) {
                                     return this.options;
                                 }
-                    
+
                                 const needle = this.search.toLowerCase();
-                    
+
                                 return this.options.filter((option) => {
                                     const label = String(option.label ?? '').toLowerCase();
                                     const value = String(option.value ?? '').toLowerCase();
                                     const description = String(option.description ?? '').toLowerCase();
-                    
+
                                     return label.includes(needle)
                                         || value.includes(needle)
                                         || description.includes(needle);
                                 });
                             },
-                    
+
                             get selectedOption() {
                                 return this.options.find((option) => String(option.value) === String(this.selected));
                             },
-                    
+
                             selectOption(option) {
                                 this.selected = option.value;
                                 this.search = option.label;
                                 this.open = false;
                             },
-                    
+
                             clearOption() {
                                 this.selected = '';
                                 this.search = '';
                                 this.open = false;
                             },
-                    
+
                             init() {
                                 this.search = this.selectedOption ? this.selectedOption.label : '';
-                    
+
                                 this.$watch('selected', () => {
                                     this.search = this.selectedOption ? this.selectedOption.label : '';
                                 });
@@ -305,17 +303,17 @@
                                 @focus="open = true"
                                 @input="
                                         open = true;
-                    
+
                                         if (selected) {
                                             selected = '';
                                         }
                                 "
                             />
-                    
+
                             <label for="filterEpisodeIdSearch" class="label">
                                 {{ __('patients.episode') }}
                             </label>
-                    
+
                             <button type="button"
                                     x-show="selected || search"
                                     x-cloak
@@ -324,7 +322,7 @@
                             >
                                 @icon('close', 'w-4 h-4')
                             </button>
-                    
+
                             <div x-show="open"
                                 x-transition
                                 x-cloak
@@ -340,7 +338,7 @@
                                                 <div class="font-medium text-gray-900 dark:text-gray-100"
                                                     x-text="option.label || 'Без назви'"
                                                 ></div>
-                    
+
                                                 <div class="text-xs text-gray-500 break-all"
                                                     x-text="option.description || option.value"
                                                 ></div>
@@ -348,7 +346,7 @@
                                         </template>
                                     </div>
                                 </template>
-                    
+
                                 <template x-if="filteredOptions.length === 0">
                                     <div class="px-3 py-2 text-sm text-gray-500">
                                         {{ __('patients.episodes_not_found') }}
@@ -365,48 +363,48 @@
                             open: false,
                             search: '',
                             selected: $wire.entangle('filterEncounterId'),
-                    
+
                             get options() {
                                 return $wire.get('filterEncounterOptions') ?? [];
                             },
-                    
+
                             get filteredOptions() {
                                 if (!this.search.trim()) {
                                     return this.options;
                                 }
-                    
+
                                 const needle = this.search.toLowerCase();
-                    
+
                                 return this.options.filter((option) => {
                                     const label = String(option.label ?? '').toLowerCase();
                                     const value = String(option.value ?? '').toLowerCase();
                                     const description = String(option.description ?? '').toLowerCase();
-                    
+
                                     return label.includes(needle)
                                         || value.includes(needle)
                                         || description.includes(needle);
                                 });
                             },
-                    
+
                             get selectedOption() {
                                 return this.options.find((option) => String(option.value) === String(this.selected));
                             },
-                    
+
                             selectOption(option) {
                                 this.selected = option.value;
                                 this.search = option.label;
                                 this.open = false;
                             },
-                    
+
                             clearOption() {
                                 this.selected = '';
                                 this.search = '';
                                 this.open = false;
                             },
-                    
+
                             init() {
                                 this.search = this.selectedOption ? this.selectedOption.label : '';
-                    
+
                                 this.$watch('selected', () => {
                                     this.search = this.selectedOption ? this.selectedOption.label : '';
                                 });
@@ -425,17 +423,17 @@
                                 @focus="open = true"
                                 @input="
                                         open = true;
-                    
+
                                         if (selected) {
                                             selected = '';
                                         }
                                 "
                             />
-                    
+
                             <label for="filterEncounterIdSearch" class="label">
                                 {{ __('patients.encounter_id') }}
                             </label>
-                    
+
                             <button type="button"
                                     x-show="selected || search"
                                     x-cloak
@@ -444,7 +442,7 @@
                             >
                                 @icon('close', 'w-4 h-4')
                             </button>
-                    
+
                             <div x-show="open"
                                 x-transition
                                 x-cloak
@@ -460,7 +458,7 @@
                                                 <div class="font-medium text-gray-900 dark:text-gray-100"
                                                     x-text="option.label || 'Без назви'"
                                                 ></div>
-                    
+
                                                 <div class="text-xs text-gray-500 break-all"
                                                     x-text="option.description || option.value"
                                                 ></div>
@@ -468,7 +466,7 @@
                                         </template>
                                     </div>
                                 </template>
-                    
+
                                 <template x-if="filteredOptions.length === 0">
                                     <div class="px-3 py-2 text-sm text-gray-500">
                                         {{ __('patients.episodes_not_found') }}
@@ -483,48 +481,48 @@
                             open: false,
                             search: '',
                             selected: $wire.entangle('filterDiagnosticReportId'),
-                    
+
                             get options() {
                                 return $wire.get('filterDiagnosticReportOptions') ?? [];
                             },
-                    
+
                             get filteredOptions() {
                                 if (!this.search.trim()) {
                                     return this.options;
                                 }
-                    
+
                                 const needle = this.search.toLowerCase();
-                    
+
                                 return this.options.filter((option) => {
                                     const label = String(option.label ?? '').toLowerCase();
                                     const value = String(option.value ?? '').toLowerCase();
                                     const description = String(option.description ?? '').toLowerCase();
-                    
+
                                     return label.includes(needle)
                                         || value.includes(needle)
                                         || description.includes(needle);
                                 });
                             },
-                    
+
                             get selectedOption() {
                                 return this.options.find((option) => String(option.value) === String(this.selected));
                             },
-                    
+
                             selectOption(option) {
                                 this.selected = option.value;
                                 this.search = option.label;
                                 this.open = false;
                             },
-                    
+
                             clearOption() {
                                 this.selected = '';
                                 this.search = '';
                                 this.open = false;
                             },
-                    
+
                             init() {
                                 this.search = this.selectedOption ? this.selectedOption.label : '';
-                    
+
                                 this.$watch('selected', () => {
                                     this.search = this.selectedOption ? this.selectedOption.label : '';
                                 });
@@ -543,17 +541,17 @@
                                 @focus="open = true"
                                 @input="
                                         open = true;
-                    
+
                                         if (selected) {
                                             selected = '';
                                         }
                                 "
                             />
-                    
+
                             <label for="filterDiagnosticReportIdSearch" class="label">
                                 {{ __('patients.diagnostic_report_id') }}
                             </label>
-                    
+
                             <button type="button"
                                     x-show="selected || search"
                                     x-cloak
@@ -562,7 +560,7 @@
                             >
                                 @icon('close', 'w-4 h-4')
                             </button>
-                    
+
                             <div x-show="open"
                                 x-transition
                                 x-cloak
@@ -578,7 +576,7 @@
                                                 <div class="font-medium text-gray-900 dark:text-gray-100"
                                                     x-text="option.label || 'Без назви'"
                                                 ></div>
-                    
+
                                                 <div class="text-xs text-gray-500 break-all"
                                                     x-text="option.description || option.value"
                                                 ></div>
@@ -586,7 +584,7 @@
                                         </template>
                                     </div>
                                 </template>
-                    
+
                                 <template x-if="filteredOptions.length === 0">
                                     <div class="px-3 py-2 text-sm text-gray-500">
                                         {{ __('patients.nothing_found') }}
@@ -601,48 +599,48 @@
                             open: false,
                             search: '',
                             selected: $wire.entangle('filterDeviceId'),
-                    
+
                             get options() {
                                 return $wire.get('filterDeviceOptions') ?? [];
                             },
-                    
+
                             get filteredOptions() {
                                 if (!this.search.trim()) {
                                     return this.options;
                                 }
-                    
+
                                 const needle = this.search.toLowerCase();
-                    
+
                                 return this.options.filter((option) => {
                                     const label = String(option.label ?? '').toLowerCase();
                                     const value = String(option.value ?? '').toLowerCase();
                                     const description = String(option.description ?? '').toLowerCase();
-                    
+
                                     return label.includes(needle)
                                         || value.includes(needle)
                                         || description.includes(needle);
                                 });
                             },
-                    
+
                             get selectedOption() {
                                 return this.options.find((option) => String(option.value) === String(this.selected));
                             },
-                    
+
                             selectOption(option) {
                                 this.selected = option.value;
                                 this.search = option.label;
                                 this.open = false;
                             },
-                    
+
                             clearOption() {
                                 this.selected = '';
                                 this.search = '';
                                 this.open = false;
                             },
-                    
+
                             init() {
                                 this.search = this.selectedOption ? this.selectedOption.label : '';
-                    
+
                                 this.$watch('selected', () => {
                                     this.search = this.selectedOption ? this.selectedOption.label : '';
                                 });
@@ -661,17 +659,17 @@
                                 @focus="open = true"
                                 @input="
                                         open = true;
-                    
+
                                         if (selected) {
                                             selected = '';
                                         }
                                 "
                             />
-                    
+
                             <label for="filterDeviceIdSearch" class="label">
                                 {{ __('patients.device_id') }}
                             </label>
-                    
+
                             <button type="button"
                                     x-show="selected || search"
                                     x-cloak
@@ -680,7 +678,7 @@
                             >
                                 @icon('close', 'w-4 h-4')
                             </button>
-                    
+
                             <div x-show="open"
                                 x-transition
                                 x-cloak
@@ -696,7 +694,7 @@
                                                 <div class="font-medium text-gray-900 dark:text-gray-100"
                                                     x-text="option.label || 'Без назви'"
                                                 ></div>
-                    
+
                                                 <div class="text-xs text-gray-500 break-all"
                                                     x-text="option.description || option.value"
                                                 ></div>
@@ -704,7 +702,7 @@
                                         </template>
                                     </div>
                                 </template>
-                    
+
                                 <template x-if="filteredOptions.length === 0">
                                     <div class="px-3 py-2 text-sm text-gray-500">
                                         {{ __('patients.nothing_found') }}
@@ -721,48 +719,48 @@
                             open: false,
                             search: '',
                             selected: $wire.entangle('filterSpecimenId'),
-                    
+
                             get options() {
                                 return $wire.get('filterSpecimenOptions') ?? [];
                             },
-                    
+
                             get filteredOptions() {
                                 if (!this.search.trim()) {
                                     return this.options;
                                 }
-                    
+
                                 const needle = this.search.toLowerCase();
-                    
+
                                 return this.options.filter((option) => {
                                     const label = String(option.label ?? '').toLowerCase();
                                     const value = String(option.value ?? '').toLowerCase();
                                     const description = String(option.description ?? '').toLowerCase();
-                    
+
                                     return label.includes(needle)
                                         || value.includes(needle)
                                         || description.includes(needle);
                                 });
                             },
-                    
+
                             get selectedOption() {
                                 return this.options.find((option) => String(option.value) === String(this.selected));
                             },
-                    
+
                             selectOption(option) {
                                 this.selected = option.value;
                                 this.search = option.label;
                                 this.open = false;
                             },
-                    
+
                             clearOption() {
                                 this.selected = '';
                                 this.search = '';
                                 this.open = false;
                             },
-                    
+
                             init() {
                                 this.search = this.selectedOption ? this.selectedOption.label : '';
-                    
+
                                 this.$watch('selected', () => {
                                     this.search = this.selectedOption ? this.selectedOption.label : '';
                                 });
@@ -781,17 +779,17 @@
                                 @focus="open = true"
                                 @input="
                                         open = true;
-                    
+
                                         if (selected) {
                                             selected = '';
                                         }
                                 "
                             />
-                    
+
                             <label for="filterSpecimenIdSearch" class="label">
                                 {{ __('patients.specimen_id') }}
                             </label>
-                    
+
                             <button type="button"
                                     x-show="selected || search"
                                     x-cloak
@@ -800,7 +798,7 @@
                             >
                                 @icon('close', 'w-4 h-4')
                             </button>
-                    
+
                             <div x-show="open"
                                 x-transition
                                 x-cloak
@@ -816,7 +814,7 @@
                                                 <div class="font-medium text-gray-900 dark:text-gray-100"
                                                     x-text="option.label || 'Без назви'"
                                                 ></div>
-                    
+
                                                 <div class="text-xs text-gray-500 break-all"
                                                     x-text="option.description || option.value"
                                                 ></div>
@@ -824,7 +822,7 @@
                                         </template>
                                     </div>
                                 </template>
-                    
+
                                 <template x-if="filteredOptions.length === 0">
                                     <div class="px-3 py-2 text-sm text-gray-500">
                                         {{ __('patients.nothing_found') }}
@@ -1039,7 +1037,7 @@
                     </div>
                 @endforelse
             </div>
-            
+
             <div class="mt-8">
                 {{ $paginatedObservations->links() }}
             </div>

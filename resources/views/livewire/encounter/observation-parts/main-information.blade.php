@@ -400,7 +400,7 @@
                     <div class="relative flex items-center">
                         @icon('calendar-week', 'svg-input absolute left-2.5 pointer-events-none')
                         <input x-model="modalObservation.valueDate"
-                               datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                               datepicker-max-date="{{ now()->format('d.m.Y') }}"
                                type="text"
                                name="valueDate"
                                id="valueDate"
@@ -424,7 +424,7 @@
                         @icon('mingcute-time-fill', 'svg-input left-2.5')
                         <input x-model="modalObservation.valueTime"
                                @input="$event.target.blur()"
-                               datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                               datepicker-max-date="{{ now()->format('d.m.Y') }}"
                                type="time"
                                name="valueTime"
                                id="valueTime"

@@ -46,7 +46,6 @@
             <div class="datepicker-wrapper">
                 <input wire:model="form.birthDate"
                        datepicker-max-date="{{ now()->format('d.m.Y') }}"
-                       datepicker-format="dd.mm.yyyy"
                        type="text"
                        name="filterBirthDate"
                        id="filterBirthDate"

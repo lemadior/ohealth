@@ -26,8 +26,8 @@
     </x-slot>
 
     <div class="breadcrumb-form p-4 shift-content">
-        <div class="w-full mt-6" 
-            x-data="{ 
+        <div class="w-full mt-6"
+            x-data="{
                 showAdditionalParams: $wire.entangle('showAdditionalParams'),
                 modalDiagnosticReport: {
                     categoryCode: $wire.entangle('filterCategory'),
@@ -38,7 +38,7 @@
                 @icon('search-outline', 'w-4.5 h-4.5')
                 <p>{{ __('patients.diagnostic_reports_search') }}</p>
             </div>
-            
+
             <div class="form-row-3 mb-6">
                 <div class="form-group group">
                     <select x-model="modalDiagnosticReport.categoryCode"
@@ -269,7 +269,6 @@
                                 type="text"
                                 name="filterIssuedFrom"
                                 id="filterIssuedFrom"
-                                datepicker-format="dd.mm.yyyy"
                                 class="datepicker-input with-leading-icon input peer w-full"
                                 placeholder=" "
                                 autocomplete="off"
@@ -286,7 +285,6 @@
                                 type="text"
                                 name="filterIssuedTo"
                                 id="filterIssuedTo"
-                                datepicker-format="dd.mm.yyyy"
                                 class="datepicker-input with-leading-icon input peer w-full"
                                 placeholder=" "
                                 autocomplete="off"
@@ -412,7 +410,7 @@
 
                 {{-- TODO: Фільтр по context_episode_id та origin_episode_id реалізований, але наразі у Diagnostic Report ці поля приходить null.
                     Коли в ЕСОЗ/тестових даних з’являться записи з contextEpisode або origin_episode_id, потрібно перевірити,
-                    чи коректно API фільтрує Diagnostic Reports за цим параметром. 
+                    чи коректно API фільтрує Diagnostic Reports за цим параметром.
                 --}}
                 <div class="form-row-3 mb-9">
                     <div class="form-group group relative"
@@ -421,8 +419,8 @@
                             search: '',
                             selected: $wire.entangle('filterContextEpisodeId'),
 
-                            get options() { 
-                                return $wire.get('filterEpisodeOptions') ?? []; 
+                            get options() {
+                                return $wire.get('filterEpisodeOptions') ?? [];
                             },
 
                             get filteredOptions() {
@@ -533,8 +531,8 @@
                             search: '',
                             selected: $wire.entangle('filterOriginEpisodeId'),
 
-                            get options() { 
-                                return $wire.get('filterEpisodeOptions') ?? []; 
+                            get options() {
+                                return $wire.get('filterEpisodeOptions') ?? [];
                             },
 
                             get filteredOptions() {

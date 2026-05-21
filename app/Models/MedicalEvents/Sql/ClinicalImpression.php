@@ -24,7 +24,6 @@ class ClinicalImpression extends Model
     protected $fillable = [
         'uuid',
         'person_id',
-        'encounter_internal_id',
         'status',
         'description',
         'code_id',
@@ -41,7 +40,6 @@ class ClinicalImpression extends Model
     protected $hidden = [
         'id',
         'person_id',
-        'encounter_internal_id',
         'code_id',
         'encounter_id',
         'assessor_id',

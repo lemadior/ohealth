@@ -64,7 +64,6 @@
                        name="birthDate"
                        id="birthDate"
                        class="datepicker-input with-leading-icon input peer @error('form.person.birthDate') input-error @enderror"
-                       datepicker-format="dd.mm.yyyy"
                        placeholder=" "
                        required
                        autocomplete="off"

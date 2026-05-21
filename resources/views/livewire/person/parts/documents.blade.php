@@ -211,7 +211,6 @@
                                         </label>
                                         <input x-model="modalDocument.issuedAt"
                                                datepicker-max-date="{{ now()->format('d.m.Y') }}"
-                                               datepicker-format="dd.mm.yyyy"
                                                type="text"
                                                name="documentIssuedAt"
                                                id="documentIssuedAt"
@@ -230,7 +229,6 @@
                                         </label>
                                         <input x-model="modalDocument.expirationDate"
                                                datepicker-min-date="{{ now()->format('d.m.Y') }}"
-                                               datepicker-format="dd.mm.yyyy"
                                                type="text"
                                                name="documentExpirationDate"
                                                id="documentExpirationDate"

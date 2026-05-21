@@ -10,6 +10,7 @@ use App\Exceptions\EHealth\EHealthValidationException;
 use App\Models\LegalEntity;
 use App\Traits\FormTrait;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -65,10 +66,9 @@ class ConditionDiagnose extends Component
             $codes = collect($details['diagnoses_group_codes'])->pluck('code')->toArray();
 
             // Get descriptions only for these specific codes
-            $descriptions = dictionary()->basics()
-                ->byName('eHealth/ICD10_AM/condition_codes')
+            $descriptions = DB::table('icd_10')
                 ->whereIn('code', $codes)
-                ->asCodeDescription();
+                ->pluck('description', 'code');
 
             // Add descriptions to each code
             foreach ($details['diagnoses_group_codes'] as &$codeItem) {

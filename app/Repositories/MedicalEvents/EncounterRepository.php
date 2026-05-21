@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace App\Repositories\MedicalEvents;
 
-use App\Classes\eHealth\Api\PatientApi;
-use App\Core\Arr;
 use App\Models\MedicalEvents\Sql\Condition;
 use App\Models\MedicalEvents\Sql\Encounter;
 use App\Models\MedicalEvents\Sql\Encounter as EncounterSql;
 use App\Models\MedicalEvents\Sql\EncounterDiagnose;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -21,69 +16,50 @@ use Throwable;
  */
 class EncounterRepository extends BaseRepository
 {
-    public string $encounterUuid {
-        get {
-            return $this->encounterUuid;
-        }
-    }
-    public ?string $employeeUuid {
-        get {
-            return $this->employeeUuid;
-        }
-    }
-
-    public function __construct(Model $model)
-    {
-        parent::__construct($model);
-
-        $this->encounterUuid = Str::uuid()->toString();
-        $this->employeeUuid = Auth::user()?->getEncounterWriterEmployee()?->uuid;
-    }
-
     /**
      * Create encounter in DB for person with related data.
      *
-     * @param  array  $encounterData
+     * @param  array  $data
      * @param  int  $personId
      * @return false|int
      * @throws Throwable
      */
-    public function store(array $encounterData, int $personId): false|int
+    public function store(array $data, int $personId): false|int
     {
-        return DB::transaction(function () use ($encounterData, $personId) {
-            $visit = Repository::identifier()->store($encounterData['visit']['identifier']['value']);
-            Repository::codeableConcept()->attach($visit, $encounterData['visit']);
+        return DB::transaction(function () use ($data, $personId) {
+            $visit = Repository::identifier()->store($data['visit']['identifier']['value']);
+            Repository::codeableConcept()->attach($visit, $data['visit']);
 
-            $episode = Repository::identifier()->store($encounterData['episode']['identifier']['value']);
-            Repository::codeableConcept()->attach($episode, $encounterData['episode']);
+            $episode = Repository::identifier()->store($data['episode']['identifier']['value']);
+            Repository::codeableConcept()->attach($episode, $data['episode']);
 
-            $class = Repository::coding()->store($encounterData['class']);
+            $class = Repository::coding()->store($data['class']);
 
-            $type = Repository::codeableConcept()->store($encounterData['type']);
+            $type = Repository::codeableConcept()->store($data['type']);
 
-            if (isset($encounterData['priority']['coding'][0]['code'])) {
-                $priority = Repository::codeableConcept()->store($encounterData['priority']);
+            if (isset($data['priority'])) {
+                $priority = Repository::codeableConcept()->store($data['priority']);
             }
 
-            $performer = Repository::identifier()->store($encounterData['performer']['identifier']['value']);
-            Repository::codeableConcept()->attach($performer, $encounterData['performer']);
+            $performer = Repository::identifier()->store($data['performer']['identifier']['value']);
+            Repository::codeableConcept()->attach($performer, $data['performer']);
 
-            if (isset($encounterData['division'])) {
-                $division = Repository::identifier()->store($encounterData['division']['identifier']['value']);
-                Repository::codeableConcept()->attach($division, $encounterData['division']);
+            if (isset($data['division'])) {
+                $division = Repository::identifier()->store($data['division']['identifier']['value']);
+                Repository::codeableConcept()->attach($division, $data['division']);
             }
-            
-            if (isset($encounterData['incomingReferral'])) {
+
+            if (isset($data['incomingReferral'])) {
                 $incomingReferral = Repository::identifier()->store(
-                    $encounterData['incomingReferral']['identifier']['value']
+                    $data['incomingReferral']['identifier']['value']
                 );
-                Repository::codeableConcept()->attach($incomingReferral, $encounterData['incomingReferral']);
+                Repository::codeableConcept()->attach($incomingReferral, $data['incomingReferral']);
             }
 
             $encounter = $this->model->create([
                 'person_id' => $personId,
-                'uuid' => $encounterData['uuid'] ?? $encounterData['id'],
-                'status' => $encounterData['status'],
+                'uuid' => $data['uuid'] ?? $data['id'],
+                'status' => $data['status'],
                 'visit_id' => $visit->id,
                 'episode_id' => $episode->id,
                 'class_id' => $class->id,
@@ -95,17 +71,17 @@ class EncounterRepository extends BaseRepository
             ]);
 
             $encounter->period()->create([
-                'start' => $encounterData['period']['start'],
-                'end' => $encounterData['period']['end']
+                'start' => $data['period']['start'],
+                'end' => $data['period']['end']
             ]);
 
-            if (!empty($encounterData['paperReferral'])) {
-                Repository::paperReferral()->store($encounterData['paperReferral'], $encounter);
+            if (!empty($data['paperReferral'])) {
+                Repository::paperReferral()->store($data['paperReferral'], $encounter);
             }
 
             $reasonIds = [];
 
-            foreach ($encounterData['reasons'] as $reasonData) {
+            foreach ($data['reasons'] as $reasonData) {
                 $reason = Repository::codeableConcept()->store($reasonData);
 
                 $reasonIds[] = $reason->id;
@@ -113,7 +89,7 @@ class EncounterRepository extends BaseRepository
 
             $encounter->reasons()->attach($reasonIds);
 
-            foreach ($encounterData['diagnoses'] as $diagnoseData) {
+            foreach ($data['diagnoses'] as $diagnoseData) {
                 $condition = Repository::identifier()->store($diagnoseData['condition']['identifier']['value']);
                 Repository::codeableConcept()->attach($condition, $diagnoseData['condition']);
 
@@ -128,7 +104,7 @@ class EncounterRepository extends BaseRepository
 
             $actionIds = [];
 
-            foreach ($encounterData['actions'] as $actionData) {
+            foreach ($data['actions'] as $actionData) {
                 $action = Repository::codeableConcept()->store($actionData);
 
                 $actionIds[] = $action->id;
@@ -143,164 +119,48 @@ class EncounterRepository extends BaseRepository
     /**
      * Get the encounter for the clinical impression based on the provided UUID to display the selected supporting info.
      *
-     * @param  string  $uuid
-     * @return array|null
-     */
-    public function getForClinicalImpression(string $uuid): ?array
-    {
-        $encounter = EncounterSql::whereUuid($uuid)
-            ->with(['period', 'diagnoses'])
-            ->first();
-
-        if (!$encounter || !data_get($encounter, 'diagnoses.0.condition.identifier.value')) {
-            return null;
-        }
-
-        $condition = Condition::whereUuid($encounter['diagnoses'][0]['condition']['identifier']['value'])
-            ->with('code.coding')
-            ->first();
-
-        return [
-            'periodStart' => $encounter->period->start,
-            'code' => $condition?->code
-        ];
-    }
-
-    /**
-     * Format clinical impressions data before request.
-     *
-     * @param  array  $clinicalImpressions
+     * @param  array  $uuids
      * @return array
      */
-    public function formatClinicalImpressionsRequest(array $clinicalImpressions): array
+    public function getDetailsMapByUuids(array $uuids): array
     {
-        $clinicalImpressionForm = array_map(function (array $clinicalImpression) {
-            $clinicalImpression['id'] = Str::uuid()->toString();
-            $clinicalImpression['status'] = 'completed';
+        $encounters = EncounterSql::whereIn('uuid', $uuids)
+            ->with(['period', 'diagnoses'])
+            ->get();
 
-            $clinicalImpression['encounter'] = [
-                'identifier' => [
-                    'type' => [
-                        'coding' => [['system' => 'eHealth/resources', 'code' => 'encounter']],
-                        'text' => ''
+        $conditionUuids = $encounters
+            ->map(fn (EncounterSql $e) => data_get($e->toArray(), 'diagnoses.0.condition.identifier.value'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $conditions = Condition::whereIn('uuid', $conditionUuids)
+            ->with('code.coding')
+            ->get()
+            ->keyBy('uuid');
+
+        return $encounters
+            ->mapWithKeys(function (EncounterSql $encounter) use ($conditions) {
+                $conditionUuid = data_get($encounter->toArray(), 'diagnoses.0.condition.identifier.value');
+                $condition = $conditionUuid ? $conditions->get($conditionUuid) : null;
+
+                return [
+                    $encounter->uuid => [
+                        'ehealthInsertedAt' => $encounter->period?->start ?? null,
+                        'codeCode' => data_get($condition?->toArray(), 'code.coding.0.code'),
+                        'type' => 'encounter',
                     ],
-                    'value' => $this->encounterUuid
-                ]
-            ];
-
-            $clinicalImpression['effectivePeriod']['start'] = convertToEHealthISO8601(
-                $clinicalImpression['effectivePeriodStartDate'] . $clinicalImpression['effectivePeriodStartTime']
-            );
-            unset($clinicalImpression['effectivePeriodStartDate'], $clinicalImpression['effectivePeriodStartTime']);
-
-            $clinicalImpression['effectivePeriod']['end'] = convertToEHealthISO8601(
-                $clinicalImpression['effectivePeriodEndDate'] . $clinicalImpression['effectivePeriodEndTime']
-            );
-            unset($clinicalImpression['effectivePeriodEndDate'], $clinicalImpression['effectivePeriodEndTime']);
-
-            $clinicalImpression['assessor']['identifier']['value'] = $this->employeeUuid;
-
-            // TODO: після створення, додати форматування попередньої клінічної оцінки, вона має бути тільки одна
-
-            if (!empty($clinicalImpression['problems'])) {
-                $clinicalImpression['problems'] = collect($clinicalImpression['problems'])
-                    ->map(static function (array $problem) {
-                        $data = [];
-
-                        Arr::set($data, 'identifier.type.coding', [
-                            [
-                                'system' => 'eHealth/resources',
-                                'code' => 'condition'
-                            ]
-                        ]);
-                        Arr::set($data, 'identifier.value', $problem['id']);
-
-                        return $data;
-                    })->toArray();
-            }
-
-            if (!empty($clinicalImpression['findings'])) {
-                $clinicalImpression['findings'] = collect($clinicalImpression['findings'])
-                    ->map(static function (array $finding) {
-                        $data = [];
-
-                        Arr::set($data, 'item_reference.identifier.type.coding', [
-                            [
-                                'system' => 'eHealth/resources',
-                                'code' => $finding['type']
-                            ]
-                        ]);
-                        Arr::set($data, 'item_reference.identifier.value', $finding['id']);
-
-                        return $data;
-                    })->toArray();
-            }
-
-            $clinicalImpression['supporting_info'] = [];
-
-            if (!empty($clinicalImpression['supportingInfoEpisodes'])) {
-                $supportingInfoEpisodes = collect($clinicalImpression['supportingInfoEpisodes'])
-                    ->map(static function (array $supportingInfoEpisode) {
-                        $data = [];
-
-                        Arr::set($data, 'identifier.type.coding', [
-                            [
-                                'system' => 'eHealth/resources',
-                                'code' => $supportingInfoEpisode['type']
-                            ]
-                        ]);
-                        Arr::set($data, 'identifier.value', $supportingInfoEpisode['id']);
-
-                        return $data;
-                    })->toArray();
-
-                $clinicalImpression['supporting_info'] = array_merge(
-                    $clinicalImpression['supporting_info'],
-                    $supportingInfoEpisodes
-                );
-            }
-
-            if (!empty($clinicalImpression['supportingInfo'])) {
-                $supportingInfo = collect($clinicalImpression['supportingInfo'])
-                    ->map(static function (array $supportingInfo) {
-                        $data = [];
-
-                        Arr::set($data, 'identifier.type.coding', [
-                            [
-                                'system' => 'eHealth/resources',
-                                'code' => $supportingInfo['type']
-                            ]
-                        ]);
-                        Arr::set($data, 'identifier.value', $supportingInfo['id']);
-
-                        return $data;
-                    })->toArray();
-
-                $clinicalImpression['supporting_info'] = array_merge(
-                    $clinicalImpression['supporting_info'],
-                    $supportingInfo
-                );
-            }
-
-            unset($clinicalImpression['supportingInfo'], $clinicalImpression['supportingInfoEpisodes']);
-
-            // Remove elements where the key is equal empty array
-            return array_filter($clinicalImpression, static fn ($value) => !is_array($value) || !empty($value));
-        }, $clinicalImpressions);
-
-        return schemaService()
-            ->setDataSchema(['clinical_impressions' => $clinicalImpressionForm], app(PatientApi::class))
-            ->requestSchemaNormalize()
-            ->camelCaseKeys()
-            ->extractFirst()
-            ->getNormalizedData();
+                ];
+            })
+            ->toArray();
     }
 
     /**
      * Get encounter data that is related to the person.
      *
-     * @param  string  $personId
-     * @return array|null
+     * @param  int  $personId
+     * @return array
      */
     public function getByPersonId(int $personId): array
     {
@@ -337,7 +197,7 @@ class EncounterRepository extends BaseRepository
                 $priority = $this->syncCodeableConcept($existing, $data['priority'] ?? null, 'priority');
                 $performerSpeciality = $this->syncCodeableConcept(
                     $existing,
-                    $data['performer_speciality'],
+                    $data['performer_speciality'] ?? null,
                     'performerSpeciality'
                 );
 
@@ -365,7 +225,7 @@ class EncounterRepository extends BaseRepository
                     'class_id' => $class->id,
                     'type_id' => $type->id,
                     'priority_id' => $priority?->id,
-                    'performer_speciality_id' => $performerSpeciality->id,
+                    'performer_speciality_id' => $performerSpeciality?->id,
                     'visit_id' => $visit?->id,
                     'episode_id' => $episode->id,
                     'incoming_referral_id' => $incomingReferral?->id,

@@ -55,7 +55,7 @@
                     @icon('calendar-week', 'w-5 h-5 text-gray-400')
                 </div>
                 <input wire:model="form.encounter.periodDate"
-                       datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                       datepicker-max-date="{{ now()->format('d.m.Y') }}"
                        datepicker-autoselect-today
                        type="text"
                        name="date"

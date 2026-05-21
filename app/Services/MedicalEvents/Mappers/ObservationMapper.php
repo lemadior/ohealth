@@ -57,7 +57,7 @@ class ObservationMapper implements FhirMapperContract
         } else {
             $result['reportOrigin'] = FhirResource::make()
                 ->coding('eHealth/report_origins', $data['reportOriginCode'])
-                ->toCodeableConcept();
+                ->toCodeableConcept($data['reportOriginText'] ?? '');
         }
 
         if (!empty($data['interpretationCode'])) {

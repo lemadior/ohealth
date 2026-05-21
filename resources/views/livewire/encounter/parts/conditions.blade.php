@@ -13,7 +13,21 @@
              conditionCodesDictionary: $wire.dictionaries['eHealth/ICPC2/condition_codes'],
              diagnosisRolesDictionary: $wire.dictionaries['eHealth/diagnosis_roles'],
              conditionClinicalStatusesRolesDictionary: $wire.dictionaries['eHealth/condition_clinical_statuses'],
-             conditionVerificationStatusesDictionary: $wire.dictionaries['eHealth/condition_verification_statuses']
+             conditionVerificationStatusesDictionary: $wire.dictionaries['eHealth/condition_verification_statuses'],
+             icd10Descriptions: {},
+             init() {
+                 const icd10Codes = this.conditions
+                     .filter(condition => condition.codeSystem === 'eHealth/ICD10_AM/condition_codes' && condition.codeCode)
+                     .map(condition => condition.codeCode);
+
+                 if (icd10Codes.length === 0) return;
+
+                 $wire.fetchIcd10Descriptions(icd10Codes).then(() => {
+                     $wire.results.forEach(result => {
+                         this.icd10Descriptions[result.code] = result.description;
+                     });
+                 });
+             }
          }"
 >
     <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">
@@ -35,7 +49,7 @@
         <template x-for="(condition, index) in conditions" :key="index">
             <tr>
                 <td class="td-input"
-                    x-text="`${ condition.codeCode } - ${ conditionCodesDictionary[condition.codeCode] }`"
+                    x-text="`${ condition.codeCode } - ${ condition.codeSystem === 'eHealth/ICD10_AM/condition_codes' ? icd10Descriptions[condition.codeCode] : conditionCodesDictionary[condition.codeCode] }`"
                 ></td>
                 <td class="td-input"
                     x-text="diagnosisRolesDictionary[diagnoses[index]?.roleCode]"
@@ -238,6 +252,7 @@
                                     <input type="text"
                                            @input.debounce.300ms="
                                                let value = $event.target.value;
+                                               modalCondition.codeCode = value;
                                                let isEnglish = /^[a-zA-Z]+$/.test(value);
 
                                                if ((isEnglish && value.length >= 1) || (!isEnglish && value.length >= 3)) {
@@ -247,7 +262,7 @@
                                            "
                                            @focus="if ((modalCondition.codeCode?.length ?? 0) >= 1) showResults = true"
                                            @click.away="showResults = false"
-                                           x-model="modalCondition.codeCode"
+                                           :value="modalCondition.codeCode && icd10Descriptions[modalCondition.codeCode] ? modalCondition.codeCode + ' - ' + icd10Descriptions[modalCondition.codeCode] : modalCondition.codeCode"
                                            id="icd10Code"
                                            class="input-modal"
                                            placeholder="{{ __('forms.select') }}"
@@ -377,7 +392,7 @@
                                         {{ __('forms.start_date') }}
                                     </label>
                                     <input x-model="modalCondition.onsetDate"
-                                           datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                                           datepicker-max-date="{{ now()->format('d.m.Y') }}"
                                            type="text"
                                            name="onsetDate"
                                            id="onsetDate"
@@ -400,7 +415,7 @@
                                     </label>
                                     <input x-model="modalCondition.onsetTime"
                                            @input="$event.target.blur()"
-                                           datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                                           datepicker-max-date="{{ now()->format('d.m.Y') }}"
                                            type="time"
                                            name="onsetTime"
                                            id="onsetTime"
@@ -422,7 +437,7 @@
                                         {{ __('patients.entry_date') }}
                                     </label>
                                     <input x-model="modalCondition.assertedDate"
-                                           datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                                           datepicker-max-date="{{ now()->format('d.m.Y') }}"
                                            type="text"
                                            name="assertedDate"
                                            id="assertedDate"
@@ -439,7 +454,7 @@
                                     </label>
                                     <input x-model="modalCondition.assertedTime"
                                            @input="$event.target.blur()"
-                                           datepicker-max-date="{{ now()->format('Y-m-d') }}"
+                                           datepicker-max-date="{{ now()->format('d.m.Y') }}"
                                            type="time"
                                            name="assertedTime"
                                            id="assertedTime"
@@ -637,16 +652,19 @@
     class Condition {
         constructor(obj = null) {
             const now = new Date();
+            const [yyyy, mm, dd] = now.toISOString().split('T')[0].split('-');
+            const formattedDate = `${dd}.${mm}.${yyyy}`;
+            const formattedTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
 
             this.primarySource = true;
             this.codeSystem = '';
             this.codeCode = '';
             this.clinicalStatus = '';
             this.verificationStatus = '';
-            this.onsetDate = now.toISOString().split('T')[0];
-            this.onsetTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
-            this.assertedDate = now.toISOString().split('T')[0];
-            this.assertedTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
+            this.onsetDate = formattedDate;
+            this.onsetTime = formattedTime;
+            this.assertedDate = formattedDate;
+            this.assertedTime = formattedTime;
             this.severityCode = '';
             this.asserterText = '';
             this.reportOriginCode = '';

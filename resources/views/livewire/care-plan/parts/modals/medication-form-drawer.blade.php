@@ -93,7 +93,6 @@
                                class="input peer ps-10"
                                placeholder="02.04.2025"
                                datepicker-autohide
-                               datepicker-format="dd.mm.yyyy"
                                datepicker-button="false"
                                wire:model.live="activityForm.scheduled_period_start"
                         />
@@ -145,7 +144,6 @@
                                class="input peer ps-10"
                                placeholder="02.08.2025"
                                datepicker-autohide
-                               datepicker-format="dd.mm.yyyy"
                                datepicker-button="false"
                                wire:model.live="activityForm.scheduled_period_end"
                         />

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Rules;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Translation\PotentiallyTranslatedString;
@@ -29,7 +29,7 @@ readonly class PastDateTime implements ValidationRule
             return;
         }
 
-        $datetime = Carbon::createFromFormat('Y-m-d H:i', $this->date . ' ' . $value);
+        $datetime = CarbonImmutable::createFromFormat(config('app.date_format') . ' H:i', $this->date . ' ' . $value);
 
         if ($datetime->isFuture()) {
             $fail(__('validation.before_or_equal', ['date' => __('validation.values.now')]));

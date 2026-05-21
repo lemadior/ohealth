@@ -15,10 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const minDate = datepickerEl.getAttribute('datepicker-min-date') || null;
             const maxDate = datepickerEl.getAttribute('datepicker-max-date') || null;
-            const format = datepickerEl.getAttribute('datepicker-format') || 'yyyy-mm-dd';
+            const format = datepickerEl.getAttribute('datepicker-format') || 'dd.mm.yyyy';
 
             const shouldAutoSelectToday = datepickerEl.hasAttribute('datepicker-autoselect-today');
-            const todayDate = new Date().toISOString().split('T')[0];
+            const [yyyy, mm, dd] = new Date().toISOString().split('T')[0].split('-');
+            const todayDate = format.replace('dd', dd).replace('mm', mm).replace('yyyy', yyyy);
 
             if (shouldAutoSelectToday && !datepickerEl.value) {
                 datepickerEl.value = todayDate;

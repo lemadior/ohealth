@@ -24,7 +24,7 @@
             <template x-for="(clinicalImpression, index) in clinicalImpressions">
                 <tr>
                     <td class="td-input"
-                        x-text="`${ clinicalImpression.code.coding[0].code } - ${ dictionary[clinicalImpression.code.coding[0].code] }`"
+                        x-text="`${ clinicalImpression.codeCode } - ${ dictionary[clinicalImpression.codeCode] }`"
                     ></td>
                     <td class="td-input" x-text="clinicalImpression.effectivePeriodStartDate"></td>
                     <td class="td-input">
@@ -173,7 +173,7 @@
                                     "
                                     class="button-primary"
                                     data-drawer-hide="clinical-impression-drawer-right"
-                                    :disabled="!modalClinicalImpression.code.coding[0].code.trim()"
+                                    :disabled="!modalClinicalImpression.codeCode.trim()"
                             >
                                 {{ __('forms.save') }}
                             </button>
@@ -189,44 +189,29 @@
      * Representation of the user's personal clinicalImpression
      */
     class ClinicalImpression {
-        code = {
-            coding: [{ system: 'eHealth/clinical_impression_patient_categories', code: '' }],
-            text: ''
-        };
-        assessor = {
-            identifier: {
-                type: {
-                    coding: [{ system: 'eHealth/resources', code: 'employee' }],
-                    text: ''
-                }
-            }
-        };
-        previousList = [];
-        problems = [];
-        findings = [];
-        supportingInfo = [];
-        supportingInfoEpisodes = [];
-
-        // Create date
-        #now = new Date();
-        #endTime = new Date(this.#now.getTime() + 15 * 60 * 1000); // add 15 minutes
-
-        effectivePeriodStartDate = this.#now.toISOString().split('T')[0];
-        effectivePeriodStartTime = this.#now.toLocaleTimeString('uk-UA', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        });
-        effectivePeriodEndDate = this.#endTime.toISOString().split('T')[0];
-        effectivePeriodEndTime = this.#endTime.toLocaleTimeString('uk-UA', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        });
-
         constructor(obj = null) {
+            const now = new Date();
+            const endTime = new Date(now.getTime() + 15 * 60 * 1000);
+            const toFormattedDate = (date) => {
+                const [yyyy, mm, dd] = date.toISOString().split('T')[0].split('-');
+                return `${dd}.${mm}.${yyyy}`;
+            };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+
+            this.codeCode = '';
+            this.description = '';
+            this.note = '';
+            this.previous = [];
+            this.problems = [];
+            this.findings = [];
+            this.supportingInfo = [];
+            this.effectivePeriodStartDate = toFormattedDate(now);
+            this.effectivePeriodStartTime = now.toLocaleTimeString('uk-UA', timeOptions);
+            this.effectivePeriodEndDate = toFormattedDate(endTime);
+            this.effectivePeriodEndTime = endTime.toLocaleTimeString('uk-UA', timeOptions);
+
             if (obj) {
-                this.clinicalImpression = JSON.parse(JSON.stringify(obj.clinicalImpression || obj));
+                Object.assign(this, JSON.parse(JSON.stringify(obj)));
             }
         }
     }

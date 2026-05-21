@@ -29,10 +29,10 @@
             <template x-for="(problem, index) in modalClinicalImpression.problems">
                 <tr>
                     <td class="td-input"
-                        x-text="new Date(problem.inserted_at).toLocaleDateString('uk-UA')"
+                        x-text="problem.ehealthInsertedAt || ''"
                     ></td>
                     <td class="td-input"
-                        x-text="`${ problem.code.coding[0].code } - ${ $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.code.coding[0].code] }`"
+                        x-text="`${ problem.codeCode } - ${ $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.codeCode] }`"
                     ></td>
                     <td class="td-input">
                         {{-- That all that is needed for the dropdown --}}
@@ -89,12 +89,18 @@
                                 >
 
                                     <button @click="
-                                                openModal = true; {{-- Open the modal --}}
-                                                item = index; {{-- Identify the item we are corrently editing --}}
-                                                {{-- Replace the previous problem with the current, don't assign object directly (modalProblem = problem) to avoid reactiveness --}}
+                                                item = index;
                                                 modalProblem = new Problem(problem);
-                                                newProblem = false; {{-- This problem is already created --}}
-                                                searchResults = modalClinicalImpression.problems;
+                                                newProblem = false;
+                                                if ($wire.problems.length > 0) {
+                                                    searchResults = JSON.parse(JSON.stringify($wire.problems));
+                                                    openModal = true;
+                                                } else {
+                                                    $wire.searchProblems().then(() => {
+                                                        searchResults = JSON.parse(JSON.stringify($wire.problems));
+                                                        openModal = true;
+                                                    });
+                                                }
                                             "
                                             @click.prevent
                                             class="dropdown-button"
@@ -119,11 +125,18 @@
         <div>
             {{-- Button to trigger the modal --}}
             <button @click.prevent="
-                        openModal = true; {{-- Open the Modal --}}
-                        newProblem = true; {{-- We are adding a new problem --}}
-                        modalProblem = new Problem(); {{-- Replace the data of the previous problem with a new one--}}
-                        searchResults = [];  {{-- Clear the search results --}}
-                        selectedProblemIds = []; {{-- Clear the selected problem IDs --}}
+                        newProblem = true;
+                        modalProblem = new Problem();
+                        selectedProblemIds = [];
+                        if ($wire.problems.length > 0) {
+                            searchResults = JSON.parse(JSON.stringify($wire.problems));
+                            openModal = true;
+                        } else {
+                            $wire.searchProblems().then(() => {
+                                searchResults = JSON.parse(JSON.stringify($wire.problems));
+                                openModal = true;
+                            });
+                        }
                     "
                     class="item-add my-5"
             >
@@ -160,44 +173,6 @@
 
                             {{-- Content --}}
                             <form>
-                                {{-- Episode info in which the search happens --}}
-                                <div class="form-row-modal">
-                                    <div class="form-group group">
-                                        <select id="episodeId"
-                                                class="input-modal peer"
-                                                x-model="modalProblem.selectedEpisodeId"
-                                        >
-                                            <option value="" selected>
-                                                {{ __('forms.select') }} {{ mb_strtolower(__('care-plan.episode')) }}
-                                            </option>
-                                            @foreach($episodes as $key => $episode)
-                                                <option value="{{ $episode['uuid'] }}">
-                                                    {{ $episode['name'] }} ({{ __('patients.' . $episode['status']) }})
-                                                    {{ __('forms.start') }} {{ CarbonImmutable::parse($episode['ehealth_inserted_at'])->format('d.m.Y') }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    {{-- Search button --}}
-                                    <div>
-                                        <button @click.prevent="
-                                                    $wire.searchProblems(modalProblem.selectedEpisodeId).then(() => {
-                                                        searchResults = JSON.parse(JSON.stringify($wire.problems));
-                                                        selectedProblemIds = [];
-                                                    })
-                                                "
-                                                class="flex items-center gap-2 button-primary"
-                                                :disabled="!modalProblem.selectedEpisodeId"
-                                        >
-                                            @icon('search', 'w-4 h-4')
-                                            <span>{{ __('patients.search') }}</span>
-                                        </button>
-                                    </div>
-
-                                    <x-forms.loading/>
-                                </div>
-
                                 {{-- A table that shows the results of the found data --}}
                                 <template x-if="searchResults.length > 0">
                                     <div class="table-container">
@@ -218,11 +193,11 @@
                                                     <tr class="border-b dark:border-gray-700">
                                                         <th scope="row" class="table-cell-primary">
                                                             <div class="text-base"
-                                                                 x-text="new Date(problem.inserted_at).toLocaleDateString('uk-UA')"
+                                                                 x-text="problem.ehealthInsertedAt || ''"
                                                             ></div>
                                                         </th>
                                                         <td class="td-input"
-                                                            x-text="`${ problem.code.coding[0].code } - ${ $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.code.coding[0].code] }`"
+                                                            x-text="`${ problem.codeCode } - ${ $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.codeCode] }`"
                                                         ></td>
                                                         <td class="td-input">
                                                             <button @click.prevent="
@@ -273,9 +248,8 @@
                                                     .filter(problem => selectedProblemIds.includes(problem.id) && !existingIds.includes(problem.id))
                                                     .map(problem => ({
                                                         id: problem.id,
-                                                        inserted_at: problem.inserted_at,
-                                                        code: problem.code,
-                                                        selectedEpisodeId: modalProblem.selectedEpisodeId
+                                                        ehealthInsertedAt: problem.ehealthInsertedAt,
+                                                        codeCode: problem.codeCode,
                                                     }));
 
                                                 {{-- Add them to the array --}}
@@ -303,8 +277,6 @@
      * Representation of the user's personal Problems
      */
     class Problem {
-        selectedEpisodeId = '';
-
         constructor(obj = null) {
             if (obj) {
                 Object.assign(this, JSON.parse(JSON.stringify(obj)));

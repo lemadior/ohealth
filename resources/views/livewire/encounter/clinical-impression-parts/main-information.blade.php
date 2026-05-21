@@ -6,7 +6,7 @@
     {{-- Code --}}
     <div class="form-row-modal" x-data="{ openModal: false }">
         <div class="form-group group">
-            <select x-model="modalClinicalImpression.code.coding[0].code"
+            <select x-model="modalClinicalImpression.codeCode"
                     id="code"
                     class="input-select peer"
                     type="text"
@@ -24,7 +24,7 @@
         {{-- Rule engine rules --}}
         <div class="form-group group">
             <div class="flex items-start pt-[10px]">
-                <a @click.prevent="modalClinicalImpression.code.coding[0].code && (openModal = true)"
+                <a @click.prevent="modalClinicalImpression.codeCode && (openModal = true)"
                    class="rule-engine-rules default-p"
                 >
                     {{ __('patients.set_of_rule_engines') }}
@@ -65,7 +65,7 @@
                                 <p class="default-p">{{ __('forms.details') }}:</p>
                                 <div class="space-y-2 border-2 rounded-md border-dashed border-white dark:border-white">
                                     <template
-                                        x-for="(detail, index) in $wire.dictionaries['custom/rule_engine_details'][modalClinicalImpression.code.coding[0].code]?.items"
+                                        x-for="(detail, index) in $wire.dictionaries['custom/rule_engine_details'][modalClinicalImpression.codeCode]?.items"
                                         :key="index"
                                     >
                                         <p class="default-p" x-text="detail.value.string"></p>

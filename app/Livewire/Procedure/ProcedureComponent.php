@@ -89,7 +89,6 @@ class ProcedureComponent extends Component
         'eHealth/LOINC/observation_codes',
         'eHealth/ICF/classifiers',
         'eHealth/ICPC2/condition_codes',
-        'eHealth/ICD10_AM/condition_codes',
         'eHealth/assistive_products'
     ];
 
@@ -148,7 +147,7 @@ class ProcedureComponent extends Component
                 ))
                 ->map(static fn (array $item) => [
                     'id' => data_get($item, 'uuid'),
-                    'insertedAt' => data_get($item, 'ehealth_inserted_at'),
+                    'ehealthInsertedAt' => data_get($item, 'ehealth_inserted_at'),
                     'codeCode' => data_get($item, 'code.coding.0.code'),
                     'type' => $type
                 ])->values()->all();

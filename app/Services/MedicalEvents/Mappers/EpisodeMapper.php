@@ -36,6 +36,8 @@ class EpisodeMapper implements FhirMapperContract
 
     public function fromFhir(array $data, mixed ...$context): array
     {
-        return [];
+        return [
+            'id' => data_get($data, 'episode.identifier.value', '')
+        ];
     }
 }

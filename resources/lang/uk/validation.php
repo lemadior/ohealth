@@ -737,6 +737,16 @@ return [
             'usedCodes.*.code' => 'допоміжні засоби реабілітації'
         ],
 
+        'clinicalImpressions.*' => [
+            'codeCode' => 'код клінічної оцінки',
+            'description' => 'заключення клінічної оцінки',
+            'effectivePeriodStartDate' => 'дата початку клінічної оцінки',
+            'effectivePeriodStartTime' => 'час початку клінічної оцінки',
+            'effectivePeriodEndDate' => 'дата завершення клінічної оцінки',
+            'effectivePeriodEndTime' => 'час завершення клінічної оцінки',
+            'note' => 'опис клінічної оцінки'
+        ],
+
         // Declaration
         'authorizeWith' => 'метод автентифікації',
         'employeeId' => 'ПІБ лікаря',

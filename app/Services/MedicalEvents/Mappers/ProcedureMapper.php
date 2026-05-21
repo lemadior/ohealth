@@ -178,7 +178,7 @@ class ProcedureMapper implements FhirMapperContract
                     return [
                         'id' => $uuid,
                         'type' => data_get($rr, 'identifier.type.coding.0.code'),
-                        'insertedAt' => $details['insertedAt'] ?? null,
+                        'ehealthInsertedAt' => $details['ehealthInsertedAt'] ?? null,
                         'codeCode' => $details['codeCode'] ?? null,
                     ];
                 })
@@ -195,7 +195,7 @@ class ProcedureMapper implements FhirMapperContract
 
                     return [
                         'id' => $uuid,
-                        'insertedAt' => $details['insertedAt'] ?? null,
+                        'ehealthInsertedAt' => $details['ehealthInsertedAt'] ?? null,
                         'codeCode' => $details['codeCode'] ?? null,
                     ];
                 })

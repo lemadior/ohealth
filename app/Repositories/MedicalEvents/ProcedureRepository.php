@@ -369,6 +369,21 @@ class ProcedureRepository extends BaseRepository
      * @param  string  $uuid
      * @return array|null
      */
+    public function getDetailsMapByUuids(array $uuids): array
+    {
+        return $this->model->whereIn('uuid', $uuids)
+            ->with(['code.type.coding', 'performedPeriod'])
+            ->get()
+            ->mapWithKeys(fn (Procedure $procedure) => [
+                $procedure->uuid => [
+                    'ehealthInsertedAt' => $procedure->performedPeriod?->start ?? null,
+                    'codeCode' => data_get($procedure->code?->toArray(), 'identifier.type.coding.0.code'),
+                    'type' => 'procedure',
+                ],
+            ])
+            ->toArray();
+    }
+
     public function getForClinicalImpression(string $uuid): ?array
     {
         return Procedure::whereUuid($uuid)

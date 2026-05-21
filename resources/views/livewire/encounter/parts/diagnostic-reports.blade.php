@@ -53,7 +53,7 @@
                                  }
                              }"
                              @keydown.escape.prevent.stop="close($refs.button)"
-                             @focusin.window="! $refs.panel.contains($event.target) && close()"
+                             @focusin.window="!$refs.panel.contains($event.target) && close()"
                              x-id="['dropdown-button']"
                              class="relative"
                         >
@@ -189,7 +189,12 @@
     class DiagnosticReport {
         constructor(obj = null) {
             const now = new Date();
-            const endTime = new Date(now.getTime() + 15 * 60 * 1000);
+            const startTime = new Date(now.getTime() - 15 * 60 * 1000);
+            const toFormattedDate = (date) => {
+                const [yyyy, mm, dd] = date.toISOString().split('T')[0].split('-');
+                return `${dd}.${mm}.${yyyy}`;
+            };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
 
             this.categoryCode = '';
             this.codeValue = '';
@@ -209,12 +214,12 @@
             this.reportOriginText = '';
             this.divisionId = '';
             this.resultsInterpreterEmployeeId = '';
-            this.issuedDate = now.toISOString().split('T')[0];
-            this.issuedTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
-            this.effectivePeriodStartDate = now.toISOString().split('T')[0];
-            this.effectivePeriodStartTime = now.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
-            this.effectivePeriodEndDate = endTime.toISOString().split('T')[0];
-            this.effectivePeriodEndTime = endTime.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', hour12: false });
+            this.issuedDate = toFormattedDate(now);
+            this.issuedTime = now.toLocaleTimeString('uk-UA', timeOptions);
+            this.effectivePeriodStartDate = toFormattedDate(startTime);
+            this.effectivePeriodStartTime = startTime.toLocaleTimeString('uk-UA', timeOptions);
+            this.effectivePeriodEndDate = toFormattedDate(now);
+            this.effectivePeriodEndTime = now.toLocaleTimeString('uk-UA', timeOptions);
 
             if (obj) {
                 Object.assign(this, JSON.parse(JSON.stringify(obj)));

@@ -260,7 +260,6 @@
                                            class="input-modal datepicker-input"
                                            autocomplete="off"
                                            required
-                                           datepicker-format="dd.mm.yyyy"
                                     >
                                 </div>
 
@@ -275,7 +274,6 @@
                                            class="input-modal datepicker-input"
                                            autocomplete="off"
                                            required
-                                           datepicker-format="dd.mm.yyyy"
                                     >
                                 </div>
 

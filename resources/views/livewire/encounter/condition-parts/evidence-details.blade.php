@@ -28,7 +28,7 @@
             <template x-for="(detail, index) in modalCondition.evidenceDetails">
                 <tr>
                     <td class="td-input"
-                        x-text="detail.insertedAt ? new Date(detail.insertedAt).toLocaleDateString('uk-UA') : ''"
+                        x-text="detail.ehealthInsertedAt || ''"
                     ></td>
                     <td class="td-input"
                         x-text="`${ detail.codeCode } - ${
@@ -177,11 +177,11 @@
                                     {{-- Search button --}}
                                     <div>
                                         <button @click.prevent="
-                                                $wire.searchEvidenceDetails(modalEvidenceDetail.type).then(() => {
+                                                $wire.searchConditionsOrObservations(modalEvidenceDetail.type).then(() => {
                                                     searchResults = JSON.parse(JSON.stringify($wire.evidenceDetails));
                                                     selectedEvidenceDetailIds = [];
                                                 })"
-                                                class="flex items-center gap-2 button-primary"
+                                        class="flex items-center gap-2 button-primary"
                                                 :disabled="!modalEvidenceDetail.type"
                                         >
                                             @icon('search', 'w-4 h-4')
@@ -211,7 +211,7 @@
                                                     <tr class="border-b dark:border-gray-700">
                                                         <th scope="row" class="table-cell-primary">
                                                             <div class="text-base"
-                                                                 x-text="condition.insertedAt ? new Date(condition.insertedAt).toLocaleDateString('uk-UA') : ''"
+                                                                 x-text="condition.ehealthInsertedAt || ''"
                                                             ></div>
                                                         </th>
                                                         <td class="td-input"

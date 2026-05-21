@@ -43,7 +43,7 @@ class DiagnosticReportForm extends Form
             'diagnosticReport.paperReferral.requesterEmployeeName' => ['nullable', 'string', 'max:255'],
             'diagnosticReport.paperReferral.requesterLegalEntityEdrpou' => [
                 Rule::requiredIf(data_get($this->diagnosticReport, 'referralType') === 'paper'),
-                'regex:/^[0-9]{8,10}$/',
+                'digits_between:8,10',
                 'string',
                 'max:255'
             ],

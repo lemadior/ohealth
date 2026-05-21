@@ -253,7 +253,6 @@
                                    placeholder=" "
                                    required
                                    datepicker-autohide
-                                   datepicker-format="dd.mm.yyyy"
                                    datepicker-button="false"
                                    x-bind:disabled="isDisabled"
                             />
@@ -307,7 +306,6 @@
                                    placeholder=" "
                                    required
                                    datepicker-autohide
-                                   datepicker-format="dd.mm.yyyy"
                                    datepicker-button="false"
                                    x-bind:disabled="isDisabled"
                             />

@@ -1,12 +1,7 @@
 <div class="relative">
     <fieldset class="fieldset"
-
               x-data="{
                   openModal: false,
-                  modalComplicationDetail: new ComplicationDetail(),
-                  newComplicationDetail: false,
-                  item: 0,
-                  searchResults: [],
                   selectedComplicationDetailIds: []
               }"
     >
@@ -26,14 +21,14 @@
             <template x-for="(complicationDetail, index) in modalProcedure.complicationDetails">
                 <tr>
                     <td class="td-input"
-                        x-text="complicationDetail.insertedAt ? new Date(complicationDetail.insertedAt).toLocaleDateString('uk-UA') : ''"
+                        x-text="complicationDetail.ehealthInsertedAt || ''"
                     ></td>
                     <td class="td-input"
                         x-text="`${ complicationDetail.codeCode } - ${
                             $wire.dictionaries['eHealth/LOINC/observation_codes']?.[complicationDetail.codeCode] ||
                             $wire.dictionaries['eHealth/ICF/classifiers']?.[complicationDetail.codeCode] ||
                             $wire.dictionaries['eHealth/ICPC2/condition_codes']?.[complicationDetail.codeCode] ||
-                            $wire.dictionaries['eHealth/ICD10_AM/condition_codes']?.[complicationDetail.codeCode]
+                            complicationDetail.codeCode
                         }`"
                     ></td>
                     <td class="td-input">
@@ -103,12 +98,8 @@
         <div>
             <button @click.prevent="
                         openModal = true;
-                        newComplicationDetail = true;
-                        modalComplicationDetail = new ComplicationDetail();
                         selectedComplicationDetailIds = [];
-                        $wire.searchConditionsOrObservations('condition').then(() => {
-                            searchResults = JSON.parse(JSON.stringify($wire.evidenceDetails));
-                        });
+                        $wire.searchComplicationDetails();
                     "
                     class="item-add my-5"
             >
@@ -123,6 +114,7 @@
                      aria-modal="true"
                      x-id="['modal-title']"
                      :aria-labelledby="$id('modal-title')"
+                     class="modal"
                 >
 
                     <div x-show="openModal" x-transition.opacity class="fixed inset-0 bg-black/25"></div>
@@ -141,7 +133,7 @@
                             <form>
                                 <x-forms.loading/>
 
-                                <template x-if="searchResults.length > 0">
+                                <template x-if="$wire.complicationDetailResults.length > 0">
                                     <div class="table-container">
                                         <div class="overflow-visible">
                                             <table class="table-base">
@@ -153,11 +145,11 @@
                                                 </tr>
                                                 </thead>
                                                 <tbody>
-                                                <template x-for="result in searchResults" :key="result.id">
+                                                <template x-for="result in $wire.complicationDetailResults" :key="result.id">
                                                     <tr class="border-b dark:border-gray-700">
                                                         <th scope="row" class="table-cell-primary">
                                                             <div class="text-base"
-                                                                 x-text="result.insertedAt ? new Date(result.insertedAt).toLocaleDateString('uk-UA') : ''"
+                                                                 x-text="result.ehealthInsertedAt || ''"
                                                             ></div>
                                                         </th>
                                                         <td class="td-input"
@@ -165,7 +157,7 @@
                                                                 $wire.dictionaries['eHealth/LOINC/observation_codes']?.[result.codeCode] ||
                                                                 $wire.dictionaries['eHealth/ICF/classifiers']?.[result.codeCode] ||
                                                                 $wire.dictionaries['eHealth/ICPC2/condition_codes']?.[result.codeCode] ||
-                                                                $wire.dictionaries['eHealth/ICD10_AM/condition_codes']?.[result.codeCode]
+                                                                result.codeCode
                                                             }`"
                                                         ></td>
                                                         <td class="td-input">
@@ -194,7 +186,7 @@
                                     </div>
                                 </template>
 
-                                <template x-if="searchResults.length <= 0">
+                                <template x-if="$wire.complicationDetailResults.length <= 0">
                                     <p class="default-p">{{ __('forms.nothing_found') }}</p>
                                 </template>
 
@@ -209,15 +201,14 @@
 
                                     <button @click.prevent
                                             @click="
-                                                const existingIds = modalProcedure.complicationDetails.map(cd => cd.id);
+                                                const existingIds = modalProcedure.complicationDetails.map(complicationDetail => complicationDetail.id);
 
-                                                const newDetails = searchResults
-                                                    .filter(r => selectedComplicationDetailIds.includes(r.id) && !existingIds.includes(r.id));
+                                                const newDetails = $wire.complicationDetailResults
+                                                    .filter(complicationDetail => selectedComplicationDetailIds.includes(complicationDetail.id) && !existingIds.includes(complicationDetail.id));
 
                                                 modalProcedure.complicationDetails = modalProcedure.complicationDetails.concat(newDetails);
 
                                                 openModal = false;
-                                                searchResults = [];
                                             "
                                             class="button-primary"
                                     >
@@ -232,16 +223,3 @@
         </div>
     </fieldset>
 </div>
-
-<script>
-    /**
-     * Representation of the user's personal ComplicationDetail
-     */
-    class ComplicationDetail {
-        constructor(obj = null) {
-            if (obj) {
-                Object.assign(this, JSON.parse(JSON.stringify(obj)));
-            }
-        }
-    }
-</script>

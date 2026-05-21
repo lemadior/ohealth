@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Encounter\Forms;
 
 use App\Core\BaseForm;
-use App\Rules\Cyrillic;
+use App\Rules\AfterOrEqualDateTime;
 use App\Rules\InDictionary;
 use App\Rules\OnlyOnePrimaryDiagnosis;
 use App\Rules\PastDateTime;
@@ -63,7 +63,7 @@ class EncounterForm extends BaseForm
             ],
             'encounter.reasons' => ['required_if:encounter.classCode,PHC', 'array'],
             'encounter.reasons.*.code' => ['required', 'string', new InDictionary('eHealth/ICPC2/reasons')],
-            'encounter.reasons.*.text' => ['nullable', 'string', new Cyrillic()],
+            'encounter.reasons.*.text' => ['nullable', 'string'],
             'encounter.diagnoses' => [
                 'required_unless:encounter.typeCode,intervention',
                 Rule::when(
@@ -84,7 +84,7 @@ class EncounterForm extends BaseForm
                 'array'
             ],
             'encounter.actions.*.code' => ['required', 'string', new InDictionary('eHealth/ICPC2/actions')],
-            'encounter.actions.*.text' => ['nullable', 'string', new Cyrillic()],
+            'encounter.actions.*.text' => ['nullable', 'string'],
             'encounter.divisionId' => [
                 'required_if:encounter.classCode,INPATIENT',
                 'nullable',
@@ -92,7 +92,7 @@ class EncounterForm extends BaseForm
                 Rule::prohibitedIf(in_array($this->encounter['typeCode'] ?? '', ['field', 'home']))
             ],
 
-            'encounter.referralType' => ['nullable', 'string', Rule::in(['', 'electronic','paper'])],
+            'encounter.referralType' => ['nullable', 'string', Rule::in(['', 'electronic', 'paper'])],
             'encounter.referralNumber' => [
                 Rule::requiredIf(($this->encounter['referralType'] ?? '') === 'electronic'),
                 'nullable',
@@ -107,6 +107,7 @@ class EncounterForm extends BaseForm
             'encounter.paperReferral.requesterLegalEntityName' => ['nullable', 'string', 'max:255'],
             'encounter.paperReferral.requesterLegalEntityEdrpou' => [
                 Rule::requiredIf(($this->encounter['referralType'] ?? '') === 'paper'),
+                'digits_between:8,10',
                 'nullable',
                 'string',
                 'max:255'
@@ -364,22 +365,21 @@ class EncounterForm extends BaseForm
                 return [
                     'required_with:diagnosticReports',
                     'date_format:H:i',
+                    new AfterOrEqualDateTime(
+                        $report['effectivePeriodEndDate'] ?? '',
+                        $report['effectivePeriodStartDate'] ?? '',
+                        $report['effectivePeriodStartTime'] ?? ''
+                    ),
                     function (string $attribute, mixed $value, Closure $fail) use ($report) {
-                        $start = Carbon::createFromFormat(
-                            'Y-m-d H:i',
-                            $report['effectivePeriodStartDate'] . ' ' . $report['effectivePeriodStartTime']
-                        );
+                        if (empty($report['issuedDate']) || empty($report['issuedTime']) || empty($report['effectivePeriodEndDate']) || empty($value)) {
+                            return;
+                        }
+
                         $end = Carbon::createFromFormat('Y-m-d H:i', $report['effectivePeriodEndDate'] . ' ' . $value);
                         $issued = Carbon::createFromFormat(
                             'Y-m-d H:i',
                             $report['issuedDate'] . ' ' . $report['issuedTime']
                         );
-
-                        if (!$end->isAfter($start)) {
-                            $fail(
-                                __('validation.after', ['date' => __('validation.attributes.effective_period_start')])
-                            );
-                        }
 
                         if ($end->isAfter($issued)) {
                             $fail(__('validation.before_or_equal', ['date' => __('validation.attributes.issued')]));
@@ -518,22 +518,12 @@ class EncounterForm extends BaseForm
                 return [
                     'required_with:procedures',
                     'date_format:H:i',
-                    function (string $attribute, mixed $value, Closure $fail) use ($procedure) {
-                        $start = Carbon::createFromFormat(
-                            'Y-m-d H:i',
-                            $procedure['performedPeriodStartDate'] . ' ' . $procedure['performedPeriodStartTime']
-                        );
-                        $end = Carbon::createFromFormat(
-                            'Y-m-d H:i',
-                            $procedure['performedPeriodEndDate'] . ' ' . $value
-                        );
-
-                        if ($end->lessThan($start)) {
-                            $fail(
-                                __('validation.after', ['date' => __('validation.attributes.performed_period_start')])
-                            );
-                        }
-                    }
+                    new AfterOrEqualDateTime(
+                        $procedure['performedPeriodEndDate'] ?? '',
+                        $procedure['performedPeriodStartDate'] ?? '',
+                        $procedure['performedPeriodStartTime'] ?? '',
+                        'performed_period_start'
+                    ),
                 ];
             }),
             'procedures.*.note' => ['nullable', 'string'],
@@ -564,27 +554,66 @@ class EncounterForm extends BaseForm
                 new InDictionary(['eHealth/ICPC2/condition_codes', 'eHealth/ICD10_AM/condition_codes'])
             ],
 
-            //            'clinicalImpressions' => ['nullable', 'array'],
+            'clinicalImpressions' => ['nullable', 'array'],
             // for edit page
-            //            'clinicalImpressions.*.uuid' => ['nullable', 'uuid'],
-            //            'clinicalImpressions.*.code.coding.*.code' => [
-            //                'required_with:clinicalImpressions',
-            //                'string',
-            //                'max:255',
-            //                new InDictionary('eHealth/clinical_impression_patient_categories')
-            //            ],
-            //            'clinicalImpressions.*.description' => ['nullable', 'string', 'max:1000'],
-            //            'clinicalImpressions.*.effectivePeriod.start' => [
-            //                'required_with:clinicalImpressions',
-            //                'date',
-            //                'before_or_equal:now'
-            //            ],
-            //            'clinicalImpressions.*.effectivePeriod.end' => [
-            //                'required_with:clinicalImpressions',
-            //                'date',
-            //                'before_or_equal:now',
-            //                'after:clinicalImpressions.*.effectivePeriod.start'
-            //            ]
+            'clinicalImpressions.*.uuid' => ['nullable', 'uuid'],
+            'clinicalImpressions.*.codeCode' => [
+                'required_with:clinicalImpressions',
+                'string',
+                'max:255',
+                new InDictionary('eHealth/clinical_impression_patient_categories')
+            ],
+            'clinicalImpressions.*.description' => ['nullable', 'string', 'max:1000'],
+            'clinicalImpressions.*.effectivePeriodStartDate' => [
+                'required_with:clinicalImpressions',
+                'date',
+                'before_or_equal:' . ($this->encounter['periodDate'] ?? 'today'),
+            ],
+            'clinicalImpressions.*.effectivePeriodStartTime' => [
+                'required_with:clinicalImpressions',
+                'date_format:H:i',
+            ],
+            'clinicalImpressions.*.effectivePeriodEndDate' => Rule::forEach(fn (mixed $value, string $attribute) => [
+                'required_with:clinicalImpressions',
+                'date',
+                'before_or_equal:today',
+                'after_or_equal:' . ($this->clinicalImpressions[(int)explode(
+                    '.',
+                    $attribute
+                )[1]]['effectivePeriodStartDate'] ?? 'today'),
+            ]),
+            'clinicalImpressions.*.effectivePeriodEndTime' => Rule::forEach(function (mixed $value, string $attribute) {
+                $index = (int)explode('.', $attribute)[1];
+                $clinicalImpression = $this->clinicalImpressions[$index];
+
+                return [
+                    'required_with:clinicalImpressions',
+                    'date_format:H:i',
+                    new PastDateTime($clinicalImpression['effectivePeriodEndDate'] ?? ''),
+                    new AfterOrEqualDateTime(
+                        $clinicalImpression['effectivePeriodEndDate'] ?? '',
+                        $clinicalImpression['effectivePeriodStartDate'] ?? '',
+                        $clinicalImpression['effectivePeriodStartTime'] ?? ''
+                    ),
+                ];
+            }),
+            'clinicalImpressions.*.note' => ['nullable', 'string', 'max:3000'],
+            'clinicalImpressions.*.previous' => ['nullable', 'array'],
+            'clinicalImpressions.*.previous.*.id' => ['required_with:clinicalImpressions.*.previous', 'uuid'],
+            'clinicalImpressions.*.problems' => ['nullable', 'array'],
+            'clinicalImpressions.*.problems.*.id' => ['required_with:clinicalImpressions.*.problems', 'uuid'],
+            'clinicalImpressions.*.findings' => ['nullable', 'array'],
+            'clinicalImpressions.*.findings.*.id' => ['required_with:clinicalImpressions.*.findings', 'uuid'],
+            'clinicalImpressions.*.findings.*.type' => ['required_with:clinicalImpressions.*.findings', 'string'],
+            'clinicalImpressions.*.supportingInfo' => ['nullable', 'array'],
+            'clinicalImpressions.*.supportingInfo.*.id' => [
+                'required_with:clinicalImpressions.*.supportingInfo',
+                'uuid'
+            ],
+            'clinicalImpressions.*.supportingInfo.*.type' => [
+                'required_with:clinicalImpressions.*.supportingInfo',
+                'string'
+            ],
         ];
 
         $this->addAllowedEncounterClasses($rules);

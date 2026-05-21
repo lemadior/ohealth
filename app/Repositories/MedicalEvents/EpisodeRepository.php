@@ -91,6 +91,24 @@ class EpisodeRepository extends BaseRepository
      * @param  string  $uuid
      * @return array|null
      */
+    public function getDetailsMapByUuids(array $uuids): array
+    {
+        return collect(
+            Episode::whereIn('uuid', $uuids)
+                ->select(['uuid', 'name', 'created_at'])
+                ->get()
+                ->toArray()
+        )
+            ->mapWithKeys(fn (array $episode) => [
+                $episode['uuid'] => [
+                    'ehealthInsertedAt' => $episode['createdAt'] ?? null,
+                    'codeCode' => $episode['name'] ?? null,
+                    'type' => 'episode_of_care',
+                ],
+            ])
+            ->toArray();
+    }
+
     public function getForClinicalImpression(string $uuid): ?array
     {
         return Episode::whereUuid($uuid)

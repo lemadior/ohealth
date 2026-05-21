@@ -68,8 +68,7 @@ class EncounterCreate extends EncounterComponent
             return;
         }
 
-        // Prepare and format data after validation
-        $formattedData = $this->prepareFormattedData($validated);
+        $formattedData = $this->packageBuilder->build($validated, $this->episodeType);
 
         try {
             $encounterId = $this->storeValidatedData($formattedData);
@@ -117,7 +116,7 @@ class EncounterCreate extends EncounterComponent
             return;
         }
 
-        $formattedData = $this->prepareFormattedData($validatedData);
+        $formattedData = $this->packageBuilder->build($validatedData, $this->episodeType);
 
         try {
             $this->storeValidatedData($formattedData);
@@ -177,28 +176,9 @@ class EncounterCreate extends EncounterComponent
     {
         $now = CarbonImmutable::now();
 
-        $this->form->encounter['periodDate'] = $now->format('Y-m-d');
+        $this->form->encounter['periodDate'] = $now->format(config('app.date_format'));
         $this->form->encounter['periodStart'] = $now->format('H:i');
         $this->form->encounter['periodEnd'] = $now->addMinutes(15)->format('H:i');
-    }
-
-    /**
-     * Prepare formatted data.
-     *
-     * @param  array  $validated
-     * @return array
-     */
-    protected function prepareFormattedData(array $validated): array
-    {
-        $package = $this->packageBuilder->build($validated, $this->episodeType);
-
-        if (!empty($this->form->clinicalImpressions)) {
-            $package['clinicalImpressions'] = Repository::encounter()->formatClinicalImpressionsRequest(
-                $this->form->clinicalImpressions
-            );
-        }
-
-        return $package;
     }
 
     /**
@@ -244,11 +224,7 @@ class EncounterCreate extends EncounterComponent
             }
 
             if (isset($formattedData['clinicalImpressions'])) {
-                Repository::clinicalImpression()->store(
-                    $formattedData['clinicalImpressions'],
-                    $this->personId,
-                    $createdEncounterId
-                );
+                Repository::clinicalImpression()->store($formattedData['clinicalImpressions'], $this->personId);
 
                 // Save the selected episode_of_care, procedure, diagnostic_report, encounter locally if they don't exist in our database.
                 foreach ($formattedData['clinicalImpressions'] as $clinicalImpression) {
@@ -302,6 +278,7 @@ class EncounterCreate extends EncounterComponent
      */
     private function processSupportingInfo(array $clinicalImpression): void
     {
+        // todo: test it!
         if (!isset($clinicalImpression['supportingInfo'])) {
             return;
         }
@@ -401,7 +378,7 @@ class EncounterCreate extends EncounterComponent
             $diagnosticReportData = EHealth::diagnosticReport()->getById($this->patientUuid, $uuid)->getData();
 
             try {
-                Repository::diagnosticReport()->store([Arr::toCamelCase($diagnosticReportData)]);
+                Repository::diagnosticReport()->store([Arr::toCamelCase($diagnosticReportData)], $this->personId);
             } catch (Throwable $exception) {
                 $this->logDatabaseErrors($exception, 'Failed to store diagnostic report');
                 Session::flash('error', __('messages.database_error'));

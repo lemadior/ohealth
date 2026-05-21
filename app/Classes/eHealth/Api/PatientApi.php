@@ -13,23 +13,6 @@ class PatientApi
     protected const string ENDPOINT_PATIENT = '/api/patients';
 
     /**
-     * Get condition data by ID.
-     *
-     * @param  string  $patientId
-     * @param  string  $conditionId
-     * @return array
-     * @throws ApiException
-     */
-    public static function getConditionById(string $patientId, string $conditionId): array
-    {
-        return new Request(
-            HttpRequest::METHOD_GET,
-            self::ENDPOINT_PATIENT . "/$patientId/conditions/$conditionId",
-            []
-        )->sendRequest();
-    }
-
-    /**
      * Get conditions in episode context.
      *
      * @param  string  $patientUuid
@@ -43,40 +26,6 @@ class PatientApi
         return new Request(
             HttpRequest::METHOD_GET,
             self::ENDPOINT_PATIENT . "/$patientUuid/episodes/$episodeUuid/conditions",
-            $params
-        )->sendRequest();
-    }
-
-    /**
-     * Get observation data by ID.
-     *
-     * @param  string  $patientId
-     * @param  string  $observationId
-     * @return array
-     * @throws ApiException
-     */
-    public static function getObservationById(string $patientId, string $observationId): array
-    {
-        return new Request(
-            HttpRequest::METHOD_GET,
-            self::ENDPOINT_PATIENT . "/$patientId/observations/$observationId",
-            []
-        )->sendRequest();
-    }
-
-    /**
-     * Get Clinical impression list for a specified patient filtered by search params.
-     *
-     * @param  string  $patientId
-     * @param  array  $params
-     * @return array
-     * @throws ApiException
-     */
-    public static function getClinicalImpressionBySearchParams(string $patientId, array $params): array
-    {
-        return new Request(
-            HttpRequest::METHOD_GET,
-            self::ENDPOINT_PATIENT . "/$patientId/clinical_impressions",
             $params
         )->sendRequest();
     }

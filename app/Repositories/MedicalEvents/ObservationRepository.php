@@ -290,7 +290,7 @@ class ObservationRepository extends BaseRepository
         )
             ->mapWithKeys(fn (array $observation) => [
                 $observation['uuid'] => [
-                    'insertedAt' => $observation['ehealthInsertedAt'] ?? null,
+                    'ehealthInsertedAt' => $observation['ehealthInsertedAt'] ?? null,
                     'codeCode' => data_get($observation, 'code.coding.0.code'),
                     'type' => 'observation'
                 ]
@@ -332,12 +332,12 @@ class ObservationRepository extends BaseRepository
             ?->toArray();
     }
 
-     /**
-     * Get observations data that is related to the person.
-     *
+    /**
+    * Get observations data that is related to the person.
+    *
      * @param  int  $personId
      * @return array|null
-     */
+    */
     public function getByPersonId(int $personId): array
     {
         return $this->model

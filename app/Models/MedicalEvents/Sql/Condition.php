@@ -153,8 +153,6 @@ class Condition extends Model
             'severity.coding',
             'bodySites.coding',
             'stageSummary.coding',
-            'evidencesRelation.codes.coding',
-            'evidencesRelation.details.type.coding'
         ]);
     }
 }

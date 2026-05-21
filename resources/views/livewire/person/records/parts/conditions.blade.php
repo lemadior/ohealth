@@ -14,7 +14,7 @@
                 $system = data_get($condition, 'code.coding.0.system');
                 $code = data_get($condition, 'code.coding.0.code');
 
-                $codeLabel = $this->dictionaries[$system][$code];
+                $codeLabel = $this->dictionaries[$system][$code] ?? $code;
             @endphp
             <div class="record-inner-column flex-1">
                 <div class="record-inner-label">{{ __('patients.code_and_name') }}</div>

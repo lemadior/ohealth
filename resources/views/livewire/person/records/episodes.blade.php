@@ -34,9 +34,17 @@
                 <p>{{ __('patients.search_episode') }}</p>
             </div>
 
-            <div class="form-row-3 mb-6" x-data="{ dictionary: '', filterCode: $wire.entangle('filterCode') }">
+            <div class="form-row-3 mb-6" x-data="{
+                dictionary: '',
+                filterCode: $wire.entangle('filterCode'),
+                icd10Results: $wire.entangle('icd10Results'),
+                showIcd10Results: false
+            }">
                 <div class="form-group group" >
-                    <select x-model="dictionary" class="input-select peer w-full mb-1 text-sm">
+                    <select x-model="dictionary"
+                            @change="filterCode = ''"
+                            class="input-select peer w-full mb-1 text-sm"
+                    >
                         <option value="" selected>{{ __('forms.select') }}</option>
                         <option value="icd10">ICD-10-AM</option>
                         <option value="icpc2">ICPC-2</option>
@@ -45,12 +53,34 @@
                 </div>
 
                 <div class="form-group group" x-show="dictionary">
-                    <div x-show="dictionary === 'icd10'">
-                        <x-select2 modelPath="filterCode"
-                                   dictionaryName="eHealth/ICD10_AM/condition_codes"
-                                   id="filterCodeIcd10"
-                                   class="input-select peer w-full"
+                    <div x-show="dictionary === 'icd10'" class="relative">
+                        <input type="text"
+                               :value="filterCode"
+                               @input.debounce.300ms="
+                                   filterCode = $event.target.value;
+                                   let value = $event.target.value;
+                                   let isEnglish = /^[a-zA-Z]+$/.test(value);
+                                   if ((isEnglish && value.length >= 1) || (!isEnglish && value.length >= 3)) {
+                                       $wire.searchICD10(value);
+                                       showIcd10Results = true;
+                                   }
+                               "
+                               @click.away="showIcd10Results = false"
+                               id="filterCodeIcd10"
+                               class="input-select peer w-full"
+                               placeholder="{{ __('forms.type_to_search') }}"
+                               autocomplete="off"
                         />
+                        <div x-show="showIcd10Results && icd10Results.length > 0"
+                             class="absolute left-0 top-full z-10 max-h-60 w-full overflow-auto rounded-lg border bg-white dark:bg-gray-800 p-1.5 shadow-lg"
+                        >
+                            <template x-for="result in icd10Results" :key="result.code">
+                                <div class="cursor-pointer rounded-md px-2 py-1.5 text-sm dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                                     @click="filterCode = result.code; showIcd10Results = false"
+                                     x-text="result.code + ' - ' + result.description"
+                                ></div>
+                            </template>
+                        </div>
                     </div>
                     <div x-show="dictionary === 'icpc2'">
                         <x-select2 modelPath="filterCode"

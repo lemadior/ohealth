@@ -26,13 +26,13 @@
             </tr>
             </thead>
             <tbody>
-            <template x-for="(previous, index) in modalClinicalImpression.previousList">
+            <template x-for="(previous, index) in modalClinicalImpression.previous">
                 <tr>
                     <td class="td-input"
-                        x-text="new Date(previous.inserted_at).toLocaleDateString('uk-UA')"
+                        x-text="previous.ehealthInsertedAt || ''"
                     ></td>
                     <td class="td-input"
-                        x-text="`${ previous.code.coding[0].code } - ${ dictionary[previous.code.coding[0].code] }`"
+                        x-text="`${ previous.codeCode } - ${ dictionary[previous.codeCode] }`"
                     ></td>
                     <td class="td-input">
                         {{-- That all that is needed for the dropdown --}}
@@ -89,22 +89,26 @@
                                 >
 
                                     <button @click="
-                                                openModal = true; {{-- Open the modal --}}
-                                                item = index; {{-- Identify the item we are corrently editing --}}
-                                                {{-- Replace the previous previous with the current, don't assign object directly (modalPrevious = previous) to avoid reactiveness --}}
+                                                item = index;
                                                 modalPrevious = new Previous(previous);
-                                                newPrevious = false; {{-- This previous is already created --}}
-                                                searchResults = modalClinicalImpression.previousList;
+                                                newPrevious = false;
+                                                if ($wire.clinicalImpressions.length > 0) {
+                                                    searchResults = JSON.parse(JSON.stringify($wire.clinicalImpressions));
+                                                    openModal = true;
+                                                } else {
+                                                    $wire.searchClinicalImpressions().then(() => {
+                                                        searchResults = JSON.parse(JSON.stringify($wire.clinicalImpressions));
+                                                        openModal = true;
+                                                    });
+                                                }
                                             "
-                                            @click.prevent
                                             class="dropdown-button"
                                     >
                                         {{ __('forms.edit') }}
                                     </button>
 
-                                    <button
-                                        @click.prevent="modalClinicalImpression.previousList.splice(index, 1); close($refs.button);"
-                                        class="dropdown-button dropdown-delete"
+                                    <button class="dropdown-button dropdown-delete"
+                                        @click.prevent="modalClinicalImpression.previous.splice(index, 1); close($refs.button);"
                                     >
                                         {{ __('forms.delete') }}
                                     </button>
@@ -120,11 +124,18 @@
         <div>
             {{-- Button to trigger the modal --}}
             <button @click.prevent="
-                        openModal = true; {{-- Open the Modal --}}
-                        newPrevious = true; {{-- We are adding a new previous --}}
-                        modalPrevious = new Previous(); {{-- Replace the data of the previous previous with a new one--}}
-                        searchResults = [];  {{-- Clear the search results --}}
-                        selectedPreviousIds = []; {{-- Clear the selected previous IDs --}}
+                        newPrevious = true;
+                        modalPrevious = new Previous();
+                        selectedPreviousIds = [];
+                        if ($wire.clinicalImpressions.length > 0) {
+                            searchResults = JSON.parse(JSON.stringify($wire.clinicalImpressions));
+                            openModal = true;
+                        } else {
+                            $wire.searchClinicalImpressions().then(() => {
+                                searchResults = JSON.parse(JSON.stringify($wire.clinicalImpressions));
+                                openModal = true;
+                            });
+                        }
                     "
                     class="item-add my-5"
             >
@@ -162,44 +173,6 @@
 
                             {{-- Content --}}
                             <form>
-                                {{-- Episode info in which the search happens --}}
-                                <div class="form-row-modal">
-                                    <div class="form-group group">
-                                        <select id="episodeId"
-                                                class="input-modal peer"
-                                                x-model="modalPrevious.selectedEpisodeId"
-                                        >
-                                            <option value="" selected>
-                                                {{ __('forms.select') }} {{ mb_strtolower(__('care-plan.episode')) }}
-                                            </option>
-                                            @foreach($episodes as $key => $episode)
-                                                <option value="{{ $episode['uuid'] }}">
-                                                    {{ $episode['name'] }} ({{ __('patients.' . $episode['status']) }})
-                                                    {{ __('forms.start') }} {{ CarbonImmutable::parse($episode['ehealth_inserted_at'])->format('d.m.Y') }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    {{-- Search button --}}
-                                    <div>
-                                        <button @click.prevent="
-                                                    $wire.searchClinicalImpressions(modalPrevious.selectedEpisodeId).then(() => {
-                                                        searchResults = JSON.parse(JSON.stringify($wire.clinicalImpressions));
-                                                        selectedPreviousIds = [];
-                                                    })
-                                                "
-                                                class="flex items-center gap-2 button-primary"
-                                                :disabled="!modalPrevious.selectedEpisodeId"
-                                        >
-                                            @icon('search', 'w-4 h-4')
-                                            <span>{{ __('patients.search') }}</span>
-                                        </button>
-                                    </div>
-
-                                    <x-forms.loading/>
-                                </div>
-
                                 {{-- A table that shows the results of the found data --}}
                                 <template x-if="searchResults.length > 0">
                                     <div class="table-container">
@@ -216,12 +189,12 @@
                                                 </thead>
                                                 <tbody>
                                                 <template x-for="clinicalImpression in searchResults"
-                                                          :key="clinicalImpression.id"
+                                                          :key="clinicalImpression.uuid"
                                                 >
                                                     <tr class="border-b dark:border-gray-700">
                                                         <th scope="row" class="table-cell-primary">
                                                             <div class="text-base"
-                                                                 x-text="new Date(clinicalImpression.inserted_at).toLocaleDateString('uk-UA')"
+                                                                 x-text="clinicalImpression.ehealthInsertedAt || ''"
                                                             ></div>
                                                         </th>
                                                         <td class="td-input"
@@ -229,7 +202,7 @@
                                                         ></td>
                                                         <td class="td-input">
                                                             <button @click.prevent="
-                                                                        const id = clinicalImpression.id;
+                                                                        const id = clinicalImpression.uuid;
                                                                         const index = selectedPreviousIds.indexOf(id);
 
                                                                         if (index === -1) {
@@ -239,7 +212,7 @@
                                                                         }
                                                                     "
                                                                     class="button-primary w-28"
-                                                                    x-text="selectedPreviousIds.includes(clinicalImpression.id)
+                                                                    x-text="selectedPreviousIds.includes(clinicalImpression.uuid)
                                                                         ? '{{ __('patients.added') }}'
                                                                         : '{{ __('forms.add') }}'"
                                                             >
@@ -269,20 +242,19 @@
 
                                     <button @click.prevent
                                             @click="
-                                            const existingIds = modalClinicalImpression.previousList.map(prv => prv.id);
+                                            const existingIds = modalClinicalImpression.previous.map(prv => prv.id);
 
                                                 {{-- Get only the new previous that are not already in the array --}}
                                                 const newPreviousList = searchResults
-                                                    .filter(previous => selectedPreviousIds.includes(previous.id) && !existingIds.includes(previous.id))
+                                                    .filter(previous => selectedPreviousIds.includes(previous.uuid) && !existingIds.includes(previous.uuid))
                                                     .map(previous => ({
-                                                        id: previous.id,
-                                                        inserted_at: previous.inserted_at,
-                                                        code: previous.code,
-                                                        selectedEpisodeId: modalPrevious.selectedEpisodeId
+                                                        id: previous.uuid,
+                                                        ehealthInsertedAt: previous.ehealthInsertedAt,
+                                                        codeCode: previous.code.coding[0].code,
                                                     }));
 
                                                 {{-- Add them to the array --}}
-                                                modalClinicalImpression.previousList = modalClinicalImpression.previousList.concat(newPreviousList);
+                                                modalClinicalImpression.previous = modalClinicalImpression.previous.concat(newPreviousList);
 
                                                 openModal = false;
                                                 searchResults = [];
@@ -306,8 +278,6 @@
      * Representation of the user's personal Previous
      */
     class Previous {
-        selectedEpisodeId = '';
-
         constructor(obj = null) {
             if (obj) {
                 Object.assign(this, JSON.parse(JSON.stringify(obj)));
