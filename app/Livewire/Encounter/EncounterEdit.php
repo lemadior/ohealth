@@ -347,6 +347,12 @@ class EncounterEdit extends EncounterComponent
         $this->form->clinicalImpressions = collect($clinicalImpressions)
             ->map(fn (array $clinicalImpression) => Fhir::clinicalImpression()->fromFhir($clinicalImpression, $detailsMap))
             ->toArray();
+
+        $icd10Items = collect($this->form->clinicalImpressions)
+            ->flatMap(fn (array $clinicalImpression) => array_merge($clinicalImpression['problems'] ?? [], $clinicalImpression['findings'] ?? []))
+            ->toArray();
+
+        $this->loadIcd10Descriptions($icd10Items);
     }
 
     /**

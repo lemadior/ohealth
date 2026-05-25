@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('paper_referrals', static function (Blueprint $table) {
-            $table->dateTime('service_request_date')->nullable()->change();
+            $table->timestamp('service_request_date')->nullable()->change();
         });
     }
 

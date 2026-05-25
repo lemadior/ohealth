@@ -34,6 +34,7 @@
                         x-text="`${ detail.codeCode } - ${
                             $wire.dictionaries['eHealth/LOINC/observation_codes'][detail.codeCode] ||
                             $wire.dictionaries['eHealth/ICF/classifiers'][detail.codeCode] ||
+                            $wire.dictionaries['eHealth/ICD10_AM/condition_codes'][detail.codeCode] ||
                             $wire.dictionaries['eHealth/ICPC2/condition_codes'][detail.codeCode]
                         }`"
                     ></td>

@@ -596,7 +596,7 @@ class EncounterForm extends BaseForm
             'clinicalImpressions.*.findings.*.id' => ['required_with:clinicalImpressions.*.findings', 'uuid'],
             'clinicalImpressions.*.findings.*.type' => ['required_with:clinicalImpressions.*.findings', 'string'],
             'clinicalImpressions.*.supportingInfo' => ['nullable', 'array'],
-            'clinicalImpressions.*.supportingInfo.*.id' => [
+            'clinicalImpressions.*.supportingInfo.*.uuid' => [
                 'required_with:clinicalImpressions.*.supportingInfo',
                 'uuid'
             ],

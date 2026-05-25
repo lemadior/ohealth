@@ -103,7 +103,7 @@ class ClinicalImpressionRepository extends BaseRepository
             ->mapWithKeys(fn (ClinicalImpression $clinicalImpression) => [
                 $clinicalImpression->uuid => [
                     'ehealthInsertedAt' => convertToAppDateFormat($clinicalImpression->ehealthInsertedAt),
-                    'codeCode' => data_get($clinicalImpression->code?->toArray(), 'coding.0.code'),
+                    'codeCode' => $clinicalImpression->code?->coding->first()?->code,
                     'type' => 'clinical_impression',
                 ],
             ])
@@ -211,7 +211,7 @@ class ClinicalImpressionRepository extends BaseRepository
             $existingFinding = $existingFindings[$index] ?? null;
 
             if ($existingFinding) {
-                $existingFinding->update(['basis' => $finding['basis']]);
+                $existingFinding->update(['basis' => $finding['basis'] ?? null]);
 
                 if ($existingFinding->itemReference) {
                     $this->updateIdentifier($existingFinding->itemReference, $finding['item_reference']);
@@ -222,7 +222,7 @@ class ClinicalImpressionRepository extends BaseRepository
 
                 $clinicalImpression->findings()->create([
                     'item_reference_id' => $identifier->id,
-                    'basis' => $finding['basis']
+                    'basis' => $finding['basis'] ?? null,
                 ]);
             }
         }

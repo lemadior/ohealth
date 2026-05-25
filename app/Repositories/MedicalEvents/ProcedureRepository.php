@@ -372,12 +372,12 @@ class ProcedureRepository extends BaseRepository
     public function getDetailsMapByUuids(array $uuids): array
     {
         return $this->model->whereIn('uuid', $uuids)
-            ->with(['code.type.coding', 'performedPeriod'])
+            ->with(['code', 'performedPeriod'])
             ->get()
             ->mapWithKeys(fn (Procedure $procedure) => [
                 $procedure->uuid => [
                     'ehealthInsertedAt' => convertToAppDateFormat($procedure->performedPeriod?->start),
-                    'codeCode' => data_get($procedure->code?->toArray(), 'identifier.type.coding.0.code'),
+                    'codeCode' => $procedure->code?->value,
                     'type' => 'procedure',
                 ],
             ])

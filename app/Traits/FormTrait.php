@@ -411,9 +411,9 @@ trait FormTrait
             return;
         }
 
-        $this->dictionaries['eHealth/ICD10_AM/condition_codes'] = DB::table('icd_10')
-            ->whereIn('code', $icd10Codes)
-            ->pluck('description', 'code')
-            ->toArray();
+        $this->dictionaries['eHealth/ICD10_AM/condition_codes'] = array_merge(
+            $this->dictionaries['eHealth/ICD10_AM/condition_codes'] ?? [],
+            DB::table('icd_10')->whereIn('code', $icd10Codes)->pluck('description', 'code')->toArray()
+        );
     }
 }
