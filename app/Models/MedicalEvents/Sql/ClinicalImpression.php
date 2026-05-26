@@ -65,7 +65,7 @@ class ClinicalImpression extends Model
     {
         return Attribute::make(
             get: fn () => isset($this->effectivePeriod['start'])
-                ? CarbonImmutable::parse($this->effectivePeriod['start'])->toDateString()
+                ? CarbonImmutable::parse($this->effectivePeriod['start'])->format(config('app.date_format'))
                 : null
         );
     }
@@ -74,7 +74,7 @@ class ClinicalImpression extends Model
     {
         return Attribute::make(
             get: fn () => isset($this->effectivePeriod['start'])
-                ? CarbonImmutable::parse($this->effectivePeriod['start'])->toTimeString()
+                ? CarbonImmutable::parse($this->effectivePeriod['start'])->format('H:i')
                 : null
         );
     }
@@ -83,7 +83,7 @@ class ClinicalImpression extends Model
     {
         return Attribute::make(
             get: fn () => isset($this->effectivePeriod['end'])
-                ? CarbonImmutable::parse($this->effectivePeriod['end'])->toDateString()
+                ? CarbonImmutable::parse($this->effectivePeriod['end'])->format(config('app.date_format'))
                 : null
         );
     }
@@ -92,7 +92,7 @@ class ClinicalImpression extends Model
     {
         return Attribute::make(
             get: fn () => isset($this->effectivePeriod['end'])
-                ? CarbonImmutable::parse($this->effectivePeriod['end'])->toTimeString()
+                ? CarbonImmutable::parse($this->effectivePeriod['end'])->format('H:i')
                 : null
         );
     }

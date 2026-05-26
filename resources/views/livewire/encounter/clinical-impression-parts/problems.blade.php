@@ -32,7 +32,7 @@
                         x-text="problem.ehealthInsertedAt || ''"
                     ></td>
                     <td class="td-input"
-                        x-text="`${ problem.codeCode } - ${ $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.codeCode] }`"
+                        x-text="`${ problem.codeCode } - ${ $wire.dictionaries['eHealth/ICD10_AM/condition_codes'][problem.codeCode] || $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.codeCode] }`"
                     ></td>
                     <td class="td-input">
                         {{-- That all that is needed for the dropdown --}}
@@ -197,7 +197,7 @@
                                                             ></div>
                                                         </th>
                                                         <td class="td-input"
-                                                            x-text="`${ problem.codeCode } - ${ $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.codeCode] }`"
+                                                            x-text="`${ problem.codeCode } - ${ $wire.dictionaries['eHealth/ICD10_AM/condition_codes'][problem.codeCode] || $wire.dictionaries['eHealth/ICPC2/condition_codes'][problem.codeCode] }`"
                                                         ></td>
                                                         <td class="td-input">
                                                             <button @click.prevent="

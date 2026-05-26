@@ -113,7 +113,7 @@ class ClinicalImpressionMapper implements FhirMapperContract
                 $details = $detailsMap[$uuid] ?? [];
 
                 return [
-                    'id' => $uuid,
+                    'uuid' => $uuid,
                     'type' => $type,
                     'ehealthInsertedAt' => $details['ehealthInsertedAt'] ?? null,
                     'code' => $details['codeCode'] ?? null,
@@ -124,18 +124,18 @@ class ClinicalImpressionMapper implements FhirMapperContract
 
         return [
             'uuid' => data_get($data, 'uuid'),
-            'codeCode' => data_get($data, 'code.coding.0.code', ''),
+            'codeCode' => data_get($data, 'code.coding.0.code'),
             'description' => data_get($data, 'description', ''),
             'effectivePeriodStartDate' => data_get($data, 'effectivePeriodStartDate', ''),
-            'effectivePeriodStartTime' => substr(data_get($data, 'effectivePeriodStartTime', '') ?? '', 0, 5),
+            'effectivePeriodStartTime' => data_get($data, 'effectivePeriodStartTime', ''),
             'effectivePeriodEndDate' => data_get($data, 'effectivePeriodEndDate', ''),
-            'effectivePeriodEndTime' => substr(data_get($data, 'effectivePeriodEndTime', '') ?? '', 0, 5),
+            'effectivePeriodEndTime' => data_get($data, 'effectivePeriodEndTime', ''),
             'note' => data_get($data, 'note', ''),
             'previous' => $previousId ? [
                 [
                     'id' => $previousId,
                     'ehealthInsertedAt' => $detailsMap[$previousId]['ehealthInsertedAt'] ?? null,
-                    'codeCode' => $detailsMap[$previousId]['codeCode'] ?? null,
+                    'codeCode' => $detailsMap[$previousId]['codeCode'] ?? null
                 ],
             ] : [],
             'problems' => collect(data_get($data, 'problems', []))
@@ -147,6 +147,7 @@ class ClinicalImpressionMapper implements FhirMapperContract
                         'id' => $uuid,
                         'ehealthInsertedAt' => $details['ehealthInsertedAt'] ?? null,
                         'codeCode' => $details['codeCode'] ?? null,
+                        'codeSystem' => $details['codeSystem'] ?? null
                     ];
                 })
                 ->toArray(),
@@ -161,10 +162,11 @@ class ClinicalImpressionMapper implements FhirMapperContract
                         'type' => $type,
                         'ehealthInsertedAt' => $details['ehealthInsertedAt'] ?? null,
                         'codeCode' => $details['codeCode'] ?? null,
+                        'codeSystem' => $details['codeSystem'] ?? null
                     ];
                 })
                 ->toArray(),
-            'supportingInfo' => $supportingInfo,
+            'supportingInfo' => $supportingInfo
         ];
     }
 
@@ -178,7 +180,7 @@ class ClinicalImpressionMapper implements FhirMapperContract
             ->map(
                 fn (array $info) => FhirResource::make()
                     ->coding('eHealth/resources', $info['type'])
-                    ->toIdentifier($info['id'])
+                    ->toIdentifier($info['uuid'])
             )
             ->values()
             ->toArray();

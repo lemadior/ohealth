@@ -137,6 +137,7 @@
                             });
                         }
                     "
+                    x-show="modalClinicalImpression.previous.length === 0"
                     class="item-add my-5"
             >
                 {{ __('forms.add') }}

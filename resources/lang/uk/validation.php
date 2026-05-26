@@ -744,7 +744,8 @@ return [
             'effectivePeriodStartTime' => 'час початку клінічної оцінки',
             'effectivePeriodEndDate' => 'дата завершення клінічної оцінки',
             'effectivePeriodEndTime' => 'час завершення клінічної оцінки',
-            'note' => 'опис клінічної оцінки'
+            'note' => 'опис клінічної оцінки',
+            'supportingInfo.*.uuid' => 'допоміжна медична інформація',
         ],
 
         // Declaration

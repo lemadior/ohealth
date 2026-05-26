@@ -29,8 +29,7 @@
                         x-text="(() => {
                             const dictName = $wire.dictionaries['eHealth/LOINC/observation_codes'][supporting.code] ||
                                              $wire.dictionaries['eHealth/ICF/classifiers'][supporting.code] ||
-                                             $wire.dictionaries['eHealth/ICPC2/condition_codes'][supporting.code] ||
-                                             supporting.code;
+                                             $wire.dictionaries['eHealth/ICPC2/condition_codes'][supporting.code];
 
                             if (dictName) {
                                 return `${ supporting.code } - ${ dictName }`;
@@ -157,7 +156,7 @@
                                                 class="input-modal peer"
                                         >
                                             <option value="" selected>
-                                                {{ __('forms.select') }} {{ __('patients.medical_records_type') }}
+                                                {{ __('forms.select') }} {{ __('patients.supporting_medical_information') }}
                                             </option>
                                             <option value="episodes">{{ __('patients.episodes') }}</option>
                                             <option value="encounter">{{ __('patients.encounters') }}</option>
@@ -192,7 +191,7 @@
                                                 </tr>
                                                 </thead>
                                                 <tbody>
-                                                <template x-for="result in $wire.supportingInfoResults" :key="result.id">
+                                                <template x-for="result in $wire.supportingInfoResults" :key="result.uuid">
                                                     <tr class="border-b dark:border-gray-700">
                                                         <th scope="row" class="table-cell-primary">
                                                             <div class="text-base"
@@ -203,8 +202,7 @@
                                                             x-text="(() => {
                                                                 const dictName = $wire.dictionaries['eHealth/LOINC/observation_codes'][result.code] ||
                                                                                  $wire.dictionaries['eHealth/ICF/classifiers'][result.code] ||
-                                                                                 $wire.dictionaries['eHealth/ICPC2/condition_codes'][result.code] ||
-                                                                                 result.code;
+                                                                                 $wire.dictionaries['eHealth/ICPC2/condition_codes'][result.code];
 
                                                                 if (dictName) {
                                                                     return `${ result.code } - ${ dictName }`;
@@ -216,7 +214,7 @@
                                                         ></td>
                                                         <td class="td-input">
                                                             <button @click.prevent="
-                                                                        const id = result.id;
+                                                                        const id = result.uuid;
                                                                         const index = selectedSupportingInfoIds.indexOf(id);
 
                                                                         if (index === -1) {
@@ -226,7 +224,7 @@
                                                                         }
                                                                     "
                                                                     class="button-primary w-28"
-                                                                    x-text="selectedSupportingInfoIds.includes(result.id)
+                                                                    x-text="selectedSupportingInfoIds.includes(result.uuid)
                                                                         ? '{{ __('patients.added') }}'
                                                                         : '{{ __('forms.add') }}'"
                                                             >
@@ -256,10 +254,10 @@
 
                                     <button @click.prevent
                                             @click="
-                                                const existingIds = modalClinicalImpression.supportingInfo.map(supportingInfo => supportingInfo.id);
+                                                const existingIds = modalClinicalImpression.supportingInfo.map(supportingInfo => supportingInfo.uuid);
 
                                                 const newItems = $wire.supportingInfoResults
-                                                    .filter(result => selectedSupportingInfoIds.includes(result.id) && !existingIds.includes(result.id));
+                                                    .filter(result => selectedSupportingInfoIds.includes(result.uuid) && !existingIds.includes(result.uuid));
 
                                                 modalClinicalImpression.supportingInfo = modalClinicalImpression.supportingInfo.concat(newItems);
 

@@ -288,7 +288,11 @@ class EncounterComponent extends Component
 
     public function boot(): void
     {
+        $icd10Cache = $this->dictionaries['eHealth/ICD10_AM/condition_codes'] ?? [];
+
         $this->getDictionary();
+
+        $this->dictionaries['eHealth/ICD10_AM/condition_codes'] = $icd10Cache;
 
         $this->observationLoincCodeMap = config('observation.category_codes.loinc', []);
         $this->observationCustomCodeMap = config('observation.category_codes.custom', []);
@@ -521,11 +525,17 @@ class EncounterComponent extends Component
         }
 
         try {
-            $this->clinicalImpressions = EHealth::clinicalImpression()->getSummary(
-                $this->patientUuid,
-                ['status' => ClinicalImpressionStatus::COMPLETED->value]
-            )->validate();
-            $this->clinicalImpressions = Arr::toCamelCase($this->clinicalImpressions);
+            $this->clinicalImpressions = collect(
+                EHealth::clinicalImpression()->getSummary(
+                    $this->patientUuid,
+                    ['status' => ClinicalImpressionStatus::COMPLETED->value]
+                )->validate()
+            )->map(static function (array $item) {
+                $item = Arr::toCamelCase($item);
+                $item['ehealthInsertedAt'] = convertToAppDateFormat($item['ehealthInsertedAt'] ?? null);
+
+                return $item;
+            })->all();
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
             $this->handleEHealthExceptions($exception, 'Error while getting clinical impressions');
 
@@ -552,11 +562,14 @@ class EncounterComponent extends Component
                 )->validate()
             )->map(static fn (array $item) => [
                 'id' => data_get($item, 'uuid'),
-                'ehealthInsertedAt' => data_get($item, 'ehealth_inserted_at'),
-                'codeCode' => data_get($item, 'code.coding.0.code')
+                'ehealthInsertedAt' => convertToAppDateFormat(data_get($item, 'ehealth_inserted_at')),
+                'codeCode' => data_get($item, 'code.coding.0.code'),
+                'codeSystem' => data_get($item, 'code.coding.0.system')
             ])
                 ->values()
                 ->all();
+
+            $this->loadIcd10Descriptions($this->problems);
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
             $this->handleEHealthExceptions($exception, 'Error while searching for problems');
         }
@@ -574,46 +587,48 @@ class EncounterComponent extends Component
             $this->supportingInfoResults = match ($type) {
                 'episodes' => collect($this->episodes)
                     ->map(fn (array $episode) => [
-                        'id' => data_get($episode, 'uuid'),
-                        'ehealthInsertedAt' => data_get($episode, 'ehealthInsertedAt'),
+                        'uuid' => data_get($episode, 'uuid'),
+                        'ehealthInsertedAt' => convertToAppDateFormat(data_get($episode, 'ehealthInsertedAt')),
                         'code' => data_get($episode, 'name'),
-                        'type' => 'episode_of_care',
+                        'type' => 'episode_of_care'
                     ])
                     ->values()
                     ->all(),
-                'encounter' => collect(EHealth::encounter()->getBySearchParams($this->patientUuid, $params)->getData())
+                'encounter' => collect(EHealth::encounter()->getBySearchParams($this->patientUuid, $params)->validate())
                     ->map(function (array $encounter) {
                         $primaryDiagnosis = collect(data_get($encounter, 'diagnoses', []))
                             ->first(fn (array $diagnosis) => data_get($diagnosis, 'role.coding.0.code') === 'primary');
 
                         return [
-                            'id' => data_get($encounter, 'id'),
-                            'ehealthInsertedAt' => data_get($encounter, 'inserted_at'),
-                            'code' => data_get($primaryDiagnosis, 'code.coding.0.code', ''),
-                            'type' => 'encounter',
+                            'uuid' => data_get($encounter, 'uuid'),
+                            'ehealthInsertedAt' => convertToAppDateFormat(data_get($encounter, 'ehealth_inserted_at')),
+                            'code' => data_get($primaryDiagnosis, 'code.coding.0.code'),
+                            'type' => 'encounter'
                         ];
                     })
                     ->values()
                     ->all(),
-                'procedure' => collect(EHealth::procedure()->getBySearchParams($this->patientUuid, $params)->getData())
+                'procedure' => collect(EHealth::procedure()->getBySearchParams($this->patientUuid, $params)->validate())
                     ->map(fn (array $procedure) => [
-                        'id' => data_get($procedure, 'id'),
-                        'ehealthInsertedAt' => data_get($procedure, 'inserted_at'),
-                        'code' => data_get($procedure, 'code.identifier.value', ''),
-                        'type' => 'procedure',
+                        'uuid' => data_get($procedure, 'uuid'),
+                        'ehealthInsertedAt' => convertToAppDateFormat(data_get($procedure, 'ehealth_inserted_at')),
+                        'code' => data_get($procedure, 'code.identifier.value'),
+                        'type' => 'procedure'
                     ])
                     ->values()
                     ->all(),
-                'diagnosticReport' => collect(EHealth::diagnosticReport()->getBySearchParams($this->patientUuid, $params)->getData())
+                'diagnosticReport' => collect(
+                    EHealth::diagnosticReport()->getBySearchParams($this->patientUuid, $params)->validate()
+                )
                     ->map(fn (array $report) => [
-                        'id' => data_get($report, 'id'),
-                        'ehealthInsertedAt' => data_get($report, 'inserted_at'),
-                        'code' => data_get($report, 'code.identifier.value', ''),
-                        'type' => 'diagnostic_report',
+                        'uuid' => data_get($report, 'uuid'),
+                        'ehealthInsertedAt' => convertToAppDateFormat(data_get($report, 'ehealth_inserted_at')),
+                        'code' => data_get($report, 'code.identifier.value'),
+                        'type' => 'diagnostic_report'
                     ])
                     ->values()
                     ->all(),
-                default => [],
+                default => []
             };
         } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
             $this->handleEHealthExceptions($exception, "Error while searching for $type in Encounter Component");
