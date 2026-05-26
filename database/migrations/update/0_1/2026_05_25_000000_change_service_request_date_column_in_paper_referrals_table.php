@@ -3,22 +3,29 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('paper_referrals', static function (Blueprint $table) {
-            $table->timestamp('service_request_date')->nullable()->change();
-        });
+        DB::statement('
+            ALTER TABLE paper_referrals
+            ALTER COLUMN service_request_date
+            TYPE timestamp(0) WITHOUT TIME ZONE
+            USING service_request_date::timestamp(0) WITHOUT TIME ZONE
+        ');
+
+        DB::statement('ALTER TABLE paper_referrals ALTER COLUMN service_request_date DROP NOT NULL');
     }
 
     public function down(): void
     {
-        Schema::table('paper_referrals', static function (Blueprint $table) {
-            $table->string('service_request_date')->nullable()->change();
-        });
+        DB::statement('
+            ALTER TABLE paper_referrals
+            ALTER COLUMN service_request_date
+            TYPE varchar(255)
+            USING service_request_date::varchar
+        ');
     }
 };
