@@ -84,9 +84,9 @@ class DeclarationIndex extends Component
      *
      * @var array|string[]
      */
-    public array $statusFilter = ['active', 'CANCELLED'];
+    public array $statusFilter = [Status::ACTIVE->value];
 
-    public array $reorganizationFilter = [ReorganizedStatus::TO_BE_RESIGNED->value];
+    public array $reorganizationFilter = [];
 
     /**
      * Filter for multiselect doctors
@@ -223,8 +223,8 @@ class DeclarationIndex extends Component
         $this->searchByName = '';
         $this->searchByNumber = '';
         $this->typeFilter = ['request', 'declaration'];
-        $this->statusFilter = ['active', 'CANCELLED'];
-        $this->reorganizationFilter = [ReorganizedStatus::TO_BE_RESIGNED->value, ReorganizedStatus::RESIGNED->value];
+        $this->statusFilter = [Status::ACTIVE->value];
+        $this->reorganizationFilter = [];
         $this->doctorFilter = [];
 
         $this->isFiltersApplied = false;
@@ -290,25 +290,6 @@ class DeclarationIndex extends Component
                 });
             }
 
-            // Filter by reorganization type
-            if (!empty($this->reorganizationFilter)) {
-                $allItems = $allItems->filter(function (DeclarationRequest|Declaration $item) {
-                    if ($item instanceof DeclarationRequest) {
-                        return false;
-                    }
-
-                    if ($item->reorganizedEmployeeDeclaration) {
-                        if ($item->hasParentDeclaration()) {
-                            return \in_array(ReorganizedStatus::RESIGNED->value, $this->reorganizationFilter, true);
-                        } else {
-                            return \in_array(ReorganizedStatus::TO_BE_RESIGNED->value, $this->reorganizationFilter, true);
-                        }
-                    }
-
-                    return false;
-                });
-            }
-
             // Search by first and last name
             if (!empty($this->searchByName)) {
                 $searchTerm = Str::lower(trim($this->searchByName));
@@ -337,6 +318,25 @@ class DeclarationIndex extends Component
                 $allItems = $allItems->filter(function (DeclarationRequest|Declaration $item) {
                     if ($item instanceof Declaration) {
                         return \in_array($item->employee->uuid, $this->doctorFilter, true);
+                    }
+
+                    return false;
+                });
+            }
+
+            // Filter by reorganization type
+            if (!empty($this->reorganizationFilter)) {
+                $allItems = $allItems->filter(function (DeclarationRequest|Declaration $item) {
+                    if ($item instanceof DeclarationRequest) {
+                        return false;
+                    }
+
+                    if ($item->reorganizedEmployeeDeclaration) {
+                        if ($item->hasParentDeclaration()) {
+                            return \in_array(ReorganizedStatus::RESIGNED->value, $this->reorganizationFilter, true);
+                        } else {
+                            return \in_array(ReorganizedStatus::TO_BE_RESIGNED->value, $this->reorganizationFilter, true);
+                        }
                     }
 
                     return false;
