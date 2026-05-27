@@ -8,7 +8,6 @@ use App\Classes\eHealth\EHealth;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Session;
 
 trait BaseAddress
 {
@@ -191,19 +190,8 @@ trait BaseAddress
 
         try {
             $this->{$districts} = EHealth::address()->getDistricts(['region' => $area, 'name' => $region])->getData();
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error when searching for districts');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when searching for districts');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when searching for districts');
 
             return;
         }
@@ -224,19 +212,8 @@ trait BaseAddress
             $this->{$settlements} = EHealth::address()->getSettlements(
                 ['region' => $area, 'district' => $region, 'name' => $settlement]
             )->getData();
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error when searching for settlements');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when searching for settlements');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when searching for settlements');
 
             return;
         }
@@ -257,19 +234,8 @@ trait BaseAddress
             $this->{$streets} = EHealth::address()->getStreets(
                 ['settlement_id' => $settlementId, 'type' => $streetType, 'name' => $street]
             )->getData();
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error when searching for streets');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when searching for streets');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when searching for streets');
 
             return;
         }

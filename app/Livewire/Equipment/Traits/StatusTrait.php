@@ -49,19 +49,8 @@ trait StatusTrait
 
         try {
             $response = EHealth::equipment()->changeStatus($equipment->uuid, removeEmptyKeys(Arr::toSnakeCase($validated)));
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when updating status of equipment');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ.");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when updating status of equipment');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when updating status of equipment');
 
             return;
         }
@@ -102,19 +91,8 @@ trait StatusTrait
                 $uuid,
                 removeEmptyKeys(Arr::toSnakeCase($validated))
             );
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when updating availability status of equipment');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ.");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when updating availability status of equipment');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when updating availability status of equipment');
 
             return;
         }

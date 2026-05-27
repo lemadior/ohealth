@@ -422,18 +422,8 @@ class LegalEntityDetails extends LegalEntityComponent
             $validated = $response->validate();
 
             Repository::legalEntity()->saveLegators($legalEntity, $validated);
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when getting a legators list');
-
-            Session::flash('error', __('errors.ehealth.messages.server_error'));
-
-            $legalEntity?->setEntityStatus(JobStatus::FAILED);
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error connecting when getting a legators list');
-
-            Session::flash('error', __('errors.ehealth.messages.server_error'));
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error connecting when getting a legators list');
 
             $legalEntity?->setEntityStatus(JobStatus::FAILED);
 

@@ -79,19 +79,8 @@ class EmployeeRoleCreate extends Component
 
         try {
             $response = EHealth::employeeRole()->create(Arr::toSnakeCase($validated));
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when creating an employee role');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ.");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when creating an employee role');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when creating an employee role');
 
             return;
         }

@@ -47,14 +47,8 @@ class LicenseIndex extends Component
     {
         try {
             $response = EHealth::license()->getMany();
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when getting licenses');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when getting licenses');
-            Session::flash('error', __('messages.database_error'));
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when getting licenses');
 
             return;
         }

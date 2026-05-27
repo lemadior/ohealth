@@ -139,19 +139,8 @@ class EquipmentComponent extends Component
     {
         try {
             return EHealth::equipment()->create($validated);
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when creating equipment');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ.");
-
-            return null;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when creating equipment');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when creating equipment');
 
             return null;
         }

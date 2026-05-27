@@ -17,22 +17,6 @@ use Throwable;
 trait LogsExceptions
 {
     /**
-     * Log error messages if connection exception occur during EHealth request.
-     *
-     * @param  ConnectionException  $exception
-     * @param  string  $message
-     * @return void
-     */
-    protected function logConnectionError(ConnectionException $exception, string $message): void
-    {
-        Log::channel('e_health_errors')->error($message, [
-            'message' => $exception->getMessage(),
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine()
-        ]);
-    }
-
-    /**
      * Log error messages if any exception occur during database interaction.
      *
      * @param  Exception|Throwable  $exception
@@ -53,43 +37,6 @@ trait LogsExceptions
     }
 
     /**
-     * Log validation and response error from EHealth.
-     *
-     * @param  EHealthValidationException|EHealthResponseException  $exception
-     * @param  string  $message
-     * @return void
-     */
-    protected function logEHealthException(
-        EHealthValidationException|EHealthResponseException $exception,
-        string $message
-    ): void {
-        $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1] ?? [];
-
-        Log::channel('e_health_errors')->error($message, [
-            'class' => $caller['class'] ?? 'unknown_class',
-            'method' => $caller['function'] ?? 'unknown_method',
-            'exception_type' => get_class($exception),
-            'error_message' => $exception->getDetails()
-        ]);
-    }
-
-    /**
-     * Log validation and response error from Cipher.
-     *
-     * @param  CipherApiException  $exception
-     * @param  string  $message
-     * @return void
-     */
-    protected function logCipherError(CipherApiException $exception, string $message): void
-    {
-        Log::channel('api_errors')->error($message, [
-            'message' => $exception->response->json(['message']),
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine()
-        ]);
-    }
-
-    /**
      * Handle eHealth API exceptions with logging and user-facing flash message.
      *
      * @param  ConnectionException|EHealthValidationException|EHealthResponseException  $exception
@@ -101,13 +48,25 @@ trait LogsExceptions
         string $logMessage
     ): void {
         if ($exception instanceof ConnectionException) {
-            $this->logConnectionError($exception, $logMessage);
+            Log::channel('e_health_errors')->error($logMessage, [
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine()
+            ]);
             Session::flash('error', __('messages.connection_exception'));
 
             return;
         }
 
-        $this->logEHealthException($exception, $logMessage);
+        $caller = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1] ?? [];
+
+        Log::channel('e_health_errors')->error($logMessage, [
+            'class' => $caller['class'] ?? 'unknown_class',
+            'method' => $caller['function'] ?? 'unknown_method',
+            'exception_type' => get_class($exception),
+            'error_message' => $exception->getDetails()
+        ]);
+
         $errorMessage = $exception instanceof EHealthValidationException
             ? $exception->getFormattedMessage()
             : __('patients.messages.ehealth_error', ['message' => $exception->getMessage()]);
@@ -126,7 +85,11 @@ trait LogsExceptions
         string $logMessage
     ): void {
         if ($exception instanceof ConnectionException) {
-            $this->logConnectionError($exception, $logMessage);
+            Log::channel('e_health_errors')->error($logMessage, [
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine()
+            ]);
             Session::flash('error', __('messages.connection_exception'));
 
             return;
@@ -139,7 +102,11 @@ trait LogsExceptions
             return;
         }
 
-        $this->logCipherError($exception, $logMessage);
+        Log::channel('api_errors')->error($logMessage, [
+            'message' => $exception->response->json(['message']),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine()
+        ]);
         Session::flash('error', $exception->getMessage());
     }
 }

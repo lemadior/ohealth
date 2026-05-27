@@ -9,7 +9,6 @@ use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
 use App\Traits\FormTrait;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Session;
 use Illuminate\View\Component;
 
 abstract class Addresses extends Component
@@ -41,19 +40,8 @@ abstract class Addresses extends Component
 
         try {
             $this->regions = EHealth::address()->getRegions()->getData();
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error when searching for regions');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when searching for regions');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when searching for regions');
 
             return;
         }

@@ -81,19 +81,8 @@ class HealthcareServiceUpdate extends Component
                 $this->healthcareServiceUuid,
                 $this->form->formatForApi($validated)
             );
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when updating a healthcare service');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ.");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when updating a healthcare service');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when updating a healthcare service');
 
             return;
         }

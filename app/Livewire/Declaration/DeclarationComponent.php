@@ -209,19 +209,8 @@ abstract class DeclarationComponent extends Component
             }
 
             $this->showInformationMessageModal = true;
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when creating a declaration');
-            Session::flash('error', __('validation.custom.connection_exception'));
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when creating a declaration');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when creating a declaration');
 
             return;
         }
@@ -287,19 +276,8 @@ abstract class DeclarationComponent extends Component
                 $this->showAuthModal = false;
                 $this->showSignModal = true;
             }
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when approving a declaration');
-            Session::flash('error', __('validation.custom.connection_exception'));
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when approving a declaration');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when approving a declaration');
 
             return;
         }
@@ -360,9 +338,10 @@ abstract class DeclarationComponent extends Component
                     logger()?->error('Error while uploading document', ['body' => $response->getBody()]);
                     Session::flash('error', __('messages.database_error'));
                 }
-            } catch (ConnectionException $exception) {
-                $this->logConnectionError($exception, 'Error while uploading document');
-                Session::flash('error', __('validation.custom.connection_exception'));
+            } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+                $this->handleEHealthExceptions($exception, 'Error while uploading document');
+
+                return;
             }
         }
 
@@ -370,22 +349,8 @@ abstract class DeclarationComponent extends Component
         if ($successCount === $totalFiles) {
             try {
                 $this->approveUploadedFiles();
-            } catch (ConnectionException $exception) {
-                $this->logConnectionError(
-                    $exception,
-                    'Error connecting when approving a declaration request after sending files'
-                );
-                Session::flash('error', __('validation.custom.connection_exception'));
-
-                return;
-            } catch (EHealthValidationException|EHealthResponseException $exception) {
-                $this->logEHealthException($exception, 'Error when approving a declaration after sending files');
-
-                if ($exception instanceof EHealthValidationException) {
-                    Session::flash('error', $exception->getFormattedMessage());
-                } else {
-                    Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-                }
+            } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+                $this->handleEHealthExceptions($exception, 'Error when approving a declaration after sending files');
 
                 return;
             }
@@ -407,19 +372,8 @@ abstract class DeclarationComponent extends Component
 
         try {
             $response = EHealth::declarationRequest()->resendAuthOtp($this->declarationRequestUuid);
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when resending sms to person');
-            Session::flash('error', __('validation.custom.connection_exception'));
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when resending sms to person');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when resending sms to person');
 
             return;
         }
@@ -522,19 +476,8 @@ abstract class DeclarationComponent extends Component
 
                 $this->redirectRoute('declaration.index', [legalEntity()], navigate: true);
             }
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when signing declaration request');
-            Session::flash('error', __('validation.custom.connection_exception'));
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when signing declaration request');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when signing declaration request');
 
             return;
         }
@@ -574,14 +517,8 @@ abstract class DeclarationComponent extends Component
     {
         try {
             return EHealth::person()->getAuthMethods($this->patientUuid)->getData();
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when getting auth methods');
-            Session::flash('error', __('validation.custom.connection_exception'));
-
-            return [];
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when getting auth methods');
-            Session::flash('error', __('messages.database_error'));
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when getting auth methods');
 
             return [];
         }

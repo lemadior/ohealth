@@ -430,7 +430,11 @@ class PersonUpdate extends PersonComponent
                 return;
             }
         } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error when finding for OTP verification');
+            Log::channel('e_health_errors')->error('Error when finding for OTP verification', [
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine()
+            ]);
             Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
 
             return;
@@ -816,19 +820,8 @@ class PersonUpdate extends PersonComponent
     {
         try {
             $response = EHealth::person()->getConfidantPersonRelationships($this->uuid);
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error when getting auth methods');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error when getting auth methods');
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error when getting auth methods');
 
             return;
         }

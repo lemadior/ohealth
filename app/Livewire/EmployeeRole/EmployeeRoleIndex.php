@@ -155,19 +155,8 @@ class EmployeeRoleIndex extends Component
 
         try {
             $response = EHealth::employeeRole()->deactivate($employeeRole->uuid);
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, "Error connecting when deactivating $employeeRole->uuid employee role");
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, "Error when deactivating $employeeRole->uuid employee role");
-
-            if ($exception instanceof EHealthValidationException) {
-                Session::flash('error', $exception->getFormattedMessage());
-            } else {
-                Session::flash('error', 'Помилка від ЕСОЗ: ' . $exception->getMessage());
-            }
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, "Error when deactivating $employeeRole->uuid employee role");
 
             return;
         }
@@ -215,14 +204,8 @@ class EmployeeRoleIndex extends Component
 
         try {
             $response = EHealth::employeeRole()->getMany();
-        } catch (ConnectionException $exception) {
-            $this->logConnectionError($exception, 'Error connecting when getting a employee role list');
-            Session::flash('error', "Виникла помилка. Відсутній зв'язок із ЕСОЗ");
-
-            return;
-        } catch (EHealthValidationException|EHealthResponseException $exception) {
-            $this->logEHealthException($exception, 'Error connecting when getting a employee role list');
-            Session::flash('error', __('messages.database_error'));
+        } catch (ConnectionException|EHealthValidationException|EHealthResponseException $exception) {
+            $this->handleEHealthExceptions($exception, 'Error connecting when getting a employee role list');
 
             return;
         }
