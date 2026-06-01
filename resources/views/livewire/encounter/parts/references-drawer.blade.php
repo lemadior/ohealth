@@ -55,14 +55,13 @@
                         </div>
                     </div>
 
-                <div class="mb-8">
                     <div class="form-group group">
                         <select x-model="selectedType"
                                 id="drawerSelectedType"
                                 class="input-select peer w-full"
                                 @change="loadMedicalRecords()"
                         >
-                            <option value="">{{ __('forms.select') }} {{ mb_strtolower(__('forms.type')) }}</option>
+                            <option value="" selected>{{ __('forms.select') }} {{ __('forms.type') }}</option>
                             <option value="condition">{{ __('patients.condition_or_diagnosis') }}</option>
                             <option value="observation">{{ __('patients.medical_observation') }}</option>
                             <option value="diagnosticReport">{{ __('patients.medical_diagnostic_report') }}</option>
@@ -78,26 +77,30 @@
                          class="text-center py-8 text-gray-500 dark:text-gray-400"
                          x-cloak
                     >
-                        Завантаження...
+                        {{ __('patients.loading') }}
                     </div>
 
                     <div x-show="!medicalRecordsLoading && hasSearchedMedicalRecords" x-cloak>
                         <table class="table-input w-inherit">
                             <thead class="thead-input">
-                                <tr>
-                                    <th scope="col" class="th-input w-[15%] uppercase">{{ mb_strtoupper(__('forms.date')) }}</th>
-                                    <th scope="col" class="th-input w-[20%] uppercase">{{ mb_strtoupper(__('forms.type')) }}</th>
-                                    <th scope="col" class="th-input w-[55%] uppercase">{{ mb_strtoupper(__('forms.name')) }}</th>
-                                    <th scope="col" class="th-input text-center w-[10%] uppercase">{{ mb_strtoupper(__('forms.actions')) }}</th>
-                                </tr>
+                            <tr>
+                                <th scope="col" class="th-input w-[15%] uppercase">{{ __('forms.date') }}</th>
+                                <th scope="col" class="th-input w-[20%] uppercase">{{ __('forms.type') }}</th>
+                                <th scope="col" class="th-input w-[55%] uppercase">{{ __('forms.name') }}</th>
+                                <th scope="col" class="th-input text-center w-[10%] uppercase">
+                                    {{ __('forms.actions') }}
+                                </th>
+                            </tr>
                             </thead>
                             <tbody>
-                                <template x-for="record in filteredRecords()" :key="record.type + '-' + record.uuid">
-                                    <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-                                        <td class="td-input text-[14px] text-gray-900 dark:text-gray-300" x-text="record.date || '—'"></td>
-                                        <td class="td-input text-[14px] text-gray-900 dark:text-gray-300" x-text="record.typeLabel || record.type"></td>
-                                        <td class="td-input text-[14px] text-gray-900 dark:text-white"
-                                            x-text="(() => {
+                            <template x-for="record in filteredRecords()" :key="record.type + '-' + record.uuid">
+                                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                                    <td class="td-input text-[14px] text-gray-900 dark:text-gray-300"
+                                        x-text="record.date || '—'"></td>
+                                    <td class="td-input text-[14px] text-gray-900 dark:text-gray-300"
+                                        x-text="record.typeLabel || record.type"></td>
+                                    <td class="td-input text-[14px] text-gray-900 dark:text-white"
+                                        x-text="(() => {
                                                 const dictName = $wire.dictionaries['eHealth/LOINC/observation_codes'][record.code] ||
                                                                  $wire.dictionaries['eHealth/ICF/classifiers'][record.code] ||
                                                                  $wire.dictionaries['eHealth/ICPC2/condition_codes'][record.code];
@@ -109,17 +112,17 @@
                                                 const service = Object.values($wire.dictionaries['custom/services']).find(serviceOption => serviceOption.id === record.code);
                                                 return service ? `${ service.code } / ${ service.name }` : (record.name || record.code || '—');
                                             })()"
-                                        ></td>
-                                        <td class="td-input text-center">
-                                            <button type="button"
-                                                    @click="addReference(record)"
-                                                    class="inline-flex items-center justify-center text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition-colors p-1"
-                                            >
-                                                @icon('plus-circle', 'w-6 h-6')
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </template>
+                                    ></td>
+                                    <td class="td-input text-center">
+                                        <button type="button"
+                                                @click="addReference(record)"
+                                                class="inline-flex items-center justify-center text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition-colors p-1"
+                                        >
+                                            @icon('plus-circle', 'w-6 h-6')
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
                             </tbody>
                         </table>
 
@@ -131,15 +134,15 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-start mt-auto">
-                <button type="button"
-                        class="button-minor"
-                        @click="cancelSelection()"
-                >
-                    {{ __('forms.cancel') }}
-                </button>
+                <div class="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-start mt-auto">
+                    <button type="button"
+                            class="button-minor"
+                            @click="cancelSelection()"
+                    >
+                        {{ __('forms.cancel') }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>

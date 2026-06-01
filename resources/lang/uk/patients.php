@@ -317,6 +317,13 @@ return [
     'end_date' => 'Дата кінця',
     'loading' => 'Завантаження...',
     'input_code_or_name' => 'Почніть вводити код або назву',
+    'new_diagnose_state' => 'Новий діагноз/стан',
+    'edit_diagnose_state' => 'Редагувати діагноз/стан',
+    'choose_coding_system' => 'Оберіть систему кодування',
+    'add_icd10_code' => ' Додати код за МКХ-10',
+    'add_icpc2_code' => ' Додати код за ICPC-2',
+    'add_diagnose' => 'Додати діагноз',
+    'doctor_who_created_episode' => 'ПІБ лікаря, що створив епізод',
 
     // Additional data
     'additional_data' => 'Додаткові дані',
@@ -326,6 +333,8 @@ return [
     'add_coauthor' => 'Додати співавтора',
     'find_doctor' => 'Знайти лікаря',
     'coauthor' => 'Співавтор',
+    'write_assignments_here' => 'Напишіть призначення тут',
+    'add_body_part' => ' Додати частину тіла',
 
     // Immunizations
     'immunizations' => 'Вакцинації',
@@ -537,22 +546,5 @@ return [
         'care_plan_sync_already_running' => 'Синхронізація планів лікування вже запущена. Будь ласка, зачекайте її завершення.',
         'care_plan_sync_resume_started' => 'Відновлення попередньої синхронізації планів лікування розпочато',
         'care_plan_sync_background_dispatch_error' => 'Помилка запуску фонової синхронізації планів лікування',
-    ],
-    'add_coauthor' => 'Додати співавтора',
-    'find_doctor' => 'Знайти лікаря',
-    'coauthor' => 'Співавтор',
-    'condition_or_diagnosis' => 'Стани/діагнози',
-    'medical_observation' => 'Спостереження',
-    'medical_diagnostic_report' => 'Діагностичні звіти',
-    'add_observations_reports_conditions' => 'Додати спостереження/звіти/стани',
-    'write_assignments_here' => 'Напишіть призначення тут',
-    'add_diagnose' => 'Додати діагноз',
-    'new_diagnose_state' => 'Новий діагноз/стан',
-    'edit_diagnose_state' => 'Редагувати діагноз/стан',
-    'choose_coding_system' => 'Оберіть систему кодування',
-    'add_icd10_code' => ' Додати код за МКХ-10',
-    'add_icpc2_code' => ' Додати код за ICPC-2',
-    'add_body_part' => ' Додати частину тіла',
-    'doctor_who_created_episode' => 'ПІБ лікаря, що створив епізод',
-    'code' => 'Код',
+    ]
 ];

@@ -15,16 +15,13 @@
             <tbody>
             <template x-for="(detail, index) in modalCondition.evidenceDetails">
                 <tr>
-                    <td class="td-input"
-                        x-text="detail.ehealthInsertedAt || ''"
-                    ></td>
+                    <td class="td-input" x-text="detail.ehealthInsertedAt || ''"></td>
                     <td class="td-input"
                         x-text="`${ detail.codeCode } - ${
-                            $wire.dictionaries['eHealth/LOINC/observation_codes']?.[detail.codeCode] ||
-                            $wire.dictionaries['eHealth/ICF/classifiers']?.[detail.codeCode] ||
-                            $wire.dictionaries['eHealth/ICD10_AM/condition_codes']?.[detail.codeCode] ||
-                            $wire.dictionaries['eHealth/ICPC2/condition_codes']?.[detail.codeCode] ||
-                            ''
+                            $wire.dictionaries['eHealth/LOINC/observation_codes'][detail.codeCode] ||
+                            $wire.dictionaries['eHealth/ICF/classifiers'][detail.codeCode] ||
+                            $wire.dictionaries['eHealth/ICD10_AM/condition_codes'][detail.codeCode] ||
+                            $wire.dictionaries['eHealth/ICPC2/condition_codes'][detail.codeCode]
                         }`"
                     ></td>
                     <td class="td-input">
@@ -65,7 +62,7 @@
                                      viewBox="0 0 24 24">
                                     <path stroke="currentColor" stroke-linecap="square" stroke-linejoin="round"
                                           stroke-width="2"
-                                          d="M7 19H5a1 1 0 0 1-1-1v-1a3 3 0 0 1 3-3h1m4-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.441 1.559a1.907 1.907 0 0 1 0 2.698l-6.069 6.069L10 19l.674-3.372 6.07-6.07a1.907 1.907 0 0 1 2.697 0Z"/>
+                                          d="M7 19H5a1 1 0 0 1-1-1v-1a3 3 0 0 1 3-3h1m4-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.441 1.559a1.907 1.907 0 0 1 0 2.698l-6.069 6.069L10 19l.674-3.372 6.07-6.07a1.907 1.907 0 0 1 2.697 0Z" />
                                 </svg>
                             </button>
 
@@ -80,9 +77,8 @@
                                      class="dropdown-panel relative"
                                      style="left: -50%" {{-- Center a dropdown panel --}}
                                 >
-                                    <button
-                                        @click.prevent="modalCondition.evidenceDetails = modalCondition.evidenceDetails.filter((_, i) => i !== index); close($refs.button);"
-                                        class="dropdown-button dropdown-delete"
+                                    <button class="dropdown-button dropdown-delete"
+                                            @click.prevent="modalCondition.evidenceDetails.splice(index, 1); close($refs.button);"
                                     >
                                         {{ __('forms.delete') }}
                                     </button>
@@ -97,9 +93,7 @@
 
         <div>
             {{-- Button to trigger the evidence search drawer --}}
-            <button @click.prevent="openEvidenceDrawer = true"
-                    class="item-add my-5"
-            >
+            <button @click.prevent="openEvidenceDrawer = true" class="item-add my-5">
                 {{ __('forms.add') }}
             </button>
         </div>

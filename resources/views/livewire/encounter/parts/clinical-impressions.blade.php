@@ -13,154 +13,154 @@
         {{ __('patients.clinical_impressions') }}
     </h2>
 
-        <table class="table-input w-inherit">
-            <thead class="thead-input">
+    <table class="table-input w-inherit">
+        <thead class="thead-input">
+        <tr>
+            <th scope="col" class="th-input">{{ __('patients.code_and_name') }}</th>
+            <th scope="col" class="th-input">{{ __('forms.date') }}</th>
+            <th scope="col" class="th-input">{{ __('forms.action') }}</th>
+        </tr>
+        </thead>
+        <tbody>
+        <template x-for="(clinicalImpression, index) in clinicalImpressions">
             <tr>
-                <th scope="col" class="th-input">{{ __('patients.code_and_name') }}</th>
-                <th scope="col" class="th-input">{{ __('forms.date') }}</th>
-                <th scope="col" class="th-input">{{ __('forms.action') }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            <template x-for="(clinicalImpression, index) in clinicalImpressions">
-                <tr>
-                    <td class="td-input"
-                        x-text="`${ clinicalImpression.codeCode } - ${ dictionary[clinicalImpression.codeCode] }`"
-                    ></td>
-                    <td class="td-input" x-text="clinicalImpression.effectivePeriodStartDate"></td>
-                    <td class="td-input">
-                        {{-- That all that is needed for the dropdown --}}
-                        <div x-data="{
-                                 openDropdown: false,
-                                 toggle() {
-                                     if (this.openDropdown) {
-                                         return this.close();
-                                     }
-
-                                     this.$refs.button.focus();
-
-                                     this.openDropdown = true;
-                                 },
-                                 close(focusAfter) {
-                                     if (!this.openDropdown) return;
-
-                                     this.openDropdown = false;
-
-                                     focusAfter && focusAfter.focus();
+                <td class="td-input"
+                    x-text="`${ clinicalImpression.codeCode } - ${ dictionary[clinicalImpression.codeCode] }`"
+                ></td>
+                <td class="td-input" x-text="clinicalImpression.effectivePeriodStartDate"></td>
+                <td class="td-input">
+                    {{-- That all that is needed for the dropdown --}}
+                    <div x-data="{
+                             openDropdown: false,
+                             toggle() {
+                                 if (this.openDropdown) {
+                                     return this.close();
                                  }
-                             }"
-                             @keydown.escape.prevent.stop="close($refs.button)"
-                             @focusin.window="!$refs.panel.contains($event.target) && close()"
-                             x-id="['dropdown-button']"
-                             class="relative"
+
+                                 this.$refs.button.focus();
+
+                                 this.openDropdown = true;
+                             },
+                             close(focusAfter) {
+                                 if (!this.openDropdown) return;
+
+                                 this.openDropdown = false;
+
+                                 focusAfter && focusAfter.focus();
+                             }
+                         }"
+                         @keydown.escape.prevent.stop="close($refs.button)"
+                         @focusin.window="!$refs.panel.contains($event.target) && close()"
+                         x-id="['dropdown-button']"
+                         class="relative"
+                    >
+                        {{-- Dropdown Button --}}
+                        <button x-ref="button"
+                                @click="toggle()"
+                                :aria-expanded="openDropdown"
+                                :aria-controls="$id('dropdown-button')"
+                                type="button"
+                                class="cursor-pointer"
                         >
-                            {{-- Dropdown Button --}}
-                            <button x-ref="button"
-                                    @click="toggle()"
-                                    :aria-expanded="openDropdown"
-                                    :aria-controls="$id('dropdown-button')"
-                                    type="button"
-                                    class="cursor-pointer"
+                            <svg class="w-6 h-6 text-gray-800 dark:text-gray-200" aria-hidden="true"
+                                 xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                                 viewBox="0 0 24 24"
                             >
-                                <svg class="w-6 h-6 text-gray-800 dark:text-gray-200" aria-hidden="true"
-                                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-                                     viewBox="0 0 24 24"
+                                <path stroke="currentColor" stroke-linecap="square" stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M7 19H5a1 1 0 0 1-1-1v-1a3 3 0 0 1 3-3h1m4-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.441 1.559a1.907 1.907 0 0 1 0 2.698l-6.069 6.069L10 19l.674-3.372 6.07-6.07a1.907 1.907 0 0 1 2.697 0Z"
+                                />
+                            </svg>
+                        </button>
+
+                        {{-- Dropdown Panel --}}
+                        <div class="absolute" style="left: 50%"> {{-- Center a dropdown panel --}}
+                            <div x-ref="panel"
+                                 x-show="openDropdown"
+                                 x-transition.origin.top.left
+                                 @click.outside="close($refs.button)"
+                                 :id="$id('dropdown-button')"
+                                 x-cloak
+                                 class="dropdown-panel relative"
+                                 style="left: -50%" {{-- Center a dropdown panel --}}
+                            >
+
+                                <button @click.prevent="
+                                            item = index; {{-- Identify the item we are corrently editing --}}
+                                            {{-- Replace the previous clinicalImpression with the current, don't assign object directly (modalClinicalImpression = clinicalImpression) to avoid reactiveness --}}
+                                            modalClinicalImpression = JSON.parse(JSON.stringify(clinicalImpressions[index]));
+                                            newClinicalImpression = false; {{-- This clinical impression is already created --}}
+                                            openClinicalImpressionDrawer = true;
+                                        "
+                                        class="dropdown-button"
                                 >
-                                    <path stroke="currentColor" stroke-linecap="square" stroke-linejoin="round"
-                                          stroke-width="2"
-                                          d="M7 19H5a1 1 0 0 1-1-1v-1a3 3 0 0 1 3-3h1m4-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm7.441 1.559a1.907 1.907 0 0 1 0 2.698l-6.069 6.069L10 19l.674-3.372 6.07-6.07a1.907 1.907 0 0 1 2.697 0Z"
-                                    />
-                                </svg>
-                            </button>
+                                    {{ __('forms.edit') }}
+                                </button>
 
-                            {{-- Dropdown Panel --}}
-                            <div class="absolute" style="left: 50%"> {{-- Center a dropdown panel --}}
-                                <div x-ref="panel"
-                                     x-show="openDropdown"
-                                     x-transition.origin.top.left
-                                     @click.outside="close($refs.button)"
-                                     :id="$id('dropdown-button')"
-                                     x-cloak
-                                     class="dropdown-panel relative"
-                                     style="left: -50%" {{-- Center a dropdown panel --}}
+                                <button @click.prevent="clinicalImpressions.splice(index, 1); close($refs.button)"
+                                        class="dropdown-button dropdown-delete"
                                 >
-
-                                    <button @click.prevent="
-                                                item = index; {{-- Identify the item we are corrently editing --}}
-                                                {{-- Replace the previous clinicalImpression with the current, don't assign object directly (modalClinicalImpression = clinicalImpression) to avoid reactiveness --}}
-                                                modalClinicalImpression = JSON.parse(JSON.stringify(clinicalImpressions[index]));
-                                                newClinicalImpression = false; {{-- This clinical impression is already created --}}
-                                                openClinicalImpressionDrawer = true;
-                                            "
-                                            class="dropdown-button"
-                                    >
-                                        {{ __('forms.edit') }}
-                                    </button>
-
-                                    <button @click.prevent="clinicalImpressions.splice(index, 1); close($refs.button)"
-                                            class="dropdown-button dropdown-delete"
-                                    >
-                                        {{ __('forms.delete') }}
-                                    </button>
-                                </div>
+                                    {{ __('forms.delete') }}
+                                </button>
                             </div>
                         </div>
-                    </td>
-                </tr>
-            </template>
-            </tbody>
-        </table>
+                    </div>
+                </td>
+            </tr>
+        </template>
+        </tbody>
+    </table>
 
-        <div>
-            {{-- Button to trigger the modal --}}
-            <button @click.prevent="
-                        newClinicalImpression = true; {{-- We are adding a new clinicalImpression --}}
-                        modalClinicalImpression = new ClinicalImpression(); {{-- Replace the data of the previous clinicalImpression with a new one--}}
-                        $wire.problems = [];
-                        $wire.findings = [];
-                        openClinicalImpressionDrawer = true;
-                    "
-                    class="item-add my-5"
-            >
-                {{ __('forms.add') }}
-            </button>
+    <div>
+        {{-- Button to trigger the modal --}}
+        <button @click.prevent="
+                    newClinicalImpression = true; {{-- We are adding a new clinicalImpression --}}
+                    modalClinicalImpression = new ClinicalImpression(); {{-- Replace the data of the previous clinicalImpression with a new one--}}
+                    $wire.problems = [];
+                    $wire.findings = [];
+                    openClinicalImpressionDrawer = true;
+                "
+                class="item-add my-5"
+        >
+            {{ __('forms.add') }}
+        </button>
 
-            {{-- Modal --}}
-            <x-dialog-drawer x-model="openClinicalImpressionDrawer" maxWidth="4/5" wire:ignore>
-                <x-slot name="title">
-                    {{ __('patients.clinical_impression') }}
-                </x-slot>
+        {{-- Modal --}}
+        <x-dialog-drawer x-model="openClinicalImpressionDrawer" maxWidth="4/5" wire:ignore>
+            <x-slot name="title">
+                {{ __('patients.clinical_impression') }}
+            </x-slot>
 
-                    <form>
-                        @include('livewire.encounter.clinical-impression-parts.main-information')
-                        @include('livewire.encounter.clinical-impression-parts.problems')
-                        @include('livewire.encounter.clinical-impression-parts.findings')
-                        @include('livewire.encounter.clinical-impression-parts.supporting-info')
-                        @include('livewire.encounter.clinical-impression-parts.additional-information')
+            <form>
+                @include('livewire.encounter.clinical-impression-parts.main-information')
+                @include('livewire.encounter.clinical-impression-parts.problems')
+                @include('livewire.encounter.clinical-impression-parts.findings')
+                @include('livewire.encounter.clinical-impression-parts.supporting-info')
+                @include('livewire.encounter.clinical-impression-parts.additional-information')
 
-                        <div class="mt-6 flex justify-between space-x-2">
-                            <button type="button"
-                                    @click="openClinicalImpressionDrawer = false"
-                                    class="button-minor"
-                            >
-                                {{ __('forms.cancel') }}
-                            </button>
+                <div class="mt-6 flex justify-between space-x-2">
+                    <button type="button"
+                            @click="openClinicalImpressionDrawer = false"
+                            class="button-minor"
+                    >
+                        {{ __('forms.cancel') }}
+                    </button>
 
-                            <button @click.prevent="
-                                        newClinicalImpression !== false
-                                            ? clinicalImpressions.push(modalClinicalImpression)
-                                            : clinicalImpressions[item] = modalClinicalImpression;
-                                        openClinicalImpressionDrawer = false;
-                                    "
-                                    class="button-primary"
-                                    :disabled="!modalClinicalImpression.codeCode.trim()"
-                            >
-                                {{ __('forms.save') }}
-                            </button>
-                        </div>
-                    </form>
-            </x-dialog-drawer>
-        </div>
+                    <button @click.prevent="
+                                newClinicalImpression !== false
+                                    ? clinicalImpressions.push(modalClinicalImpression)
+                                    : clinicalImpressions[item] = modalClinicalImpression;
+                                openClinicalImpressionDrawer = false;
+                            "
+                            class="button-primary"
+                            :disabled="!modalClinicalImpression.codeCode.trim()"
+                    >
+                        {{ __('forms.save') }}
+                    </button>
+                </div>
+            </form>
+        </x-dialog-drawer>
+    </div>
 </div>
 
 <script>
