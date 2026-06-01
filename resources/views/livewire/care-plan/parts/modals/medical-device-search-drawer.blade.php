@@ -1,35 +1,20 @@
-{{-- Medical Device Search Drawer Overlay (below header z-60) --}}
-<div x-show="showMedicalDeviceSearchDrawer"
-     x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100"
-     x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0"
-     x-cloak
-     @click="showMedicalDeviceSearchDrawer = false"
-     class="fixed top-0 right-0 h-screen pt-20 w-4/5 bg-gray-900/50"
-     style="z-index: 44;"
-></div>
+@php
+    $searchQuery = $searchQuery ?? '';
+    $searchResults = $searchResults ?? [];
+@endphp
 
-{{-- Medical Device Search Drawer (30px gap on the LEFT) --}}
-<div id="medical-device-search-drawer-right"
-     x-show="showMedicalDeviceSearchDrawer"
-     x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="translate-x-full"
-     x-transition:enter-end="translate-x-0"
-     x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="translate-x-0"
-     x-transition:leave-end="translate-x-full"
-     x-cloak
-     class="fixed top-0 right-0 h-screen pt-20 p-4 overflow-y-auto bg-white dark:bg-gray-800 shadow-2xl"
-     style="z-index: 45; width: calc(80% - 30px);"
-     tabindex="-1"
-     x-data="{ showFilter: false }"
+<x-dialog-drawer
+    x-model="showMedicalDeviceSearchDrawer"
+    noTeleport="true"
+    topClass="top-[57px]"
+    zIndex="42"
+    customWidth="w-full sm:w-[calc(80%-15%)]"
+    overlayWidth="80%"
+    hasClose="true"
+    onCloseClick="showMedicalDeviceSearchDrawer = false"
+    title="{{ __('care-plan.medical_device_search') }}"
 >
-    <h3 class="modal-header">
-        {{ __('care-plan.medical_device_search') }}
-    </h3>
+    <div x-data="{ showFilter: false }" class="flex flex-col h-full w-full">
 
     {{-- Search Input --}}
     <div class="mb-4">
@@ -132,4 +117,5 @@
             {{ __('forms.cancel') }}
         </button>
     </div>
-</div>
+    </div>
+</x-dialog-drawer>
