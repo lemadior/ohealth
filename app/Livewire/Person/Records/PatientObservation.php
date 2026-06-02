@@ -9,6 +9,7 @@ use App\Classes\eHealth\EHealth;
 use App\Enums\JobStatus;
 use App\Jobs\ObservationSync;
 use App\Models\LegalEntity;
+use App\Models\MedicalEvents\Sql\Episode;
 use App\Repositories\MedicalEvents\Repository;
 use App\Traits\BatchLegalEntityQueries;
 use App\Traits\HandlesSyncBatch;
@@ -243,7 +244,7 @@ class PatientObservation extends BasePatientComponent
 
     private function loadEpisodesFromDb(): void
     {
-        $filterEpisodeOptions = Repository::episode()->getByPersonId($this->personId);
+        $filterEpisodeOptions = Episode::forPerson($this->personId)->get()->toArray();
 
         $this->filterEpisodeOptions = collect($filterEpisodeOptions)
             ->map(function (array $episode) {

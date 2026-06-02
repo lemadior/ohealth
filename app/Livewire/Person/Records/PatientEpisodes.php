@@ -6,10 +6,12 @@ namespace App\Livewire\Person\Records;
 
 use App\Classes\eHealth\EHealth;
 use App\Core\Arr;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Facades\DB;
+use App\Enums\Person\EpisodeStatus;
+use App\Rules\InDictionary;
+use Illuminate\Validation\Rule;
 use App\Enums\JobStatus;
 use App\Jobs\EpisodeFullSync;
+use App\Models\Icd10;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\Episode;
 use App\Repositories\MedicalEvents\Repository;
@@ -30,7 +32,12 @@ class PatientEpisodes extends BasePatientComponent
     use HandlesSyncBatch;
     use WithPagination;
 
-    public array $episodes = [];
+    /**
+     * Whether the list is showing eHealth API search results instead of local episodes.
+     *
+     * @var bool
+     */
+    public bool $isSearching = false;
 
     public string $syncStatus = '';
 
@@ -44,6 +51,11 @@ class PatientEpisodes extends BasePatientComponent
 
     protected array $dictionaryNames = ['eHealth/ICPC2/condition_codes'];
 
+    /**
+     * ICD-10 dictionary matches (code and description) for the search autocomplete.
+     *
+     * @var array
+     */
     public array $icd10Results = [];
 
     protected function initializeComponent(): void
@@ -51,27 +63,14 @@ class PatientEpisodes extends BasePatientComponent
         $this->getDictionary();
 
         $this->syncStatus = legalEntity()->getEntityStatus(LegalEntity::ENTITY_EPISODE) ?? '';
-
-        $this->episodes = Arr::toCamelCase(
-            Episode::wherePersonId($this->personId)->withRelationships()
-                ->orderByRaw('CASE WHEN ehealth_updated_at IS NULL THEN 1 ELSE 0 END')
-                ->orderByDesc('ehealth_updated_at')
-                ->get()
-                ->toArray()
-        );
     }
 
     #[Computed]
     public function paginatedEpisodes(): LengthAwarePaginator
     {
-        $collection = collect($this->episodes);
-
-        return new LengthAwarePaginator(
-            $collection->forPage($this->getPage(), config('pagination.per_page')),
-            $collection->count(),
-            config('pagination.per_page'),
-            $this->getPage()
-        );
+        return $this->isSearching
+            ? $this->searchEpisodesFromEHealth()
+            : $this->paginateLocalEpisodes();
     }
 
     protected function getSyncStatus(string $entityType): ?string
@@ -138,46 +137,97 @@ class PatientEpisodes extends BasePatientComponent
             Session::flash('success', __('patients.messages.episodes_synced_successfully'));
         }
 
-        $this->episodes = Arr::toCamelCase($this->formatDatesForDisplay($validatedData));
+        $this->isSearching = false;
+        $this->resetPage();
     }
 
     public function searchICD10(string $value): void
     {
-        $this->icd10Results = DB::table('icd_10')
-            ->select(['code', 'description'])
-            ->where(function (Builder $query) use ($value): void {
-                $query->where('code', 'ILIKE', "%$value%")
-                    ->orWhere('description', 'ILIKE', "%$value%");
-            })
-            ->limit(50)
-            ->get()
+        $this->icd10Results = Icd10::search($value)->limit(50)
+            ->get(['code', 'description'])
             ->toArray();
     }
 
     public function resetFilters(): void
     {
-        $this->filterPeriodDateRange = '';
-        $this->filterCode = '';
-        $this->filterStatus = '';
+        $this->reset(['filterPeriodDateRange', 'filterCode', 'filterStatus', 'isSearching']);
         $this->resetPage();
     }
 
     public function search(): void
     {
+        $this->validate();
+        $this->isSearching = true;
+        $this->resetPage();
+    }
+
+    /**
+     * Validation rules for the episode search filters.
+     *
+     * @return array
+     */
+    protected function rules(): array
+    {
+        return [
+            'filterCode' => [
+                'nullable',
+                'string',
+                new InDictionary(['eHealth/ICPC2/condition_codes', 'eHealth/ICD10_AM/condition_codes'])
+            ],
+            'filterStatus' => ['nullable', Rule::in(array_keys(EpisodeStatus::searchableOptions()))],
+            'filterPeriodDateRange' => ['nullable', 'string', 'max:255']
+        ];
+    }
+
+    /**
+     * Paginate locally stored (synced) episodes straight from the database.
+     *
+     * @return LengthAwarePaginator
+     */
+    private function paginateLocalEpisodes(): LengthAwarePaginator
+    {
+        $paginator = Episode::forPerson($this->personId)
+            ->withRelationships()
+            ->recentlyUpdatedFirst()
+            ->paginate(config('pagination.per_page'));
+
+        $paginator->setCollection(collect(Arr::toCamelCase($paginator->getCollection()->toArray())));
+
+        return $paginator;
+    }
+
+    /**
+     * Fetch a single page of episodes from the eHealth API for the active search filters.
+     *
+     * @return LengthAwarePaginator
+     */
+    private function searchEpisodesFromEHealth(): LengthAwarePaginator
+    {
+        $perPage = config('pagination.per_page');
+        $page = $this->getPage();
+
         // todo: add period params after change in frontend
         $params = array_filter([
             'code' => $this->filterCode ?: null,
             'status' => $this->filterStatus ?: null,
-            'managing_organization_id' => legalEntity()->uuid
+            'managing_organization_id' => legalEntity()->uuid,
+            'page' => $page,
+            'page_size' => $perPage
         ]);
 
         try {
             $response = EHealth::episode()->getBySearchParams($this->uuid, $params);
-            $this->episodes = Arr::toCamelCase($this->formatDatesForDisplay($response->validate()));
-            $this->resetPage();
+            $episodes = Arr::toCamelCase($this->formatDatesForDisplay($response->validate()));
+            $total = $response->getPaging()['total_entries'];
         } catch (EHealthException|EHealthConnectionException $exception) {
             $exception->handle('Error while searching episodes');
+            $episodes = [];
+            $total = 0;
         }
+
+        return new LengthAwarePaginator(collect($episodes), $total, $perPage, $page, [
+            'path' => LengthAwarePaginator::resolveCurrentPath()
+        ]);
     }
 
     public function render(): View

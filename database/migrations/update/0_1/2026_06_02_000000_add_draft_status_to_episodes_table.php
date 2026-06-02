@@ -4,23 +4,20 @@ declare(strict_types=1);
 
 use App\Enums\Person\EpisodeStatus;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * Adds 'draft' to the allowed episode statuses.
      */
     public function up(): void
     {
-        $values = implode("', '", EpisodeStatus::values());
-
-        if (DB::getDriverName() === 'pgsql') {
-            DB::statement("ALTER TABLE episodes DROP CONSTRAINT IF EXISTS episodes_status_check");
-            DB::statement("ALTER TABLE episodes ADD CONSTRAINT episodes_status_check CHECK (status IN ('$values'))");
-        } else {
-            DB::statement("ALTER TABLE episodes MODIFY status ENUM('$values') NOT NULL");
-        }
+        $this->setStatusConstraint(EpisodeStatus::values());
     }
 
     /**
@@ -32,16 +29,29 @@ return new class extends Migration
             ->where('status', EpisodeStatus::DRAFT->value)
             ->update(['status' => EpisodeStatus::ACTIVE->value]);
 
-        $values = implode("', '", array_filter(
+        $this->setStatusConstraint(array_filter(
             EpisodeStatus::values(),
-            static fn (string $value) => $value !== EpisodeStatus::DRAFT->value
+            static fn (string $value): bool => $value !== EpisodeStatus::DRAFT->value
         ));
+    }
 
-        if (DB::getDriverName() === 'pgsql') {
-            DB::statement("ALTER TABLE episodes DROP CONSTRAINT IF EXISTS episodes_status_check");
-            DB::statement("ALTER TABLE episodes ADD CONSTRAINT episodes_status_check CHECK (status IN ('$values'))");
-        } else {
-            DB::statement("ALTER TABLE episodes MODIFY status ENUM('$values') NOT NULL");
-        }
+    /**
+     * Restrict the episodes status column to the given values.
+     *
+     * The old CHECK constraint is dropped through the schema builder, then recreated
+     * with a raw statement because Blueprint has no API for CHECK constraints.
+     *
+     * @param  array<int, string>  $values
+     * @return void
+     */
+    private function setStatusConstraint(array $values): void
+    {
+        Schema::table('episodes', static function (Blueprint $table): void {
+            $table->dropForeign('episodes_status_check');
+        });
+
+        $list = implode("', '", $values);
+
+        DB::statement("ALTER TABLE episodes ADD CONSTRAINT episodes_status_check CHECK (status IN ('$list'))");
     }
 };
