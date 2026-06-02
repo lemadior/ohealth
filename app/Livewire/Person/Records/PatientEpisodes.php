@@ -11,19 +11,24 @@ use Illuminate\Support\Facades\DB;
 use App\Enums\JobStatus;
 use App\Jobs\EpisodeFullSync;
 use App\Models\LegalEntity;
+use App\Models\MedicalEvents\Sql\Episode;
 use App\Repositories\MedicalEvents\Repository;
 use App\Traits\BatchLegalEntityQueries;
 use App\Traits\HandlesSyncBatch;
 use Illuminate\Contracts\View\View;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Session;
 use App\Exceptions\EHealth\EHealthConnectionException;
 use App\Exceptions\EHealth\EHealthException;
+use Livewire\Attributes\Computed;
+use Livewire\WithPagination;
 use Throwable;
 
 class PatientEpisodes extends BasePatientComponent
 {
     use BatchLegalEntityQueries;
     use HandlesSyncBatch;
+    use WithPagination;
 
     public array $episodes = [];
 
@@ -44,6 +49,29 @@ class PatientEpisodes extends BasePatientComponent
     protected function initializeComponent(): void
     {
         $this->getDictionary();
+
+        $this->syncStatus = legalEntity()->getEntityStatus(LegalEntity::ENTITY_EPISODE) ?? '';
+
+        $this->episodes = Arr::toCamelCase(
+            Episode::wherePersonId($this->personId)->withRelationships()
+                ->orderByRaw('CASE WHEN ehealth_updated_at IS NULL THEN 1 ELSE 0 END')
+                ->orderByDesc('ehealth_updated_at')
+                ->get()
+                ->toArray()
+        );
+    }
+
+    #[Computed]
+    public function paginatedEpisodes(): LengthAwarePaginator
+    {
+        $collection = collect($this->episodes);
+
+        return new LengthAwarePaginator(
+            $collection->forPage($this->getPage(), config('pagination.per_page')),
+            $collection->count(),
+            config('pagination.per_page'),
+            $this->getPage()
+        );
     }
 
     protected function getSyncStatus(string $entityType): ?string
@@ -126,6 +154,14 @@ class PatientEpisodes extends BasePatientComponent
             ->toArray();
     }
 
+    public function resetFilters(): void
+    {
+        $this->filterPeriodDateRange = '';
+        $this->filterCode = '';
+        $this->filterStatus = '';
+        $this->resetPage();
+    }
+
     public function search(): void
     {
         // todo: add period params after change in frontend
@@ -138,6 +174,7 @@ class PatientEpisodes extends BasePatientComponent
         try {
             $response = EHealth::episode()->getBySearchParams($this->uuid, $params);
             $this->episodes = Arr::toCamelCase($this->formatDatesForDisplay($response->validate()));
+            $this->resetPage();
         } catch (EHealthException|EHealthConnectionException $exception) {
             $exception->handle('Error while searching episodes');
         }

@@ -83,8 +83,7 @@ class PatientEncounters extends BasePatientComponent
     {
         $this->getDictionary();
 
-        $status = legalEntity()->getEntityStatus(LegalEntity::ENTITY_ENCOUNTER);
-        $this->syncStatus = $status instanceof JobStatus ? $status->value : ($status ?? '');
+        $this->syncStatus = legalEntity()->getEntityStatus(LegalEntity::ENTITY_ENCOUNTER);
 
         $this->episodes = Episode::wherePersonId($this->personId)->get()->toArray();
 
