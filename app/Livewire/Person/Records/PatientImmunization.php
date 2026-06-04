@@ -380,7 +380,7 @@ class PatientImmunization extends BasePatientComponent
         );
     }
 
-    private function filterValidationRules(): array
+    protected function filterValidationRules(): array
     {
         return [
             'filterVaccine' => ['nullable', 'string', 'max:255'],

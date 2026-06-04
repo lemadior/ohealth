@@ -32,13 +32,6 @@ class PatientEpisodes extends BasePatientComponent
     use HandlesSyncBatch;
     use WithPagination;
 
-    /**
-     * Whether the list is showing eHealth API search results instead of local episodes.
-     *
-     * @var bool
-     */
-    public bool $isSearching = false;
-
     public string $syncStatus = '';
 
     public string $filterPeriodDateRange = '';
@@ -156,7 +149,7 @@ class PatientEpisodes extends BasePatientComponent
 
     public function search(): void
     {
-        $this->validate();
+        $this->validate($this->filterValidationRules());
         $this->isSearching = true;
         $this->resetPage();
     }
@@ -166,7 +159,7 @@ class PatientEpisodes extends BasePatientComponent
      *
      * @return array
      */
-    protected function rules(): array
+    protected function filterValidationRules(): array
     {
         return [
             'filterCode' => [
@@ -184,7 +177,7 @@ class PatientEpisodes extends BasePatientComponent
      *
      * @return LengthAwarePaginator
      */
-    private function paginateLocalEpisodes(): LengthAwarePaginator
+    protected function paginateLocalEpisodes(): LengthAwarePaginator
     {
         $paginator = Episode::forPerson($this->personId)
             ->withRelationships()
@@ -201,7 +194,7 @@ class PatientEpisodes extends BasePatientComponent
      *
      * @return LengthAwarePaginator
      */
-    private function searchEpisodesFromEHealth(): LengthAwarePaginator
+    protected function searchEpisodesFromEHealth(): LengthAwarePaginator
     {
         $perPage = config('pagination.per_page');
         $page = $this->getPage();

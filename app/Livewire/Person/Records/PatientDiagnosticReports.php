@@ -370,7 +370,7 @@ class PatientDiagnosticReports extends BasePatientComponent
         );
     }
 
-    private function filterValidationRules(): array
+    protected function filterValidationRules(): array
     {
         return [
             'filterCategory' => ['nullable', 'string', 'max:255'],

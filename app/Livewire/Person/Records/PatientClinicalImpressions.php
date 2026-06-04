@@ -372,7 +372,7 @@ class PatientClinicalImpressions extends BasePatientComponent
         );
     }
 
-    private function filterValidationRules(): array
+    protected function filterValidationRules(): array
     {
         return [
             'filterCode' => ['nullable', 'string', 'max:255'],
