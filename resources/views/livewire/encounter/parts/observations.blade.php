@@ -37,24 +37,24 @@
 
                     <div class="record-inner-action-col">
                         <div x-data="{
-                                     openDropdown: false,
-                                     toggle() {
-                                         if (this.openDropdown) {
-                                             return this.close();
-                                         }
+                            openDropdown: false,
+                            toggle() {
+                                if (this.openDropdown) {
+                                    return this.close();
+                                }
 
-                                         this.$refs.button.focus();
+                                this.$refs.button.focus();
 
-                                         this.openDropdown = true;
-                                     },
-                                     close(focusAfter) {
-                                         if (!this.openDropdown) return;
+                                this.openDropdown = true;
+                            },
+                            close(focusAfter) {
+                                if (!this.openDropdown) return;
 
-                                         this.openDropdown = false;
+                                this.openDropdown = false;
 
-                                         focusAfter && focusAfter.focus();
-                                     }
-                                 }"
+                                focusAfter && focusAfter.focus();
+                            }
+                        }"
                              @keydown.escape.prevent.stop="close($refs.button)"
                              @focusin.window="!$refs.panel.contains($event.target) && close()"
                              x-id="['dropdown-button']"
@@ -90,12 +90,12 @@
                                      class="dropdown-panel relative"
                                 >
                                     <button @click.prevent="
-                                                    openModal = true;
-                                                    item = index;
-                                                    modalObservation = JSON.parse(JSON.stringify(observations[index]));
-                                                    newObservation = false;
-                                                    close($refs.button);
-                                                "
+                                        openModal = true;
+                                        item = index;
+                                        modalObservation = JSON.parse(JSON.stringify(observations[index]));
+                                        newObservation = false;
+                                        close($refs.button);
+                                    "
                                     >
                                         {{ __('forms.edit') }}
                                     </button>
@@ -151,10 +151,10 @@
     <div>
         {{-- Button to trigger the modal --}}
         <button @click.prevent="
-                        openModal = true;
-                        newObservation = true;
-                        modalObservation = new Observation();
-                    "
+            openModal = true;
+            newObservation = true;
+            modalObservation = new Observation();
+        "
                 class="item-add my-5"
         >
             {{ __('forms.add') }}
@@ -203,42 +203,42 @@
                                 </button>
 
                                 <button @click.prevent="
-                                                const selectedValueType = valueMap[modalObservation.codeCode]?.[1];
+                                    const selectedValueType = valueMap[modalObservation.codeCode]?.[1];
 
-                                                const fieldsToDelete = [
-                                                    'valueQuantity',
-                                                    'valueCodeableConcept',
-                                                    'valueString',
-                                                    'valueBoolean',
-                                                    'valueDateTime'
-                                                ];
+                                    const fieldsToDelete = [
+                                        'valueQuantity',
+                                        'valueCodeableConcept',
+                                        'valueString',
+                                        'valueBoolean',
+                                        'valueDateTime'
+                                    ];
 
-                                                fieldsToDelete.forEach(field => {
-                                                    if (field !== selectedValueType) {
-                                                        if (field === 'valueQuantity') {
-                                                            modalObservation.valueQuantityValue = '';
-                                                            modalObservation.valueQuantityComparator = '';
-                                                            modalObservation.valueQuantityUnit = '';
-                                                            modalObservation.valueQuantitySystem = '';
-                                                            modalObservation.valueQuantityCode = '';
-                                                        } else if (field === 'valueDateTime') {
-                                                            delete modalObservation.valueDate;
-                                                            delete modalObservation.valueTime;
-                                                        } else {
-                                                            delete modalObservation[field];
-                                                        }
-                                                    }
-                                                });
+                                    fieldsToDelete.forEach(field => {
+                                        if (field !== selectedValueType) {
+                                            if (field === 'valueQuantity') {
+                                                modalObservation.valueQuantityValue = '';
+                                                modalObservation.valueQuantityComparator = '';
+                                                modalObservation.valueQuantityUnit = '';
+                                                modalObservation.valueQuantitySystem = '';
+                                                modalObservation.valueQuantityCode = '';
+                                            } else if (field === 'valueDateTime') {
+                                                delete modalObservation.valueDate;
+                                                delete modalObservation.valueTime;
+                                            } else {
+                                                delete modalObservation[field];
+                                            }
+                                        }
+                                    });
 
-                                                modalObservation.dictionaryName = $wire.observationValueMap[modalObservation.codeCode]?.[0];
+                                    modalObservation.dictionaryName = $wire.observationValueMap[modalObservation.codeCode]?.[0];
 
-                                                newObservation !== false
-                                                    ? observations.push(modalObservation)
-                                                    : observations[item] = modalObservation;
+                                    newObservation !== false
+                                        ? observations.push(modalObservation)
+                                        : observations[item] = modalObservation;
 
-                                                showDuplicateCodeWarning = false;
-                                                openModal = false;
-                                            "
+                                    showDuplicateCodeWarning = false;
+                                    openModal = false;
+                                "
                                         class="button-primary"
                                         :disabled="!(
                                                 modalObservation.issuedDate.trim() &&

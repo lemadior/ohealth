@@ -28,24 +28,24 @@
 
                     <div class="record-inner-action-col">
                         <div x-data="{
-                                 openDropdown: false,
-                                 toggle() {
-                                     if (this.openDropdown) {
-                                         return this.close()
-                                     }
+                            openDropdown: false,
+                            toggle() {
+                                if (this.openDropdown) {
+                                    return this.close()
+                                }
 
-                                     this.$refs.button.focus()
+                                this.$refs.button.focus()
 
-                                     this.openDropdown = true
-                                 },
-                                 close(focusAfter) {
-                                     if (!this.openDropdown) return
+                                this.openDropdown = true
+                            },
+                            close(focusAfter) {
+                                if (!this.openDropdown) return
 
-                                     this.openDropdown = false
+                                this.openDropdown = false
 
-                                     focusAfter && focusAfter.focus()
-                                 }
-                             }"
+                                focusAfter && focusAfter.focus()
+                            }
+                        }"
                              @keydown.escape.prevent.stop="close($refs.button)"
                              @focusin.window="!$refs.panel.contains($event.target) && close()"
                              x-id="['dropdown-button']"
@@ -81,12 +81,12 @@
                                      class="dropdown-panel relative"
                                 >
                                     <button @click.prevent="
-                                                item = index;
-                                                modalDiagnosticReport = JSON.parse(JSON.stringify(diagnosticReports[index]));
-                                                newDiagnosticReport = false;
-                                                openDiagnosticReportDrawer = true;
-                                                close($refs.button);
-                                            "
+                                        item = index;
+                                        modalDiagnosticReport = JSON.parse(JSON.stringify(diagnosticReports[index]));
+                                        newDiagnosticReport = false;
+                                        openDiagnosticReportDrawer = true;
+                                        close($refs.button);
+                                    "
                                     >
                                         {{ __('forms.edit') }}
                                     </button>

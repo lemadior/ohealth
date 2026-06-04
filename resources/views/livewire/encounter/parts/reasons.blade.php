@@ -27,24 +27,24 @@
 
                     <div class="record-inner-action-col">
                         <div x-data="{
-                                     openDropdown: false,
-                                     toggle() {
-                                         if (this.openDropdown) {
-                                             return this.close()
-                                         }
+                            openDropdown: false,
+                            toggle() {
+                                if (this.openDropdown) {
+                                    return this.close()
+                                }
 
-                                         this.$refs.button.focus()
+                                this.$refs.button.focus()
 
-                                         this.openDropdown = true
-                                     },
-                                     close(focusAfter) {
-                                         if (!this.openDropdown) return
+                                this.openDropdown = true
+                            },
+                            close(focusAfter) {
+                                if (!this.openDropdown) return
 
-                                         this.openDropdown = false
+                                this.openDropdown = false
 
-                                         focusAfter && focusAfter.focus()
-                                     }
-                                 }"
+                                focusAfter && focusAfter.focus()
+                            }
+                        }"
                              @keydown.escape.prevent.stop="close($refs.button)"
                              @focusin.window="! $refs.panel.contains($event.target) && close()"
                              x-id="['dropdown-button']"
@@ -80,12 +80,12 @@
                                      class="dropdown-panel relative"
                                 >
                                     <button @click.prevent="
-                                                    openModal = true;
-                                                    item = index;
-                                                    modalReason = new Reason(reason);
-                                                    newReason = false;
-                                                    close($refs.button);
-                                                "
+                                        openModal = true;
+                                        item = index;
+                                        modalReason = new Reason(reason);
+                                        newReason = false;
+                                        close($refs.button);
+                                    "
                                     >
                                         {{ __('forms.edit') }}
                                     </button>
@@ -117,10 +117,10 @@
     <div>
         {{-- Button to trigger the modal --}}
         <button @click.prevent="
-                        openModal = true;
-                        newReason = true;
-                        modalReason = new Reason();
-                    "
+            openModal = true;
+            newReason = true;
+            modalReason = new Reason();
+        "
                 class="item-add my-5"
         >
             {{ __('forms.add') }}
@@ -193,25 +193,25 @@
                                 </button>
 
                                 <button @click.prevent="
-                                                const newReasonCode = modalReason.code;
-                                                const matchingReasonCodesCount = reasons.filter((reason, index) => {
-                                                    // If editing — ignore the current index
-                                                    if (newReason === false && index === item) return false;
-                                                    return reason.code === newReasonCode;
-                                                }).length;
+                                    const newReasonCode = modalReason.code;
+                                    const matchingReasonCodesCount = reasons.filter((reason, index) => {
+                                        // If editing — ignore the current index
+                                        if (newReason === false && index === item) return false;
+                                        return reason.code === newReasonCode;
+                                    }).length;
 
-                                                if (matchingReasonCodesCount >= 1) {
-                                                    showDuplicateCodeWarning = true;
-                                                    return;
-                                                }
+                                    if (matchingReasonCodesCount >= 1) {
+                                        showDuplicateCodeWarning = true;
+                                        return;
+                                    }
 
-                                                newReason !== false
-                                                    ? reasons.push(modalReason)
-                                                    : reasons[item] = modalReason;
+                                    newReason !== false
+                                        ? reasons.push(modalReason)
+                                        : reasons[item] = modalReason;
 
-                                                showDuplicateCodeWarning = false;
-                                                openModal = false;
-                                            "
+                                    showDuplicateCodeWarning = false;
+                                    openModal = false;
+                                "
                                         class="button-primary"
                                         :disabled="!modalReason.code.trim()"
                                 >

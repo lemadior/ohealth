@@ -28,22 +28,22 @@
 
                     <div class="record-inner-action-col">
                         <div x-data="{
-                                 openDropdown: false,
-                                 toggle() {
-                                     if (this.openDropdown) {
-                                         return this.close();
-                                     }
+                            openDropdown: false,
+                            toggle() {
+                                if (this.openDropdown) {
+                                    return this.close();
+                                }
 
-                                     this.$refs.button.focus();
-                                     this.openDropdown = true;
-                                 },
-                                 close(focusAfter) {
-                                     if (!this.openDropdown) return;
+                                this.$refs.button.focus();
+                                this.openDropdown = true;
+                            },
+                            close(focusAfter) {
+                                if (!this.openDropdown) return;
 
-                                     this.openDropdown = false;
-                                     focusAfter && focusAfter.focus();
-                                 }
-                             }"
+                                this.openDropdown = false;
+                                focusAfter && focusAfter.focus();
+                            }
+                        }"
                              @keydown.escape.prevent.stop="close($refs.button)"
                              @focusin.window="! $refs.panel.contains($event.target) && close()"
                              x-id="['dropdown-button']"
@@ -79,12 +79,12 @@
                                      class="dropdown-panel relative"
                                 >
                                     <button @click.prevent="
-                                                item = index;
-                                                modalProcedure = JSON.parse(JSON.stringify(procedures[index]));
-                                                newProcedure = false;
-                                                openProcedureDrawer = true;
-                                                close($refs.button);
-                                            "
+                                        item = index;
+                                        modalProcedure = JSON.parse(JSON.stringify(procedures[index]));
+                                        newProcedure = false;
+                                        openProcedureDrawer = true;
+                                        close($refs.button);
+                                    "
                                     >
                                         {{ __('forms.edit') }}
                                     </button>
