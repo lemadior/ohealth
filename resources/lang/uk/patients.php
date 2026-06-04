@@ -229,6 +229,7 @@ return [
     'data_access' => 'Доступ до даних',
     'sync_ehealth_data' => 'Синхронізувати дані з ЕСОЗ',
     'sync_success' => 'Дані успішно синхронізовані',
+    'show_more' => 'Побачити більше',
     'allergies' => 'Алергії',
     'risk_assessments' => 'Оцінки ризиків',
     'devices' => 'Пристрої',

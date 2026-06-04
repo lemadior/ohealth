@@ -60,7 +60,7 @@
                                 class="w-full flex items-center justify-between p-5 focus:outline-none"
                         >
                             <div
-                                class="flex items-center gap-4 text-gray-900 dark:text-gray-100 font-medium text-[15px]">
+                                class="flex items-center gap-4 text-gray-900 dark:text-gray-100 font-semibold text-[17px]">
                                 <span
                                     class="w-6 h-6 flex items-center justify-center shrink-0 text-gray-900 dark:text-gray-100">
                                     @icon($item['icon'], 'w-6 h-6')
@@ -94,29 +94,29 @@
                         <div x-show="activeSection === '{{ $item['id'] }}'" style="display: none;" class="px-5 pb-5">
 
                             @if($item['id'] === 'episodes')
-                                @include('livewire.person.records.parts.episodes', ['episodes' => $episodes])
+                                @include('livewire.person.records.parts.episodes', ['episodes' => $episodes, 'limit' => 5])
                             @elseif($item['id'] === 'encounters')
-                                @include('livewire.person.records.parts.encounters')
+                                @include('livewire.person.records.parts.encounters', ['limit' => 5])
                             @elseif($item['id'] === 'clinicalImpressions')
-                                @include('livewire.person.records.parts.clinical-impressions')
+                                @include('livewire.person.records.parts.clinical-impressions', ['limit' => 5])
                             @elseif($item['id'] === 'immunizations')
-                                @include('livewire.person.records.parts.immunizations')
+                                @include('livewire.person.records.parts.immunizations', ['limit' => 5])
                             @elseif($item['id'] === 'observations')
-                                @include('livewire.person.records.parts.observations')
+                                @include('livewire.person.records.parts.observations', ['limit' => 5])
                             @elseif($item['id'] === 'diagnoses')
-                                @include('livewire.person.records.parts.diagnoses')
+                                @include('livewire.person.records.parts.diagnoses', ['limit' => 5])
                             @elseif($item['id'] === 'conditions')
-                                @include('livewire.person.records.parts.conditions')
+                                @include('livewire.person.records.parts.conditions', ['limit' => 5])
                             @elseif($item['id'] === 'diagnosticReports')
-                                @include('livewire.person.records.parts.diagnostic-reports')
+                                @include('livewire.person.records.parts.diagnostic-reports', ['limit' => 5])
                             @elseif($item['id'] === 'allergies')
-                                @include('livewire.person.records.parts.allergies')
+                                @include('livewire.person.records.parts.allergies', ['limit' => 5])
                             @elseif($item['id'] === 'risk_assessments')
-                                @include('livewire.person.records.parts.risk-assessments')
+                                @include('livewire.person.records.parts.risk-assessments', ['limit' => 5])
                             @elseif($item['id'] === 'devices')
-                                @include('livewire.person.records.parts.devices')
+                                @include('livewire.person.records.parts.devices', ['limit' => 5])
                             @elseif($item['id'] === 'medicines')
-                                @include('livewire.person.records.parts.medicines')
+                                @include('livewire.person.records.parts.medicines', ['limit' => 5])
                             @else
                                 <div
                                     class="py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 mt-2">
@@ -159,5 +159,5 @@
         </div>
     </div>
 
-    <x-forms.loading />
+    <x-forms.loading/>
 </x-layouts.patient>
