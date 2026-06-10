@@ -147,13 +147,10 @@ abstract class DeclarationComponent extends Component
 
     protected function baseMount(int $personId): void
     {
-        $patient = Person::select(['uuid', 'first_name', 'last_name', 'second_name'])
+        $patient = Person::select(['uuid', 'first_name', 'last_name', 'second_name', 'is_syncing'])
             ->withExists('documents')
             ->whereId($personId)
             ->firstOrFail();
-
-        // Use 'documents_exists' dynamic attribute (added by withExists) to determine if we need to update person data
-        $this->isNeedToPersonUpdate = !(bool) $patient->documents_exists;
 
         $this->patientFullName = $patient->fullName;
         $this->personId = $personId;
@@ -163,6 +160,10 @@ abstract class DeclarationComponent extends Component
 
         $this->form->personId = $this->patientUuid;
         $this->authMethods = $this->getPersonAuthMethods();
+
+        // Use 'documents_exists' dynamic attribute (added by withExists) to determine if we need to update person data (for one haven't OTP authentication method)
+        $this->isNeedToPersonUpdate = !$patient->documents_exists && 
+            collect($this->authMethods)->where('type', AuthenticationMethod::OTP->value)->isEmpty();
 
         $this->isNeedToResign = Repository::declarationRequest()->checkIfNeedToResign($this->patientUuid);
     }
@@ -209,12 +210,6 @@ abstract class DeclarationComponent extends Component
             return;
         }
 
-        if ($this->isNeedToPersonUpdate) {
-            $this->showUpdatePersonDataModal = true;
-
-            return;
-        }
-
         $this->setDivisionId();
 
         try {
@@ -222,6 +217,12 @@ abstract class DeclarationComponent extends Component
         } catch (ValidationException $exception) {
             Session::flash('error', $exception->validator->errors()->first());
             $this->setErrorBag($exception->validator->getMessageBag());
+
+            return;
+        }
+
+        if ($this->isNeedToPersonUpdate) {
+            $this->showUpdatePersonDataModal = true;
 
             return;
         }
@@ -711,5 +712,19 @@ abstract class DeclarationComponent extends Component
             $users = Repository::user()->getLegalEntityOwners();
             Notification::send($users, new LegalEntityUpdated());
         }
+    }
+
+    /**
+     * Redirect to the patient data page for the current person.
+     *
+     * @param int |null $personId Optional person ID; if not provided, uses the component's personId property.
+     * 
+     * @return void
+     */
+    public function goToPatientData(?int $personId = null): void
+    {
+        $personId ??= $this->personId;
+
+        $this->redirectRoute('persons.patient-data', [legalEntity(), 'personId' => $personId]);
     }
 }

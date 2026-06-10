@@ -93,7 +93,8 @@ return [
         'party_request' => 30,
         'declaration' => 10,
         'declaration_request' => 20,
-        'legal_entity_legators' => 2
+        'legal_entity_legators' => 2,
+        'remote_job' => 1399
     ],
     'employee_type' => [
         'OWNER' => [

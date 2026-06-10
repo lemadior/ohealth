@@ -16,6 +16,7 @@ use App\Jobs\HealthcareServiceSync;
 use App\Jobs\ImmunizationSync;
 use App\Jobs\LegalEntitySync;
 use App\Jobs\ObservationSync;
+use App\Jobs\RemoteEHealthLinksProcessing;
 use App\Rules\TranslatedDateValidator;
 use Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider;
 use Fruitcake\LaravelDebugbar\ServiceProvider as DebugbarServiceProvider;
@@ -157,6 +158,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for(
             'legal-entity-legators-get',
             static fn (LegalEntitySync $job) => Limit::perMinute(config('ehealth.rate_limit.legal_entity_legators'))->by($job->user->id)
+        );
+
+        RateLimiter::for(
+            'ehealth-remote-job-get',
+            static fn (RemoteEHealthLinksProcessing $job) => Limit::perMinute(config('ehealth.rate_limit.remote_job'))
+                ->by($job->user->id)
         );
     }
 }

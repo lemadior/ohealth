@@ -16,41 +16,52 @@
                         {{ __('patients.patient_data_incomplete') }}
                     </h2>
 
-                    <p class="default-p mb-8">
-                        {{ __('patients.missed_patient_data') }}
-                    </p>
+                    @if(!$isSyncing)
+                        <p class="default-p mb-8">
+                            {{ __('patients.missed_patient_data') }}
+                        </p>
 
-                    <p class="default-p mb-8">
-                        {{ __('patients.patient_data_need_to_update') }}
-                    </p>
+                        <p class="default-p mb-8">
+                            {{ __('patients.patient_data_need_to_update') }}
+                        </p>
 
-                    {{-- Is signed by patient --}}
-                    <div class="form-row">
-                        <div class="form-group group">
-                            <input x-model="isInformed"
-                                   type="checkbox"
-                                   name="isInformed"
-                                   id="isInformed"
-                                   class="default-checkbox"
-                            />
-                            <label class="default-p" for="isInformed">
-                                {{ __('declarations.patient_confirm_sync_message') }}
-                            </label>
+                        {{-- Is signed by patient --}}
+                        {{--
+                        <div class="form-row">
+                            <div class="form-group group">
+                                <input x-model="isInformed"
+                                    type="checkbox"
+                                    name="isInformed"
+                                    id="isInformed"
+                                    class="default-checkbox"
+                                />
+                                <label class="default-p" for="isInformed">
+                                    {{ __('declarations.patient_confirm_sync_message') }}
+                                </label>
+                            </div>
                         </div>
-                    </div>
-
+                         --}}
+                    @else
+                        <p class="default-p mb-8">
+                            {{ __('patients.syncng_patient_data') }}
+                        </p>
+                    @endif
+                    
                     {{-- Action buttons --}}
                     <div class="flex justify-center gap-8.5 mt-16">
-                        <button type="button" @click="isNeedToUpdatePerson = false" class="button-minor">
-                            {{ __('forms.cancel') }}
+                        <button type="button" @click="isNeedToUpdatePerson = false; isInformed = false" class="button-minor">
+                            {{ __('forms.close') }}
                         </button>
-                        <button wire:click="openApproveModal"
-                                type="button"
+                        
+                        @if(!$isSyncing)
+                            <button type="button"
+                                @click="isNeedToUpdatePerson = false; isInformed = false; $wire.goToPatientData()"
+                                {{-- :disabled="!isInformed" --}}
                                 class="button-primary flex items-center gap-2"
-                                :disabled="!isInformed"
-                        >
-                            {{ __('patients.patient_data_update') }}
-                        </button>
+                            >
+                                {{ __('patients.patient_record') }}
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>

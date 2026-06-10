@@ -341,7 +341,9 @@ abstract class EHealthJob implements ShouldQueue
         echo "Found " . $users->count() . " users with active sessions for legal entity {$legalEntity->id}" . PHP_EOL;
 
         // $users here is a Collection of User models. $userKey is the key/index of the first user that has the required scope/permission
-        $userKey = $users->search(fn (User $user) => $user->hasPermissionTo($this->requiredScope(), 'ehealth'));
+        $userKey = empty($this->requiredScope())
+            ? $users->keys()->first()
+            : $users->search(fn (User $user) => $user->hasPermissionTo($this->requiredScope(), 'ehealth'));
 
         // If no user found with required scope, return null
         return $users->get($userKey);

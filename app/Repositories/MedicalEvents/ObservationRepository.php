@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Enums\User\Role;
 use Throwable;
 
 /**
@@ -27,7 +28,7 @@ class ObservationRepository extends BaseRepository
     {
         parent::__construct($model);
 
-        $this->employeeUuid = Auth::user()?->getDiagnosticReportWriterEmployee()?->uuid;
+        $this->employeeUuid = Auth::user()?->getWriterEmployeeByRolePriority(Role::DOCTOR, Role::SPECIALIST)?->uuid;
     }
 
     public function getByDiagnosticReportId(int $diagnosticReportId): array

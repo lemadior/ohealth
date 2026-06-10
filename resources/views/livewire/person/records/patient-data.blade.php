@@ -1,3 +1,4 @@
+@use('App\Models\Person')
 @use('App\Enums\Person\AuthenticationMethod')
 @use('App\Enums\Person\VerificationStatus as Status')
 
@@ -18,6 +19,19 @@
                 {{ __('patients.update_status') }}
                 @icon('refresh', 'w-4 h-4')
             </button>
+
+            @can('syncPersonData', Person::class)
+            <div>
+                <button wire:click.once="syncPersonDataFromEHealth()"
+                        type="button"
+                        class="flex items-center gap-2 button-primary"
+                >
+                    {{ $isSyncing ? __('forms.sync_retry') : __('patients.sync_ehealth_data') }}
+                    @icon('refresh', 'w-4 h-4')
+                </button>
+                @include('livewire.person.parts.modals.person-update-authentication')
+            </div>
+            @endcan
         </div>
 
         <div id="accordion-open" data-accordion="open" class="flex flex-col gap-4">
@@ -206,7 +220,7 @@
                         @icon('edit-user-outline', 'w-5 h-5 text-gray-400 shrink-0')
                     </button>
                 </h2>
-            </div>
+          /div>
         </div>
 
         <div class="mt-8">
