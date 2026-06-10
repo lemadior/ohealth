@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Auth;
 
+use App\Enums\Employee\RequestStatus;
+use App\Models\Employee\EmployeeRequest;
 use App\Models\User;
+use App\Notifications\GeneratedPasswordNotification;
 use App\Notifications\TwoFactorCodeNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +22,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\Features\SupportRedirects\Redirector;
 use Random\RandomException;
+use Throwable;
 
 #[Layout('layouts.guest')]
 class MisLogin extends Component
@@ -66,7 +70,11 @@ class MisLogin extends Component
 
         $user = User::where('email', $this->email)->first();
 
-        if (!$user || !Hash::check($this->password, $user->password)) {
+        if (!$user) {
+            return $this->handleMissingUser($key);
+        }
+
+        if (!Hash::check($this->password, $user->password)) {
             RateLimiter::hit($key, config('ehealth.auth.delay_seconds'));
 
             $this->addError('email', __('auth.login.error.validation.credentials'));
@@ -90,6 +98,71 @@ class MisLogin extends Component
         $this->reset('password');
 
         return null;
+    }
+
+    /**
+     * Handle a login attempt for an email that has no user yet.
+     *
+     * @param  string  $key  The rate limiting throttle key.
+     * @return RedirectResponse|Redirector|null
+     */
+    protected function handleMissingUser(string $key): RedirectResponse|Redirector|null
+    {
+        $employeeRequest = EmployeeRequest::whereEmail($this->email)
+            ->whereStatus(RequestStatus::APPROVED)
+            ->first();
+
+        if (!$employeeRequest) {
+            RateLimiter::hit($key, config('ehealth.auth.delay_seconds'));
+
+            $this->addError('email', __('auth.login.error.validation.credentials'));
+
+            return null;
+        }
+
+        if (!$this->provisionUser($employeeRequest->partyId)) {
+            $this->addError('email', __('auth.login.error.common'));
+
+            return null;
+        }
+
+        $this->reset('password');
+
+        Session::flash('success', __('auth.login.success.account_provisioned'));
+
+        return null;
+    }
+
+    /**
+     * Create a new user for the entered email and email them a generated password.
+     *
+     * @param  int|null  $partyId
+     * @return bool Whether the user was successfully created and notified.
+     */
+    protected function provisionUser(?int $partyId): bool
+    {
+        $password = Str::password(8);
+
+        try {
+            $user = User::create([
+                'email' => $this->email,
+                'password' => Hash::make($password),
+                'party_id' => $partyId
+            ]);
+
+            $user->markEmailAsVerified();
+
+            $user->notify(new GeneratedPasswordNotification($password));
+        } catch (Throwable $exception) {
+            Log::error('MisLogin: failed to provision user from employee request', [
+                'error' => $exception->getMessage(),
+                'email' => $this->email
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
