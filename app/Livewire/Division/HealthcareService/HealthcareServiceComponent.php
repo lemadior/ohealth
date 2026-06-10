@@ -17,6 +17,7 @@ use App\Exceptions\EHealth\EHealthException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -75,6 +76,30 @@ class HealthcareServiceComponent extends Component
         $this->divisionId = $division->id;
 
         $this->licenses = $legalEntity->licenses()->get(['id', 'uuid', 'type']);
+    }
+
+    /**
+     * Categories that require each conditional field, consumed by the frontend to toggle field visibility.
+     *
+     * @return array
+     */
+    #[Computed]
+    public function categoryRequiredFields(): array
+    {
+        $categoryCodes = array_keys($this->dictionaries['HEALTHCARE_SERVICE_CATEGORIES'] ?? []);
+
+        return [
+            'speciality' => config('ehealth.healthcare_service_speciality_type_field_required_for_categories', []),
+            'type' => config('ehealth.healthcare_service_type_field_required_for_categories', []),
+            'license' => array_values(
+                array_filter(
+                    $categoryCodes,
+                    static fn (string $categoryCode): bool => filled(
+                        config('ehealth.healthcare_service_' . strtolower($categoryCode) . '_license_type')
+                    )
+                )
+            )
+        ];
     }
 
     /**

@@ -155,7 +155,7 @@
                                                placeholder="Оберіть статуси"
                                                x-on:click="open = !open"
                                                :value="selectedStatuses.length ? selectedStatuses.map(s => {
-                                                   if (s === 'APPROVED') return '{{ __('forms.active') }}';
+                                                   if (s === 'APPROVED') return '{{ __('forms.status.active') }}';
                                                    if (s === 'NEW') return '{{ __('forms.draft') }}';
                                                    if (s === 'SIGNED') return '{{ __('forms.status.sent') }}';
                                                    if (s === 'DISMISSED') return '{{ __('forms.dismissed') }}';
@@ -186,7 +186,7 @@
                                                     <label class="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" value="{{ Status::APPROVED->value }}" wire:model="status"
                                                                class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
-                                                        <span>{{ __('forms.active') }}</span>
+                                                        <span>{{ __('forms.status.active') }}</span>
                                                     </label>
                                                 </li>
                                                 <li>

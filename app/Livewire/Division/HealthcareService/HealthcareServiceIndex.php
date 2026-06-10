@@ -87,7 +87,7 @@ class HealthcareServiceIndex extends Component
      */
     protected function getSyncStatus(): string
     {
-        return legalEntity()?->getEntityStatus(LegalEntity::ENTITY_HEALTHCARE_SERVICE) ?? '';
+        return legalEntity()->getEntityStatus(LegalEntity::ENTITY_HEALTHCARE_SERVICE) ?? '';
     }
 
     /**
@@ -117,12 +117,6 @@ class HealthcareServiceIndex extends Component
 
         // Return true if either sync is in progress
         return $legalEntitySync || $divisionSync || $hcsSync;
-    }
-
-    public function boot(): void
-    {
-        // This will ensure that the 'isSync' computed property is not cached between requests
-        unset($this->isSync);
     }
 
     public function mount(LegalEntity $legalEntity, Division $division): void
@@ -157,7 +151,7 @@ class HealthcareServiceIndex extends Component
     public function activate(HealthcareService $healthcareService): void
     {
         if (Auth::user()->cannot('activate', $healthcareService)) {
-            Session::flash('error', 'У вас немає дозволу на активування послуги');
+            Session::flash('error', __('healthcare-services.policy.activate'));
 
             return;
         }
@@ -173,7 +167,7 @@ class HealthcareServiceIndex extends Component
         try {
             Repository::healthcareService()->updateStatus($healthcareService->uuid, $response->validate());
 
-            Session::flash('success', 'Послугу успішно активовано');
+            Session::flash('success', __('healthcare-services.success.activated'));
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors($exception, "Failed to activate $healthcareService->uuid healthcare service");
 
@@ -184,7 +178,7 @@ class HealthcareServiceIndex extends Component
     public function deactivate(HealthcareService $healthcareService): void
     {
         if (Auth::user()->cannot('deactivate', $healthcareService)) {
-            Session::flash('error', 'У вас немає дозволу на деактивування послуги');
+            Session::flash('error', __('healthcare-services.policy.deactivate'));
 
             return;
         }
@@ -200,7 +194,7 @@ class HealthcareServiceIndex extends Component
         try {
             Repository::healthcareService()->updateStatus($healthcareService->uuid, $response->validate());
 
-            Session::flash('success', 'Послугу успішно деактивовано');
+            Session::flash('success', __('healthcare-services.success.deactivated'));
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors($exception, "Failed to deactivate $healthcareService->uuid healthcare service");
 
@@ -211,7 +205,7 @@ class HealthcareServiceIndex extends Component
     public function delete(HealthcareService $healthcareService): void
     {
         if (Auth::user()->cannot('delete', $healthcareService)) {
-            Session::flash('error', 'У вас немає дозволу на видалення заявки на створення послуги');
+            Session::flash('error', __('healthcare-services.policy.delete'));
 
             return;
         }
@@ -219,7 +213,7 @@ class HealthcareServiceIndex extends Component
         try {
             HealthcareService::destroy($healthcareService->id);
 
-            Session::flash('success', 'Чернетку послуги успішно видалено');
+            Session::flash('success', __('healthcare-services.success.draft_deleted'));
         } catch (Exception $exception) {
             $this->handleDatabaseErrors($exception, 'Error while deleting healthcare service: ');
 
@@ -230,13 +224,13 @@ class HealthcareServiceIndex extends Component
     public function sync(): void
     {
         if ($this->isSyncProcessing()) {
-            Session::flash('error', 'Синхронізація вже запущена. Будь ласка, зачекайте її завершення.');
+            Session::flash('error', __('healthcare-services.error.sync_in_progress'));
 
             return;
         }
 
         if (Auth::user()->cannot('sync', HealthcareService::class)) {
-            Session::flash('error', 'У вас немає дозволу на синхронізацію послуг');
+            Session::flash('error', __('healthcare-services.policy.sync'));
 
             return;
         }
@@ -248,7 +242,7 @@ class HealthcareServiceIndex extends Component
         if ($this->syncStatus === JobStatus::PAUSED->value || $this->syncStatus === JobStatus::FAILED->value) {
             $this->resumeSynchronization($user, $token);
 
-            Session::flash('success', __('Відновлення попередньої синхронізації розпочато'));
+            Session::flash('success', __('healthcare-services.success.sync_resumed'));
 
             $user->notify(new SyncNotification('healthcare_service', 'resumed'));
 
@@ -272,7 +266,7 @@ class HealthcareServiceIndex extends Component
             $this->handleDatabaseErrors(
                 $exception,
                 'Error while synchronizing healthcare services with eHealth: ',
-                'Виникла помилка. Оновіть список місць надання послуг та спробуйте ще раз'
+                __('healthcare-services.error.sync_failed')
             );
 
             return;
@@ -283,7 +277,7 @@ class HealthcareServiceIndex extends Component
             try {
                 $user->notify(new SyncNotification('healthcare_service', 'started'));
                 $this->dispatchNextSyncJobs($user, $token);
-                Session::flash('success', __('Синхронізацію успішно розпочато.'));
+                Session::flash('success', __('healthcare-services.success.sync_started'));
             } catch (Throwable $exception) {
                 Log::error('Failed to dispatch HealthcareServiceSync batch', ['exception' => $exception]);
 
@@ -292,7 +286,7 @@ class HealthcareServiceIndex extends Component
         } else {
             legalEntity()?->setEntityStatus(JobStatus::COMPLETED, LegalEntity::ENTITY_HEALTHCARE_SERVICE);
 
-            Session::flash('success', __('Інформацію успішно оновлено'));
+            Session::flash('success', __('healthcare-services.success.sync_updated'));
         }
     }
 
@@ -317,7 +311,7 @@ class HealthcareServiceIndex extends Component
             if ($batch->name === self::BATCH_NAME) {
                 Log::info('Resuming Division sync batch: ' . $batch->name . ' id: ' . $batch->id);
 
-                legalEntity()?->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_HEALTHCARE_SERVICE);
+                legalEntity()->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_HEALTHCARE_SERVICE);
 
                 $this->restartBatch($batch, $user, $encryptedToken, legalEntity());
 
@@ -354,6 +348,8 @@ class HealthcareServiceIndex extends Component
     /**
      * Dispatch next sync jobs for remaining pages.
      *
+     * @param  User  $user
+     * @param  string  $token
      * @return void
      * @throws Throwable
      */
@@ -376,7 +372,7 @@ class HealthcareServiceIndex extends Component
             ->name(self::BATCH_NAME)
             ->dispatch();
 
-        legalEntity()?->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_HEALTHCARE_SERVICE);
+        legalEntity()->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_HEALTHCARE_SERVICE);
     }
 
     public function render(): View

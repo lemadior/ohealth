@@ -61,7 +61,7 @@ class HealthcareServiceUpdate extends Component
     public function update(): void
     {
         if (!$this->canUpdate) {
-            Session::flash('error', 'У вас немає дозволу на оновлення послуги');
+            Session::flash('error', __('healthcare-services.policy.update'));
 
             return;
         }
@@ -94,7 +94,7 @@ class HealthcareServiceUpdate extends Component
 
             Repository::healthcareService()->update($validated, false);
 
-            Session::flash('success', 'Послугу успішно оновлено.');
+            Session::flash('success', __('healthcare-services.success.updated'));
             $this->redirectRoute('healthcare-service.index', [legalEntity()], navigate: true);
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors($exception, 'Failed to update healthcare service');

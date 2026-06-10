@@ -106,7 +106,7 @@
                                                            wire:model="statusFilter"
                                                            class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
                                                     />
-                                                    <span>{{ __('forms.active') }}</span>
+                                                    <span>{{ __('forms.status.active') }}</span>
                                                 </label>
                                             </li>
                                             <li>
