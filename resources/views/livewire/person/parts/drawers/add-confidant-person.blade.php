@@ -146,7 +146,7 @@
         </template>
 
         <template x-if="$wire.confidantPerson.length === 0">
-            <x-nothing-found class="mx-auto" :maxW2xl="false" />
+            <x-nothing-found class="mx-auto" maxWidth="" />
         </template>
     </div>
 

@@ -491,7 +491,7 @@
             </div>
 
             @if ($services->isEmpty())
-                <x-nothing-found class="!mx-auto mt-8 shift-content" :maxW2xl="false" />
+                <x-nothing-found class="!mx-auto mt-8 shift-content" maxWidth="" />
             @endif
         </div>
     </div>
