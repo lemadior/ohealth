@@ -92,10 +92,10 @@ class Login extends Component
         if ($user && $user->mustChangePassword) {
             $this->clearLoginAttempts();
             $token = Password::createToken($user);
-        
-            return redirect()->route('password.reset', [
+
+            return Redirect::route('password.reset', [
                 'token' => $token,
-                'email' => $user->email,
+                'email' => $user->email
             ]);
         }
 
@@ -114,8 +114,6 @@ class Login extends Component
                 'seconds' => $seconds
             ]));
         }
-
-        $user = User::where('email', $this->email)->first();
 
         // If user not found in the system and local auth is used - show error
         if (!$user && $this->isLocalAuth) {

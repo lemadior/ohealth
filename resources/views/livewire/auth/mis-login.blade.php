@@ -5,8 +5,8 @@
         </h2>
 
         @if (!$showCodeForm)
-            <form wire:submit.prevent="login">
-                <div class="form-group group">
+            <form wire:submit.prevent="login" x-data="{ isFirstLogin: $wire.entangle('isFirstLogin') }">
+                <div class="form-group group pt-5">
                     <input
                         wire:model="email"
                         required
@@ -25,14 +25,34 @@
                         </p>
                     @enderror
 
-                    <label for="email" class="label z-10">
+                    <label for="email" class="label z-10 mb-4">
                         {{ __('forms.email') }}
                     </label>
                 </div>
 
-                <div class="form-group group pt-5">
+                <div class="block mt-4">
+                    <div class="form-group group">
+                        <input
+                            x-model="isFirstLogin"
+                            type="checkbox"
+                            id="is_first_login"
+                            class="default-checkbox text-blue-500 focus:ring-blue-300"
+                        >
+
+                        <label for="is_first_login" class="ms-2 text-xs font-medium text-gray-500 dark:text-gray-300">
+                            {{ __('forms.first_login') }}
+                        </label>
+                    </div>
+                </div>
+
+                <div
+                    class="form-group group pt-5"
+                    x-show="!isFirstLogin"
+                    x-cloak
+                >
                     <input
                         wire:model="password"
+                        :required="!isFirstLogin"
                         type="password"
                         placeholder=" "
                         autocomplete="off"

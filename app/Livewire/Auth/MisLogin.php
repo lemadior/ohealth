@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace App\Livewire\Auth;
 
 use App\Enums\Employee\RequestStatus;
+use App\Mail\UserCredentialsMail;
 use App\Models\Employee\EmployeeRequest;
 use App\Models\User;
-use App\Notifications\GeneratedPasswordNotification;
 use App\Notifications\TwoFactorCodeNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
@@ -32,6 +33,13 @@ class MisLogin extends Component
     public string $password = '';
 
     public string $code = '';
+
+    /**
+     * Whether the user is signing in for the first time and has no password yet.
+     *
+     * @var bool
+     */
+    public bool $isFirstLogin = false;
 
     /**
      * Whether the one-time code form is currently displayed.
@@ -56,7 +64,7 @@ class MisLogin extends Component
 
         $this->validate([
             'email' => 'required|email',
-            'password' => 'required|string'
+            'password' => $this->isFirstLogin ? 'nullable' : 'required|string'
         ]);
 
         if (!$this->ensureIsNotRateLimited()) {
@@ -69,6 +77,12 @@ class MisLogin extends Component
         }
 
         $user = User::where('email', $this->email)->first();
+
+        if ($this->isFirstLogin && $user) {
+            $this->addError('email', __('auth.login.error.account_exists'));
+
+            return null;
+        }
 
         if (!$user) {
             return $this->handleMissingUser($key);
@@ -126,7 +140,7 @@ class MisLogin extends Component
             return null;
         }
 
-        $this->reset('password');
+        $this->reset('password', 'isFirstLogin');
 
         Session::flash('success', __('auth.login.success.account_provisioned'));
 
@@ -147,12 +161,13 @@ class MisLogin extends Component
             $user = User::create([
                 'email' => $this->email,
                 'password' => Hash::make($password),
-                'party_id' => $partyId
+                'party_id' => $partyId,
+                'must_change_password' => true
             ]);
 
             $user->markEmailAsVerified();
 
-            $user->notify(new GeneratedPasswordNotification($password));
+            Mail::to($this->email)->send(new UserCredentialsMail($this->email, $password));
         } catch (Throwable $exception) {
             Log::error('MisLogin: failed to provision user from employee request', [
                 'error' => $exception->getMessage(),

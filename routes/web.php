@@ -13,7 +13,6 @@ use App\Livewire\Auth\LoginDev;
 use App\Livewire\Auth\MisLogin;
 use App\Livewire\Auth\Register;
 use App\Livewire\Auth\ResetPassword;
-use App\Livewire\Auth\SelectLegalEntity;
 use App\Livewire\Auth\VerifyEmail;
 use App\Livewire\Auth\VerifyPersonality;
 use App\Livewire\Contract\CapitationContractCreate;
@@ -115,10 +114,14 @@ Route::get('/ehealth/oauth', EHealthLoginController::class)->name('ehealth.oauth
 
 Route::middleware('guest')->group(function () {
     Route::get('login', Login::class)->middleware('mis.2fa')->name('login');
-    Route::get('mis-login', MisLogin::class)->name('mis.login');
     Route::get('register', Register::class)->name('register');
-    Route::get('forgot-password', ForgotPassword::class)->name('forgot.password');
-    Route::get('reset-password/{token}', ResetPassword::class)->name('password.reset');
+
+    // Local MIS authentication: email/password login plus its password-reset lifecycle
+    Route::prefix('mis')->group(function () {
+        Route::get('login', MisLogin::class)->name('mis.login');
+        Route::get('forgot-password', ForgotPassword::class)->name('forgot.password');
+        Route::get('reset-password/{token}', ResetPassword::class)->name('password.reset');
+    });
 
     Route::get('email/verify', VerifyEmail::class)->name('verification.notice');
 
