@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire\Division\Forms;
 
 use App\Core\Arr;
+use App\Enums\Division\Status;
 use App\Enums\License\Type;
-use App\Enums\Status;
 use App\Models\Division;
 use App\Models\HealthcareService;
 use App\Rules\InDictionary;
@@ -22,7 +22,7 @@ class HealthcareServiceForm extends Form
     public string $divisionId;
 
     public array $category = [
-        'coding' => [['system' => 'HEALTHCARE_SERVICE_CATEGORIES']]
+        'coding' => [['system' => 'HEALTHCARE_SERVICE_CATEGORIES', 'code' => '']]
     ];
 
     public ?string $specialityType = '';
@@ -30,7 +30,7 @@ class HealthcareServiceForm extends Form
     public string $providingCondition = '';
 
     public ?array $type = [
-        'coding' => [['system' => 'HEALTHCARE_SERVICE_PHARMACY_DRUGS_TYPES']]
+        'coding' => [['system' => 'HEALTHCARE_SERVICE_PHARMACY_DRUGS_TYPES', 'code' => '']]
     ];
 
     public ?string $licenseId = null;
@@ -51,8 +51,25 @@ class HealthcareServiceForm extends Form
         $providingConditionConfigKey = 'legal_entity_' . strtolower(legalEntity()->type->name) . '_providing_conditions';
 
         $categoryCode = Arr::get($this->category, 'coding.0.code');
-        // Check for HEALTHCARE_SERVICE_<$.category>_LICENSE_TYPE, see: https://e-health-ua.atlassian.net/wiki/spaces/EH/pages/17088643146/Configurations+for+Healthcare+services
-        $isLicenseRequiredForType = in_array($categoryCode, [Type::PHARMACY->value, Type::PHARMACY_DRUGS->value], true);
+
+        $licenseType = $categoryCode
+            ? config('ehealth.healthcare_service_' . strtolower($categoryCode) . '_license_type')
+            : null;
+        $isLicenseRequiredForType = !empty($licenseType);
+
+        $isSpecialityRequiredForCategory = in_array(
+            $categoryCode,
+            config('ehealth.healthcare_service_speciality_type_field_required_for_categories', []),
+            true
+        );
+
+        $isTypeRequiredForCategory = in_array(
+            $categoryCode,
+            config('ehealth.healthcare_service_type_field_required_for_categories', []),
+            true
+        );
+
+        $typeDictionary = "HEALTHCARE_SERVICE_{$categoryCode}_TYPES";
 
         return array_merge([
             'divisionId' => ['required', 'uuid', Rule::exists('divisions', 'uuid')->where('status', Status::ACTIVE)],
@@ -68,8 +85,7 @@ class HealthcareServiceForm extends Form
                 'nullable',
                 'string',
                 new InDictionary('SPECIALITY_TYPE'),
-                'required_if:category.coding.0.code,' . Type::MSP->value,
-                'prohibited_unless:category.coding.0.code,' . Type::MSP->value
+                $isSpecialityRequiredForCategory ? 'required' : 'prohibited'
             ],
             'providingCondition' => [
                 'required',
@@ -78,23 +94,25 @@ class HealthcareServiceForm extends Form
                 Rule::in(config("ehealth.$providingConditionConfigKey", []))
             ],
             'type' => ['array', 'nullable'],
-            'type.coding.*.system' => ['nullable', 'string', Rule::in('HEALTHCARE_SERVICE_PHARMACY_DRUGS_TYPES')],
+            'type.coding.*.system' => $isTypeRequiredForCategory
+                ? ['nullable', 'string', Rule::in($typeDictionary)]
+                : ['nullable', 'string'],
             'type.coding.*.code' => [
                 'nullable',
                 'string',
-                'required_if:category.coding.0.code,' . Type::PHARMACY_DRUGS->value,
-                'prohibited_unless:category.coding.0.code,' . Type::PHARMACY_DRUGS->value,
-                new InDictionary(['HEALTHCARE_SERVICE_PHARMACY_DRUGS_TYPES', 'LEGAL_ENTITY_TYPE_V2']),
+                $isTypeRequiredForCategory ? 'required' : 'prohibited',
+                new InDictionary([$typeDictionary, 'LEGAL_ENTITY_TYPE_V2'])
             ],
             'licenseId' => [
                 'nullable',
                 'uuid',
-                Rule::exists('licenses', 'uuid')->where('is_active', true)
+                $isLicenseRequiredForType ? 'required' : 'prohibited',
+                Rule::exists('licenses', 'uuid')
+                    ->where('legal_entity_id', legalEntity()->id)
+                    ->where('is_active', true)
                     ->where(function (QueryBuilder $query) {
                         $query->where('expiry_date', '>=', now())->orWhereNull('expiry_date');
-                    })->when($isLicenseRequiredForType, fn (Exists $rule) => $rule->where('type', $categoryCode)),
-                'required_if:category.coding.0.code,' . Type::PHARMACY->value . ',' . Type::PHARMACY_DRUGS->value,
-                'prohibited_if:category.coding.0.code,' . Type::MSP->value
+                    })->when($isLicenseRequiredForType, fn (Exists $rule) => $rule->where('type', $licenseType))
             ]
         ], $this->rulesForUpdating());
     }
@@ -162,12 +180,12 @@ class HealthcareServiceForm extends Form
     protected function messages(): array
     {
         return [
-            'specialityType.required_if' => __('healthcare-services.validation.speciality_type.required_if'),
-            'specialityType.prohibited_unless' => __('healthcare-services.validation.speciality_type.prohibited_unless'),
-            'type.coding.*.code.required_if' => __('healthcare-services.validation.type_coding.required_if'),
-            'type.coding.*.code.prohibited_unless' => __('healthcare-services.validation.type_coding.prohibited_unless'),
-            'licenseId.required_if' => __('healthcare-services.validation.license_id.required_if'),
-            'licenseId.prohibited_if' => __('healthcare-services.validation.license_id.prohibited_if'),
+            'specialityType.required' => __('healthcare-services.validation.speciality_type.required_if'),
+            'specialityType.prohibited' => __('healthcare-services.validation.speciality_type.prohibited_unless'),
+            'type.coding.*.code.required' => __('healthcare-services.validation.type_coding.required_if'),
+            'type.coding.*.code.prohibited' => __('healthcare-services.validation.type_coding.prohibited_unless'),
+            'licenseId.required' => __('healthcare-services.validation.license_id.required_if'),
+            'licenseId.prohibited' => __('healthcare-services.validation.license_id.prohibited_if'),
         ];
     }
 
@@ -245,6 +263,7 @@ class HealthcareServiceForm extends Form
             $secondCheck = HealthcareService::whereDivisionId($divisionId)
                 ->whereHas('category.coding', fn (EloquentBuilder $query) => $query->where('code', $categoryCode))
                 ->whereHas('type.coding', fn (EloquentBuilder $query) => $query->where('code', $typeCode))
+                ->whereNotNull('uuid')
                 ->exists();
 
             if ($secondCheck) {
@@ -254,14 +273,17 @@ class HealthcareServiceForm extends Form
             }
         }
 
-        $thirdCheck = HealthcareService::whereDivisionId($divisionId)
-            ->whereHas('category.coding', fn (EloquentBuilder $query) => $query->where('code', Type::PHARMACY))
-            ->exists();
+        if ($categoryCode === Type::PHARMACY->value) {
+            $thirdCheck = HealthcareService::whereDivisionId($divisionId)
+                ->whereHas('category.coding', fn (EloquentBuilder $query) => $query->where('code', Type::PHARMACY->value))
+                ->whereNotNull('uuid')
+                ->exists();
 
-        if ($thirdCheck) {
-            throw ValidationException::withMessages([
-                'unique_combination' => __('validation.attributes.healthcareService.constraint.categoryPharmacy')
-            ]);
+            if ($thirdCheck) {
+                throw ValidationException::withMessages([
+                    'unique_combination' => __('validation.attributes.healthcareService.constraint.categoryPharmacy')
+                ]);
+            }
         }
     }
 }

@@ -41,7 +41,7 @@
                                      x-transition:leave="transition ease-in duration-75"
                                      x-transition:leave-start="transform opacity-100 scale-100"
                                      x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute left-0 mt-2 w-max min-w-[260px] max-w-[400px] max-h-[350px] overflow-hidden flex flex-col rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-lg z-50"
+                                     class="absolute left-0 mt-2 w-max min-w-65 max-w-100 max-h-87.5 overflow-hidden flex flex-col rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-lg z-50"
                                 >
                                     {{-- Search Header --}}
                                     <div class="p-2 border-b border-gray-100 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-800/50">
@@ -64,7 +64,7 @@
                                             @if($division['status'] === Status::ACTIVE->value)
                                                 <a href="{{ route('healthcare-service.create', [legalEntity(), $division['id']]) }}"
                                                    x-show="'{{ addslashes($division['name']) }}'.toLowerCase().includes(search.toLowerCase())"
-                                                   class="block px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors whitespace-normal break-words"
+                                                   class="block px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors whitespace-normal wrap-break-word"
                                                 >
                                                     {{ __('healthcare-services.for_division', ['name' => $division['name']]) }}
                                                 </a>
@@ -149,7 +149,7 @@
                            x-on:click="open = !open"
                            x-on:click.outside="open = false"
                            :value="selectedStatuses.length ? selectedStatuses.map(s => {
-                               if (s === 'ACTIVE') return '{{ __('forms.active') }}';
+                               if (s === 'ACTIVE') return '{{ __('forms.status.active') }}';
                                if (s === 'INACTIVE') return '{{ __('forms.status.non_active') }}';
                                if (s === 'DRAFT') return '{{ __('forms.draft') }}';
                                return s;
@@ -168,8 +168,9 @@
                             <li>
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" value="ACTIVE" wire:model.live="status"
-                                           class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
-                                    <span>{{ __('forms.active') }}</span>
+                                           class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
+                                    />
+                                    <span>{{ __('forms.status.active') }}</span>
                                 </label>
                             </li>
                             <li>
@@ -201,7 +202,7 @@
     <div class="flow-root mt-8 shift-content pl-3.5"
          wire:key="healthcare-services-table-page-{{ $healthcareServices->total() }}-{{ $healthcareServices->currentPage() }}"
     >
-        <div class="max-w-screen-xl">
+        <div class="max-w-7xl">
             @if($healthcareServices->isNotEmpty())
                 <div class="index-table-wrapper">
                     <table class="index-table">
@@ -278,7 +279,7 @@
                                                      x-transition.origin.top.left
                                                      @click.outside="close($refs.button)"
                                                      :id="$id('dropdown-button')"
-                                                     class="absolute right-0 mt-2 w-auto min-w-[10rem] max-w-[20rem] rounded-md bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-md z-50"
+                                                     class="absolute right-0 mt-2 w-auto min-w-40 max-w-[20rem] rounded-md bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-md z-50"
                                                 >
                                                     @if ($service->status === Status::ACTIVE)
                                                         @can('view', $service)
@@ -312,7 +313,7 @@
                                                                     "
                                                                     class="cursor-pointer flex items-center gap-2 w-full last-of-type:rounded-b-md px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600"
                                                             >
-@icon('delete', 'w-5 h-5 text-red-600 dark:text-red-400')
+                                                                @icon('delete', 'w-5 h-5 text-red-600 dark:text-red-400')
                                                             {{ __('forms.deactivate') }}
                                                             </button>
                                                         @endcan

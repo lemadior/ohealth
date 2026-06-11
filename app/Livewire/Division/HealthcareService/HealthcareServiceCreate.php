@@ -25,7 +25,7 @@ class HealthcareServiceCreate extends HealthcareServiceComponent
     public function createLocally(): void
     {
         if (Auth::user()->cannot('create', HealthcareService::class)) {
-            Session::flash('error', 'У вас немає дозволу на створення послуги');
+            Session::flash('error', __('healthcare-services.policy.create'));
 
             return;
         }
@@ -47,7 +47,7 @@ class HealthcareServiceCreate extends HealthcareServiceComponent
 
             Repository::healthcareService()->store($this->form->formatForApi($validated));
 
-            Session::flash('success', 'Чернетку послуги успішно створено.');
+            Session::flash('success', __('healthcare-services.success.draft_created'));
             $this->redirectRoute('healthcare-service.index', [legalEntity(), $this->divisionId], navigate: true);
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors($exception, 'Failed to store healthcare service');
@@ -59,7 +59,7 @@ class HealthcareServiceCreate extends HealthcareServiceComponent
     public function create(): void
     {
         if (Auth::user()->cannot('create', HealthcareService::class)) {
-            Session::flash('error', 'У вас немає дозволу на створення послуги');
+            Session::flash('error', __('healthcare-services.policy.create'));
 
             return;
         }
@@ -78,7 +78,7 @@ class HealthcareServiceCreate extends HealthcareServiceComponent
             $validated = $response->validate();
             Repository::healthcareService()->store($response->map($this->form->formatForApi($validated)));
 
-            Session::flash('success', 'Послугу успішно створено.');
+            Session::flash('success', __('healthcare-services.success.created'));
             $this->redirectRoute('healthcare-service.index', [legalEntity(), $this->divisionId], navigate: true);
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors($exception, 'Failed to store healthcare service');

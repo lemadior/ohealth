@@ -119,6 +119,8 @@ class HealthcareServiceRepository
                     } else {
                         $item['type_id'] = Repository::codeableConcept()->store($typeConcept)->id;
                     }
+                } else {
+                    $item['type_id'] = $existing->typeId ?? null;
                 }
 
                 unset($item['category'], $item['type']);
@@ -129,6 +131,7 @@ class HealthcareServiceRepository
 
                 $item['ehealth_inserted_at'] = Carbon::parse($item['ehealth_inserted_at'])->format('Y-m-d H:i:s');
                 $item['ehealth_updated_at'] = Carbon::parse($item['ehealth_updated_at'])->format('Y-m-d H:i:s');
+
                 return $item;
             })->values()->all();
 

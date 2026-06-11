@@ -102,3 +102,32 @@ When an element's attributes are split across multiple lines:
 <div class="record-inner-value text-[16px]"
      x-text="`${ action.code } - ${ dictionary[action.code] }`"></div>
 ```
+
+The `>`-on-its-own-line rule above applies to **empty elements** (no text content) whose attributes already span multiple lines.
+
+## Elements with text content
+
+When an element has text content (or a Blade echo) and its attributes fit on a single line, keep the attributes and the opening `>` on the tag line, then put the content on its **own indented line** and the closing tag on its own line.
+
+**Correct** — attributes on the tag line, content and closing tag each on their own line:
+
+```html
+<label for="providingCondition" class="label">
+    {{ __('healthcare-services.providing_condition') }}
+</label>
+```
+
+**Not this** — content glued to the opening `>`:
+
+```html
+<label for="providingCondition"
+       class="label">{{ __('healthcare-services.providing_condition') }}</label>
+```
+
+**Not this** — pushing the `>` onto its own line just to un-glue the content (the `>`-on-its-own-line form is for empty elements only):
+
+```html
+<label for="providingCondition"
+       class="label"
+>{{ __('healthcare-services.providing_condition') }}</label>
+```

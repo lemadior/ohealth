@@ -101,7 +101,7 @@
         >
             @foreach ($weekdays as $key => $day)
                 <div
-                    class="p-6 min-h-[220px] {{ $loop->iteration % 2 === 0 ? '' : 'border-r border-gray-200 dark:border-gray-700' }} {{ $loop->last ? '' : 'border-b border-gray-200 dark:border-gray-700' }} ">
+                    class="p-6 min-h-55 {{ $loop->iteration % 2 === 0 ? '' : 'border-r border-gray-200 dark:border-gray-700' }} {{ $loop->last ? '' : 'border-b border-gray-200 dark:border-gray-700' }} ">
                     <div :key="'{{ $key }}'">
                         <div class="mb-4">
                             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ $day }}</h3>
@@ -121,7 +121,8 @@
                                        }"
                                 >
                                 <div
-                                    class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:bg-gray-700 dark:peer-focus:ring-blue-800 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full"></div>
+                                    class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:bg-gray-700 dark:peer-focus:ring-blue-800 after:content-[''] after:absolute after:top-0.5 after:start-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full"
+                                ></div>
                                 <span class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
                                       x-text="localAvailableTime[{{ $loop->index }}].working ? '{{ __('forms.works') }}' : '{{ __('forms.does_not_work') }}'"
                                 ></span>

@@ -11,7 +11,34 @@
     </x-header-navigation>
 
     <div class="form shift-content" wire:key="{{ time() }}">
-        <fieldset class="fieldset" x-data="{ isDisabled: $wire.entangle('isDisabled') }">
+        <fieldset class="fieldset"
+                  x-data="{
+                      isDisabled: $wire.entangle('isDisabled'),
+                      categoryCode: $wire.entangle('form.category.coding.0.code'),
+                      specialityType: $wire.entangle('form.specialityType'),
+                      typeCode: $wire.entangle('form.type.coding.0.code'),
+                      licenseId: $wire.entangle('form.licenseId'),
+                      requiredCategories: @js($this->categoryRequiredFields),
+                      isRequired(field) {
+                          return this.requiredCategories[field].includes(this.categoryCode);
+                      },
+                      init() {
+                          this.$watch('categoryCode', () => {
+                              if (!this.isRequired('speciality')) {
+                                  this.specialityType = '';
+                              }
+
+                              if (!this.isRequired('type')) {
+                                  this.typeCode = '';
+                              }
+
+                              if (!this.isRequired('license')) {
+                                  this.licenseId = null;
+                              }
+                          });
+                      }
+                  }"
+        >
             <legend class="legend">{{ __('forms.main_information') }}</legend>
 
             <div class="form-row-2">
@@ -60,7 +87,10 @@
             </div>
 
             <div class="form-row-2">
-                <div class="form-group group">
+                <div class="form-group group"
+                     x-show="isRequired('speciality')"
+                     x-cloak
+                >
                     <select wire:model="form.specialityType"
                             type="text"
                             name="specialityType"
@@ -95,8 +125,9 @@
                         @endforeach
                     </select>
 
-                    <label for="providingCondition"
-                           class="label">{{ __('healthcare-services.providing_condition') }}</label>
+                    <label for="providingCondition" class="label">
+                        {{ __('healthcare-services.providing_condition') }}
+                    </label>
 
                     @error('form.providingCondition')
                     <p class="text-error">{{ $message }}</p>
@@ -106,7 +137,10 @@
 
             @if(legalEntity()->type->name !== LegalEntity::TYPE_PRIMARY_CARE)
                 <div class="form-row-2">
-                    <div class="form-group group">
+                    <div class="form-group group"
+                         x-show="isRequired('type')"
+                         x-cloak
+                    >
                         <select wire:model="form.type.coding.0.code"
                                 type="text"
                                 name="type"
@@ -127,7 +161,10 @@
                         @enderror
                     </div>
 
-                    <div class="form-group group">
+                    <div class="form-group group"
+                         x-show="isRequired('license')"
+                         x-cloak
+                    >
                         <select wire:model="form.licenseId"
                                 type="text"
                                 name="licenseId"
@@ -155,14 +192,14 @@
                     <label for="comment" class="label-modal">{{ __('forms.comment') }}</label>
 
                     <div>
-                    <textarea wire:model="form.comment"
-                              rows="4"
-                              id="comment"
-                              name="comment"
-                              class="textarea"
-                              placeholder="{{ __('forms.write_comment_here') }}"
-                              x-bind:disabled="isDisabled"
-                    ></textarea>
+                        <textarea wire:model="form.comment"
+                                  rows="4"
+                                  id="comment"
+                                  name="comment"
+                                  class="textarea"
+                                  placeholder="{{ __('forms.write_comment_here') }}"
+                                  x-bind:disabled="isDisabled"
+                        ></textarea>
                     </div>
                 </div>
             </div>

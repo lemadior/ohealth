@@ -34,7 +34,7 @@ class HealthcareServiceEdit extends HealthcareServiceComponent
     {
         $healthcareService = HealthcareService::find($this->healthcareServiceId);
         if (Auth::user()->cannot('edit', $healthcareService)) {
-            Session::flash('error', 'У вас немає дозволу на редагування цієї послуги');
+            Session::flash('error', __('healthcare-services.policy.edit'));
 
             return;
         }
@@ -54,7 +54,7 @@ class HealthcareServiceEdit extends HealthcareServiceComponent
             $validated['id'] = $this->healthcareServiceId;
             Repository::healthcareService()->update($response->map($validated));
 
-            Session::flash('success', 'Послугу успішно створено.');
+            Session::flash('success', __('healthcare-services.success.created'));
             $this->redirectRoute('healthcare-service.index', [legalEntity(), $this->divisionId], navigate: true);
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors($exception, 'Failed to store healthcare service');
