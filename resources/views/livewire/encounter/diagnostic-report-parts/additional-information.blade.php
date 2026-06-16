@@ -107,6 +107,7 @@
                     id="resultsInterpreter"
                     class="input-select peer"
                     type="text"
+                    :required="['diagnostic_procedure', 'imaging'].includes(modalDiagnosticReport.categoryCode)"
             >
                 <option value="" selected>
                     {{ __('forms.select') }} {{ mb_strtolower(__('patients.the_doctor_who_interpreted_the_results')) }}

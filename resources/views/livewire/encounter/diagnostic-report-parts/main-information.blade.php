@@ -138,9 +138,10 @@
                                            class="input peer"
                                            placeholder=" "
                                            autocomplete="off"
+                                           required
                                     >
                                     <label for="requesterEmployeeName" class="label">
-                                        {{ __('patients.author') }}
+                                        {{ __('patients.author') }} *
                                     </label>
 
                                     @error($diagnosticReportErrorPath . '.paperReferralRequesterEmployeeName')
@@ -178,7 +179,6 @@
                                            class="input peer"
                                            placeholder=" "
                                            autocomplete="off"
-                                           required
                                     >
                                     <label for="requesterLegalEntityName" class="label">
                                         {{ __('patients.name_of_the_institution_that_issued_it') }}
