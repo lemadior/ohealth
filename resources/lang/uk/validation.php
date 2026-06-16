@@ -213,6 +213,11 @@ return [
                 'class_forbidden' => 'Тип взаємодії :value заборонений для вашого класу взаємодії'
             ]
         ],
+        'diagnosticReport' => [
+            'categoryCode' => [
+                'laborant_category' => 'Лаборант може створювати діагностичний звіт лише з категорією "Лабораторна процедура".',
+            ],
+        ],
         'conditions' => [
             'codeSystem' => [
                 'class_forbidden' => "Для класу взаємодії 'Амбулаторна медична допомога' та 'Стаціонарна медична допомога' дозволена лише система eHealth/ICD10_AM/condition_codes"

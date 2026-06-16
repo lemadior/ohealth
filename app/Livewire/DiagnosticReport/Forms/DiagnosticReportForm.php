@@ -5,18 +5,27 @@ declare(strict_types=1);
 namespace App\Livewire\DiagnosticReport\Forms;
 
 use App\Core\BaseForm;
+use App\Enums\User\Role;
 use App\Rules\AfterOrEqualDateTime;
 use App\Rules\InDictionary;
 use App\Rules\PastDateTime;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class DiagnosticReportForm extends BaseForm
 {
     public array $diagnosticReport = [];
 
     public array $observations = [];
+
+    private const LABORANT_ALLOWED_CATEGORIES = ['laboratory_procedure'];
+
+    private const RESULTS_INTERPRETER_REQUIRED_CATEGORIES = [
+        'diagnostic_procedure',
+        'imaging',
+    ];
 
     protected function rules(): array
     {
@@ -26,14 +35,34 @@ class DiagnosticReportForm extends BaseForm
             'diagnosticReport.categoryCode' => [
                 'required',
                 'string',
-                new InDictionary('eHealth/diagnostic_report_categories')
+                new InDictionary('eHealth/diagnostic_report_categories'),
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $employeeType = Auth::user()
+                        ?->getDiagnosticReportWriterEmployee()
+                        ?->employeeType;
+
+                    if (
+                        $employeeType === Role::LABORANT->value
+                        && !in_array($value, self::LABORANT_ALLOWED_CATEGORIES, true)
+                    ) {
+                        $fail(__('validation.custom.diagnosticReport.categoryCode.laborant_category'));
+                    }
+                },
             ],
             'diagnosticReport.codeValue' => [
                 'required',
                 'uuid',
             ],
             'diagnosticReport.paperReferralRequisition' => ['nullable', 'string', 'max:255'],
-            'diagnosticReport.paperReferralRequesterEmployeeName' => ['nullable', 'string', 'max:255'],
+            'diagnosticReport.paperReferralRequesterEmployeeName' => [
+                Rule::requiredIf(
+                    data_get($this->diagnosticReport, 'isReferralAvailable') === true
+                    && data_get($this->diagnosticReport, 'referralType') === 'paper'
+                ),
+                'nullable',
+                'string',
+                'max:255',
+            ],
             'diagnosticReport.paperReferralRequesterLegalEntityEdrpou' => [
                 Rule::requiredIf(
                     data_get($this->diagnosticReport, 'isReferralAvailable') === true
@@ -41,14 +70,8 @@ class DiagnosticReportForm extends BaseForm
                 ),
                 'nullable',
                 'digits_between:8,10',
-                'string',
-                'max:255',
             ],
             'diagnosticReport.paperReferralRequesterLegalEntityName' => [
-                Rule::requiredIf(
-                    data_get($this->diagnosticReport, 'isReferralAvailable') === true
-                    && data_get($this->diagnosticReport, 'referralType') === 'paper'
-                ),
                 'nullable',
                 'string',
                 'max:255',
@@ -59,7 +82,7 @@ class DiagnosticReportForm extends BaseForm
                     && data_get($this->diagnosticReport, 'referralType') === 'paper'
                 ),
                 'nullable',
-                'date',
+                'date_format:' . config('app.date_format'),
             ],
             'diagnosticReport.paperReferralNote' => ['nullable', 'string', 'max:255'],
             'diagnosticReport.effectivePeriodStartDate' => [
@@ -141,7 +164,17 @@ class DiagnosticReportForm extends BaseForm
                 'max:1000',
             ],
             'diagnosticReport.divisionId' => ['nullable', 'uuid'],
-            'diagnosticReport.resultsInterpreterEmployeeId' => ['nullable', 'uuid'],
+            'diagnosticReport.resultsInterpreterEmployeeId' => [
+                Rule::requiredIf(
+                    in_array(
+                        data_get($this->diagnosticReport, 'categoryCode'),
+                        self::RESULTS_INTERPRETER_REQUIRED_CATEGORIES,
+                        true
+                    )
+                ),
+                'nullable',
+                'uuid',
+            ],
 
             'observations' => ['nullable', 'array'],
             'observations.*.uuid' => ['nullable', 'uuid'],
