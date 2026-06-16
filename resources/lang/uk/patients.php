@@ -251,6 +251,9 @@ return [
     'group_actions' => 'Групові дії',
     'revoke_access' => 'Відкликати доступ до записів',
     'filter_created_at_range' => 'Створено від - до',
+    'filter_effective_date_range' => 'Дата ефективності від - до',
+    'filter_onset_date_range' => 'Дата початку від - до',
+    'filter_date_range' => 'Дата від - до',
     'episodes_not_found' => 'Епізоди не знайдено',
 
     // Diagnoses record

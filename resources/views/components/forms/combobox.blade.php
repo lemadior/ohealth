@@ -82,7 +82,7 @@
 @endphp
 
 <div {{ $attributes->merge(['class' => "form-group group"]) }}
-     :class="{ 'z-30': open }"
+     :class="{ '!z-30': open }"
      x-id="['input', 'listbox']"
      x-data="combobox({
          options: @js($options),
@@ -116,7 +116,7 @@
         x-cloak
         wire:ignore
         :id="$id('listbox')"
-        class="py-2 text-sm text-gray-700 dark:text-gray-200 absolute z-17 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded shadow max-h-60 overflow-auto"
+        class="py-2 text-sm text-gray-700 dark:text-gray-200 absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-600 rounded shadow max-h-60 overflow-auto"
     >
         <template x-if="filtered.length > 0">
             <template x-for="option in filtered" :key="option.index">

@@ -76,7 +76,7 @@
         </template>
     </div>
 
-    <div class="form-row-2 mt-6 relative z-10">
+    <div class="form-row-2 mt-6">
         <div class="form-group group"
              x-data="{ type: $wire.entangle('form.type') }"
         >

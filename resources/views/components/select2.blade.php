@@ -5,8 +5,6 @@
      x-model="{{ $modelPath }}"
      @click.away="hideOptions"
      x-cloak
-     class="relative"
-     :class="{ 'z-30': optionsVisible }"
 >
     <input class="{{ $attributes->get('class', 'input-modal') }}"
            {{ $attributes->except('class') }}
@@ -83,6 +81,18 @@
                 this.$watch('search', Alpine.debounce(() => this.filterOptions(), 150));
                 // Defer heavy processing to avoid blocking the initial render
                 setTimeout(() => this.initializeOptions(), 0);
+
+                // Prevent dropdown clipping
+                this.$watch('optionsVisible', (visible) => {
+                    const formGroup = this.$el.closest('.form-group');
+                    if (formGroup) {
+                        if (visible) {
+                            formGroup.classList.add('!z-30');
+                        } else {
+                            formGroup.classList.remove('!z-30');
+                        }
+                    }
+                });
             },
 
             initializeOptions() {

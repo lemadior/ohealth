@@ -41,7 +41,7 @@
                 <p>{{ __('patients.encounter_search') }}</p>
             </div>
 
-            <div class="form-row-3 mb-6 relative z-10">
+            <div class="form-row-3 mb-6">
                 <div class="form-group group">
                     <div class="datepicker-wrapper">
                         <input wire:model="filterStartDateRange"
@@ -133,7 +133,7 @@
             </div>
 
             <div x-show="showAdditionalParams" x-transition x-cloak>
-                <div class="form-row-3 mb-9 relative z-10">
+                <div class="form-row-3 mb-9">
                     <x-forms.combobox :options="$incomingReferrals"
                                       bind="filterIncomingReferralId"
                                       bindValue="uuid"

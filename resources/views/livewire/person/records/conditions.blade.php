@@ -174,69 +174,33 @@
                              x-data="{
                                  from: $wire.entangle('filterOnsetDateFrom'),
                                  to: $wire.entangle('filterOnsetDateTo'),
-                                 rangeText: '',
-                                 init() {
-                                     flatpickr(this.$refs.rangeInput, {
-                                         mode: 'range',
-                                         showMonths: 2,
-                                         dateFormat: 'd.m.Y',
-                                         locale: {
-                                             firstDayOfWeek: 1,
-                                             rangeSeparator: ' — ',
-                                             weekdays: {
-                                                 shorthand: ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
-                                                 longhand: ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П\'ятниця', 'Субота']
-                                             },
-                                             months: {
-                                                 shorthand: ['Січ', 'Лют', 'Бер', 'Квіт', 'Трав', 'Черв', 'Лип', 'Серп', 'Врес', 'Жовт', 'Лист', 'Груд'],
-                                                 longhand: ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень']
-                                             }
-                                         },
-                                         allowInput: true,
-                                         onReady: (selectedDates, dateStr, instance) => {
-                                             if (this.from && this.to) {
-                                                 instance.setDate([this.from, this.to]);
-                                                 this.rangeText = this.from + ' — ' + this.to;
-                                             }
-                                         },
-                                         onChange: (selectedDates, dateStr, instance) => {
-                                             this.rangeText = dateStr;
-                                             if (selectedDates.length === 2) {
-                                                 this.from = instance.formatDate(selectedDates[0], 'd.m.Y');
-                                                 this.to = instance.formatDate(selectedDates[1], 'd.m.Y');
-                                             } else if (selectedDates.length === 0) {
-                                                 this.from = '';
-                                                 this.to = '';
-                                             }
-                                         }
-                                     });
-                                     this.$watch('from', value => {
-                                         if (!value) {
-                                             this.rangeText = '';
-                                             const fp = this.$refs.rangeInput._flatpickr;
-                                             if (fp) fp.clear();
-                                         }
-                                     });
-                                     this.$watch('to', value => {
-                                         if (!value) {
-                                             this.rangeText = '';
-                                             const fp = this.$refs.rangeInput._flatpickr;
-                                             if (fp) fp.clear();
-                                         }
-                                     });
-                                 }
+                                 rangeText: ''
                              }"
+                             x-init="
+                                 if (from && to) rangeText = from + ' — ' + to;
+                                 $watch('from', val => { if (!val) { rangeText = ''; const fp = $el.querySelector('input')._flatpickr; if (fp) fp.clear(); } });
+                                 $watch('to', val => { if (!val) { rangeText = ''; const fp = $el.querySelector('input')._flatpickr; if (fp) fp.clear(); } });
+                             "
                         >
-                            <input x-ref="rangeInput"
-                                   x-model="rangeText"
+                            <input x-model="rangeText"
+                                   @change="
+                                       const parts = $event.target.value.split(' — ');
+                                       if (parts.length === 2) {
+                                           from = parts[0];
+                                           to = parts[1];
+                                       } else if (!$event.target.value) {
+                                           from = '';
+                                           to = '';
+                                       }
+                                   "
                                    type="text"
-                                   class="with-leading-icon input peer w-full"
+                                   class="daterangepicker-uk with-leading-icon input peer w-full"
                                    placeholder=" "
                                    autocomplete="off"
                             />
 
                             <label class="wrapped-label">
-                                Дата початку від - до
+                                {{ __('patients.filter_onset_date_range') }}
                             </label>
                         </div>
                     </div>

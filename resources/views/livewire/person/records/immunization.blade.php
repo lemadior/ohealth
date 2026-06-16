@@ -34,7 +34,7 @@
                 <p>{{ __('patients.immunization_search') }}</p>
             </div>
 
-            <div class="form-row-3 mb-6 relative z-10" x-data="{ filterCode: $wire.entangle('filterCode') }">
+            <div class="form-row-3 mb-6" x-data="{ filterCode: $wire.entangle('filterCode') }">
                 <x-select2 modelPath="filterCode"
                            dictionaryName="eHealth/vaccine_codes"
                            id="filterCode"
@@ -100,75 +100,39 @@
             </div>
 
             <div x-show="showAdditionalParams" x-transition x-cloak wire:key="immunization-search-filters" class="mb-8">
-                <div class="form-row-3 mb-6 relative z-10">
+                <div class="form-row-3 mb-6">
                     <div class="form-group group">
                         <div class="datepicker-wrapper"
                              x-data="{
                                  from: $wire.entangle('filterDateFrom'),
                                  to: $wire.entangle('filterDateTo'),
-                                 rangeText: '',
-                                 init() {
-                                     flatpickr(this.$refs.rangeInput, {
-                                         mode: 'range',
-                                         showMonths: 2,
-                                         dateFormat: 'd.m.Y',
-                                         locale: {
-                                             firstDayOfWeek: 1,
-                                             rangeSeparator: ' — ',
-                                             weekdays: {
-                                                 shorthand: ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
-                                                 longhand: ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'П\'ятниця', 'Субота']
-                                             },
-                                             months: {
-                                                 shorthand: ['Січ', 'Лют', 'Бер', 'Квіт', 'Трав', 'Черв', 'Лип', 'Серп', 'Врес', 'Жовт', 'Лист', 'Груд'],
-                                                 longhand: ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень']
-                                             }
-                                         },
-                                         allowInput: true,
-                                         onReady: (selectedDates, dateStr, instance) => {
-                                             if (this.from && this.to) {
-                                                 instance.setDate([this.from, this.to]);
-                                                 this.rangeText = this.from + ' — ' + this.to;
-                                             }
-                                         },
-                                         onChange: (selectedDates, dateStr, instance) => {
-                                             this.rangeText = dateStr;
-                                             if (selectedDates.length === 2) {
-                                                 this.from = instance.formatDate(selectedDates[0], 'd.m.Y');
-                                                 this.to = instance.formatDate(selectedDates[1], 'd.m.Y');
-                                             } else if (selectedDates.length === 0) {
-                                                 this.from = '';
-                                                 this.to = '';
-                                             }
-                                         }
-                                     });
-                                     this.$watch('from', value => {
-                                         if (!value) {
-                                             this.rangeText = '';
-                                             const fp = this.$refs.rangeInput._flatpickr;
-                                             if (fp) fp.clear();
-                                         }
-                                     });
-                                     this.$watch('to', value => {
-                                         if (!value) {
-                                             this.rangeText = '';
-                                             const fp = this.$refs.rangeInput._flatpickr;
-                                             if (fp) fp.clear();
-                                         }
-                                     });
-                                 }
+                                 rangeText: ''
                              }"
+                             x-init="
+                                 if (from && to) rangeText = from + ' — ' + to;
+                                 $watch('from', val => { if (!val) { rangeText = ''; const fp = $el.querySelector('input')._flatpickr; if (fp) fp.clear(); } });
+                                 $watch('to', val => { if (!val) { rangeText = ''; const fp = $el.querySelector('input')._flatpickr; if (fp) fp.clear(); } });
+                             "
                         >
-                            <input x-ref="rangeInput"
-                                   x-model="rangeText"
+                            <input x-model="rangeText"
+                                   @change="
+                                       const parts = $event.target.value.split(' — ');
+                                       if (parts.length === 2) {
+                                           from = parts[0];
+                                           to = parts[1];
+                                       } else if (!$event.target.value) {
+                                           from = '';
+                                           to = '';
+                                       }
+                                   "
                                    type="text"
-                                   class="with-leading-icon input peer w-full"
+                                   class="daterangepicker-uk with-leading-icon input peer w-full"
                                    placeholder=" "
                                    autocomplete="off"
                             />
 
                             <label class="wrapped-label">
-                                Дата від - до
+                                {{ __('patients.filter_date_range') }}
                             </label>
                         </div>
                     </div>
