@@ -4,15 +4,13 @@
 
 <div>
     <x-header-navigation class="items-start">
-
-        <x-slot name="title">
-            {{ __('employee-roles.label') }}
-        </x-slot>
+        <x-slot name="title">{{ __('employee-roles.label') }}</x-slot>
 
         <div class="mt-3 ml-0 flex flex-col sm:flex-row sm:flex-wrap gap-2 self-start pl-4 sm:pl-0">
             @can('create', EmployeeRole::class)
-                <a href="{{ route('employee-role.create', [legalEntity()]) }}"
-                   class="button-primary flex items-center gap-2"
+                <a
+                    href="{{ route('employee-role.create', [legalEntity()]) }}"
+                    class="button-primary flex items-center gap-2"
                 >
                     @icon('plus', 'w-4 h-4')
                     {{ __('employee-roles.new') }}
@@ -36,12 +34,13 @@
                     <div>
                         <div class="form-row-3">
                             <div class="form-group group">
-                                <input type="search"
-                                       id="employeeSearch"
-                                       placeholder=" "
-                                       class="input peer pl-8"
-                                       wire:model="employeeSearch"
-                                       autocomplete="off"
+                                <input
+                                    type="search"
+                                    id="employeeSearch"
+                                    placeholder=" "
+                                    class="input peer pl-8"
+                                    wire:model="employeeSearch"
+                                    autocomplete="off"
                                 />
                                 <label for="employeeSearch" class="label pl-8">
                                     {{ __('employee-roles.search_by_employee') }}
@@ -52,10 +51,7 @@
 
                         <div class="form-row-3">
                             <div class="form-group group">
-                                <select wire:model="specialityTypeFilter"
-                                        id="specialityType"
-                                        class="input-select"
-                                >
+                                <select wire:model="specialityTypeFilter" id="specialityType" class="input-select">
                                     <option value="" selected>{{ __('employee-roles.speciality_type') }}</option>
                                     @foreach($healthcareServiceSpecialityTypes as $type)
                                         <option value="{{ $type }}">
@@ -66,24 +62,32 @@
                             </div>
                         </div>
 
+                        @php
+                            $statusOptions = [
+                                'ACTIVE' => __('forms.status.active'),
+                                'INACTIVE' => __('forms.status.non_active')
+                            ];
+                        @endphp
+
                         <div class="form-row-3">
                             <div class="form-group group">
                                 <label for="statusFilter" class="label">{{ __('forms.status.label') }}</label>
-                                <div class="relative"
-                                     x-data="{ open: false, selectedStatuses: $wire.entangle('statusFilter') }"
+                                <div
+                                    class="relative"
+                                    x-data="{
+                                        open: false,
+                                        selectedStatuses: $wire.entangle('statusFilter'),
+                                        labels: @js($statusOptions)
+                                    }"
                                 >
-                                    <input type="text"
-                                           id="statusFilter"
-                                           class="input peer"
-                                           placeholder="Активні, Не активний"
-                                           @click="open = !open"
-                                           :value="selectedStatuses.length ? selectedStatuses.map(status => {
-                                                       if (status === 'ACTIVE') return 'Активний';
-                                                       if (status === 'INACTIVE') return 'Не активний';
-                                                       return status;
-                                                   }).join(', ') : 'Активні, Не активний'
-                                           "
-                                           readonly
+                                    <input
+                                        type="text"
+                                        id="statusFilter"
+                                        class="input peer"
+                                        value="{{ collect($statusFilter)->map(fn (string $status) => $statusOptions[$status] ?? $status)->implode(', ') ?: collect($statusOptions)->implode(', ') }}"
+                                        :value="selectedStatuses.length ? selectedStatuses.map(status => labels[status] ?? status).join(', ') : Object.values(labels).join(', ')"
+                                        @click="open = !open"
+                                        readonly
                                     />
                                     <svg stroke="currentColor"
                                          class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
@@ -93,32 +97,27 @@
                                     >
                                         <path d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div x-show="open"
-                                         @click.away="open = false"
-                                         x-transition
-                                         class="absolute z-10 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg"
+                                    <div
+                                        x-show="open"
+                                        x-cloak
+                                        @click.away="open = false"
+                                        x-transition
+                                        class="absolute z-10 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg"
                                     >
                                         <ul class="py-2 px-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                                            <li>
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox"
-                                                           value="ACTIVE"
-                                                           wire:model="statusFilter"
-                                                           class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
-                                                    />
-                                                    <span>{{ __('forms.status.active') }}</span>
-                                                </label>
-                                            </li>
-                                            <li>
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox"
-                                                           value="INACTIVE"
-                                                           wire:model="statusFilter"
-                                                           class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
-                                                    />
-                                                    <span>{{ __('forms.status.non_active') }}</span>
-                                                </label>
-                                            </li>
+                                            @foreach($statusOptions as $statusValue => $statusLabel)
+                                                <li wire:key="status-option-{{ $statusValue }}">
+                                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            value="{{ $statusValue }}"
+                                                            wire:model.live="statusFilter"
+                                                            class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
+                                                        />
+                                                        <span>{{ $statusLabel }}</span>
+                                                    </label>
+                                                </li>
+                                            @endforeach
                                         </ul>
                                     </div>
                                 </div>
@@ -144,19 +143,19 @@
     <div class="flow-root mt-8 shift-content pl-3.5"
          wire:key="employee-roles-table-page-{{ $employeeRoles->total() }}-{{ $employeeRoles->currentPage() }}"
     >
-        <div class="max-w-screen-xl">
+        <div class="max-w-7xl">
             @if($employeeRoles->isNotEmpty())
                 <div class="index-table-wrapper">
                     <table class="index-table">
                         <thead class="index-table-thead">
                         <tr>
-                            <th class="index-table-th w-[20%]">{{ __('employees.doctor_full_name') }}</th>
+                            <th class="index-table-th w-1/5">{{ __('employees.doctor_full_name') }}</th>
                             <th class="index-table-th w-[15%]">{{ __('employee-roles.speciality_type') }}</th>
                             <th class="index-table-th w-[18%]">{{ __('forms.divisions') }}</th>
                             <th class="index-table-th w-[15%]">{{ __('employee-roles.providing_condition') }}</th>
                             <th class="index-table-th w-[10%]">{{ __('forms.created_at') }}</th>
                             <th class="index-table-th w-[10%]">{{ __('employee-roles.end_date') }}</th>
-                            <th class="index-table-th w-[10%]">{{ __('employee-roles.status') }}</th>
+                            <th class="index-table-th w-[13%]">{{ __('employee-roles.status') }}</th>
                             <th class="index-table-th w-[6%]">{{ __('forms.action') }}</th>
                         </tr>
                         </thead>
@@ -177,10 +176,10 @@
                                     {{ $dictionaries['PROVIDING_CONDITION'][$employeeRole->healthcareService->providingCondition] }}
                                 </td>
                                 <td class="index-table-td">
-                                    {{ $employeeRole->startDate->format(config('app.date_format')) }}
+                                    {{ $employeeRole->startDate }}
                                 </td>
                                 <td class="index-table-td">
-                                    {{ $employeeRole->endDate?->format(config('app.date_format')) }}
+                                    {{ $employeeRole->endDate }}
                                 </td>
                                 <td class="index-table-td">
                                     <span class="{{
@@ -196,38 +195,42 @@
                                 <td class="index-table-td-actions">
                                     @if($employeeRole->status === Status::ACTIVE)
                                         <div class="flex justify-center relative">
-                                            <div x-data="{
-                                                     open: false,
-                                                     show: false,
-                                                     toggle() { this.open ? this.close() : (this.$refs.button.focus(), this.open = true) },
-                                                     close(focusAfter) { if (!this.open) return; this.open = false; focusAfter && focusAfter.focus() }
-                                                 }"
-                                                 @keydown.escape.prevent.stop="close($refs.button)"
-                                                 @focusin.window="!$refs.panel.contains($event.target) && close()"
-                                                 x-id="['dropdown-button']"
-                                                 class="relative"
+                                            <div
+                                                x-data="{
+                                                    open: false,
+                                                    show: false,
+                                                    toggle() { this.open ? this.close() : (this.$refs.button.focus(), this.open = true) },
+                                                    close(focusAfter) { if (!this.open) return; this.open = false; focusAfter && focusAfter.focus() }
+                                                }"
+                                                @keydown.escape.prevent.stop="close($refs.button)"
+                                                @focusin.window="!$refs.panel.contains($event.target) && close()"
+                                                x-id="['dropdown-button']"
+                                                class="relative"
                                             >
-                                                <button @click="toggle()"
-                                                        x-ref="button"
-                                                        :aria-expanded="open"
-                                                        :aria-controls="$id('dropdown-button')"
-                                                        type="button"
-                                                        class="hover:text-primary cursor-pointer"
+                                                <button
+                                                    @click="toggle()"
+                                                    x-ref="button"
+                                                    :aria-expanded="open"
+                                                    :aria-controls="$id('dropdown-button')"
+                                                    type="button"
+                                                    class="hover:text-primary cursor-pointer"
                                                 >
                                                     @icon('edit-user-outline', 'svg-hover-action w-6 h-6 text-gray-800 dark:text-gray-300')
                                                 </button>
 
-                                                <div x-show="open"
-                                                     x-cloak
-                                                     x-ref="panel"
-                                                     x-transition.origin.top.left
-                                                     @click.outside="close($refs.button)"
-                                                     :id="$id('dropdown-button')"
-                                                     class="absolute right-0 mt-2 w-auto min-w-[10rem] max-w-[20rem] rounded-md bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-md z-50"
+                                                <div
+                                                    x-show="open"
+                                                    x-cloak
+                                                    x-ref="panel"
+                                                    x-transition.origin.top.left
+                                                    @click.outside="close($refs.button)"
+                                                    :id="$id('dropdown-button')"
+                                                    class="absolute right-0 mt-2 w-auto min-w-40 max-w-[20rem] rounded-md bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-md z-50"
                                                 >
                                                     @can('deactivate', $employeeRole)
-                                                        <button @click.prevent="show = true"
-                                                                class="cursor-pointer flex items-center gap-2 w-full last-of-type:rounded-b-md px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600"
+                                                        <button
+                                                            @click.prevent="show = true"
+                                                            class="cursor-pointer flex items-center gap-2 w-full last-of-type:rounded-b-md px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600"
                                                         >
                                                             @icon('delete', 'w-5 h-5 text-red-600 dark:text-red-400')
                                                             {{ __('forms.deactivate') }}
@@ -250,7 +253,7 @@
             @endif
 
             @if($employeeRoles->isNotEmpty())
-                <div class="mt-8 pl-3.5 pb-8 lg:pl-8 2xl:pl-5">
+                <div class="pagination">
                     {{ $employeeRoles->links() }}
                 </div>
             @endif

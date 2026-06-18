@@ -19,13 +19,13 @@ return new class extends Migration
             $table->uuid()->unique();
             $table->foreignId('employee_id')->constrained();
             $table->foreignId('healthcare_service_id')->constrained();
-            $table->dateTimeTz('start_date');
-            $table->dateTimeTz('end_date')->nullable();
+            $table->timestamp('start_date');
+            $table->timestamp('end_date')->nullable();
             $table->enum('status', [Status::ACTIVE, Status::INACTIVE]);
             $table->boolean('is_active');
-            $table->dateTimeTz('ehealth_inserted_at');
+            $table->timestamp('ehealth_inserted_at');
             $table->string('ehealth_inserted_by');
-            $table->dateTimeTz('ehealth_updated_at');
+            $table->timestamp('ehealth_updated_at');
             $table->string('ehealth_updated_by');
             $table->timestamps();
         });

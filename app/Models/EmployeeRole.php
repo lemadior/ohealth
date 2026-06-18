@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\EHealthTimestampAsDateCast;
+use App\Casts\EHealthTimestampCast;
 use App\Enums\Status;
 use App\Models\Employee\Employee;
 use Eloquence\Behaviours\HasCamelCasing;
@@ -30,11 +32,17 @@ class EmployeeRole extends Model
         'ehealth_updated_by'
     ];
 
-    protected $hidden = ['id'];
+    protected $hidden = [
+        'id',
+        'created_at',
+        'updated_at'
+    ];
 
     protected $casts = [
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
+        'start_date' => EHealthTimestampAsDateCast::class,
+        'end_date' => EHealthTimestampAsDateCast::class,
+        'ehealth_inserted_at' => EHealthTimestampCast::class,
+        'ehealth_updated_at' => EHealthTimestampCast::class,
         'status' => Status::class
     ];
 
@@ -64,12 +72,11 @@ class EmployeeRole extends Model
             'healthcareService.legalEntity:id',
             'healthcareService.division:id,name'
         ])
-            ->select(['id', 'uuid', 'employee_id', 'healthcare_service_id', 'start_date', 'end_date', 'status', 'is_active'])
             ->whereHas(
                 'healthcareService',
-                fn (Builder $query) => $query->select('id')->where('legal_entity_id', legalEntity()->id)
+                fn (Builder $healthcareServiceQuery) => $healthcareServiceQuery->whereLegalEntityId(legalEntity()->id)
             )
-            ->orderByDesc('created_at');
+            ->latest();
     }
 
     /**
@@ -85,14 +92,13 @@ class EmployeeRole extends Model
         if ($search) {
             $query->whereHas(
                 'employee',
-                fn (Builder $employeeQuery) => $employeeQuery->select('id')
-                    ->whereHas(
-                        'party',
-                        fn (Builder $partyQuery) => $partyQuery->select('id')
-                            ->where('first_name', 'ILIKE', "%$search%")
-                            ->orWhere('last_name', 'ILIKE', "%$search%")
-                            ->orWhere('second_name', 'ILIKE', "%$search%")
-                    )
+                fn (Builder $employeeQuery) => $employeeQuery->whereHas(
+                    'party',
+                    fn (Builder $partyQuery) => $partyQuery
+                        ->whereLike('first_name', "%$search%")
+                        ->orWhereLike('last_name', "%$search%")
+                        ->orWhereLike('second_name', "%$search%")
+                )
             );
         }
 
@@ -103,8 +109,10 @@ class EmployeeRole extends Model
     protected function filterBySpecialityType(Builder $query, ?string $specialityTypeFilter): Builder
     {
         if ($specialityTypeFilter) {
-            $query->whereHas('healthcareService', fn (Builder $subQuery) => $subQuery->select('speciality_type')
-                ->where('speciality_type', $specialityTypeFilter));
+            $query->whereHas(
+                'healthcareService',
+                fn (Builder $subQuery) => $subQuery->where('speciality_type', $specialityTypeFilter)
+            );
         }
 
         return $query;

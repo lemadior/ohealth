@@ -382,7 +382,7 @@ class PersonUpdate extends PersonComponent
                     ->authenticationMethods()
                     ->create($response->validate());
             } catch (Throwable $exception) {
-                $this->logDatabaseErrors($exception, 'Failed to create authentication method');
+                $this->handleDatabaseErrors($exception, 'Failed to create authentication method');
 
                 return;
             }

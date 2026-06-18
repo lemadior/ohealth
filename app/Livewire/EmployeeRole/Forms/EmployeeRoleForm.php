@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\EmployeeRole\Forms;
 
+use App\Enums\Status;
 use App\Models\Employee\Employee;
 use App\Models\EmployeeRole;
 use App\Models\HealthcareService;
@@ -63,7 +64,7 @@ class EmployeeRoleForm extends Form
 
         if (!in_array($healthcareService->specialityType, $specialities, true)) {
             throw ValidationException::withMessages([
-                'specialization' => 'Спеціалізація працівника не відповідає типу медичної послуги'
+                'specialization' => __('validation.attributes.employeeRole.constraint.specialityMismatch')
             ]);
         }
     }
@@ -77,14 +78,14 @@ class EmployeeRoleForm extends Form
      */
     protected function validateConstraints(Employee $employee, HealthcareService $healthcareService): void
     {
-        $exists = EmployeeRole::where('employee_id', $employee->id)
-            ->where('healthcare_service_id', $healthcareService->id)
-            ->where('status', 'ACTIVE')
+        $exists = EmployeeRole::whereEmployeeId($employee->id)
+            ->whereHealthcareServiceId($healthcareService->id)
+            ->whereStatus(Status::ACTIVE)
             ->exists();
 
         if ($exists) {
             throw ValidationException::withMessages([
-                'employee_role' => 'Для цього співробітника і медичної послуги вже існує активна роль'
+                'employee_role' => __('validation.attributes.employeeRole.constraint.duplicateActiveRole')
             ]);
         }
     }

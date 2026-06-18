@@ -1,15 +1,11 @@
 <section class="section-form">
     <x-header-navigation class="breadcrumb-form">
-        <x-slot name="title">
-            {{ __('employee-roles.label') }}
-        </x-slot>
+        <x-slot name="title">{{ __('employee-roles.label') }}</x-slot>
     </x-header-navigation>
 
     <form class="form shift-content">
         <fieldset class="fieldset">
-            <legend class="legend">
-                {{ __('employee-roles.new') }}
-            </legend>
+            <legend class="legend">{{ __('employee-roles.new') }}</legend>
 
             <div class="form-row-2">
                 <div class="form-group group">
@@ -17,14 +13,15 @@
                         {{ __('employee-roles.healthcareServiceId') }}
                     </label>
 
-                    <select wire:model="form.healthcareServiceId"
-                            id="healthcareServiceId"
-                            name="healthcareServiceId"
-                            class="input-select peer"
-                            type="text"
-                            required
+                    <select
+                        wire:model="form.healthcareServiceId"
+                        id="healthcareServiceId"
+                        name="healthcareServiceId"
+                        class="input-select peer"
+                        type="text"
+                        required
                     >
-                        <option selected value="">{{ __('forms.select') }}</option>
+                        <option value="" selected>{{ __('forms.select') }}</option>
                         @foreach($healthcareServices as $healthcareService)
                             <option value="{{ $healthcareService['uuid'] }}">
                                 {{ $dictionaries['SPECIALITY_TYPE'][$healthcareService['specialityType']] }} -
@@ -41,14 +38,15 @@
                 <div class="form-group group">
                     <label for="employeeId" class="label-modal">{{ __('employee-roles.employeeId') }}</label>
 
-                    <select wire:model="form.employeeId"
-                            id="employeeId"
-                            name="employeeId"
-                            class="input-select peer"
-                            type="text"
-                            required
+                    <select
+                        wire:model="form.employeeId"
+                        id="employeeId"
+                        name="employeeId"
+                        class="input-select peer"
+                        type="text"
+                        required
                     >
-                        <option selected value="">{{ __('forms.select') }}</option>
+                        <option value="" selected>{{ __('forms.select') }}</option>
                         @foreach($employees as $employee)
                             <option value="{{ $employee['uuid'] }}">
                                 {{ $employee['fullName'] }} - {{ $dictionaries['POSITION'][$employee['position']] }}
@@ -65,7 +63,7 @@
         </fieldset>
 
         <div class="flex gap-8">
-            <a href="{{ url()->previous() }}" type="submit" class="button-minor">
+            <a href="{{ route('employee-role.index', legalEntity()) }}" wire:navigate class="button-minor">
                 {{ __('forms.cancel') }}
             </a>
             <button wire:click.prevent="create" type="submit" class="button-primary">

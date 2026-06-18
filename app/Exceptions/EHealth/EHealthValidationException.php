@@ -69,16 +69,14 @@ class EHealthValidationException extends EHealthException
         $type = $this->details['error']['type'] ?? null;
         $errorMessage = $this->details['error']['message'] ?? null;
 
-        if ($errorMessage) {
-            $translated = match ($errorMessage) {
-                'Care plan has unfinished activities' => 'План лікування має незавершені призначення (активності). Спочатку скасуйте або завершіть усі призначення в цьому плані.',
-                default => $errorMessage,
-            };
-        } else {
-            $translated = $this->getMessage();
-        }
+        $translated = match (true) {
+            $type === 'validation_failed' => '',
+            $errorMessage === 'Care plan has unfinished activities' => 'План лікування має незавершені призначення (активності). Спочатку скасуйте або завершіть усі призначення в цьому плані.',
+            $errorMessage !== null => $errorMessage,
+            default => $this->getMessage()
+        };
 
-        $message = 'Помилка від ЕСОЗ: ' . $translated;
+        $message = 'Помилка від ЕСОЗ:' . ($translated !== '' ? ' ' . $translated : '');
 
         if (isset($this->details['error']['invalid']) && is_array($this->details['error']['invalid'])) {
             $invalids = $this->details['error']['invalid'];

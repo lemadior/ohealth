@@ -394,7 +394,7 @@
             @endif
 
             @if($equipments->isNotEmpty())
-                <div class="mt-8 pl-3.5 pb-8 lg:pl-8 2xl:pl-5">
+                <div class="pagination">
                     {{ $equipments->links() }}
                 </div>
             @endif

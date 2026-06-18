@@ -466,6 +466,13 @@ return [
             ]
         ],
 
+        'employeeRole' => [
+            'constraint' => [
+                'specialityMismatch' => 'Спеціалізація працівника не відповідає типу медичної послуги',
+                'duplicateActiveRole' => 'Для цього співробітника і медичної послуги вже існує активна роль'
+            ]
+        ],
+
         'educations' => [
             'degree' => 'Ступінь',
             'speciality' => 'Спеціальність',

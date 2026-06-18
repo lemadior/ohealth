@@ -20,6 +20,7 @@ use App\Jobs\EmployeeRoleSync;
 use App\Repositories\Repository;
 use App\Classes\eHealth\EHealth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,7 @@ class EmployeeRoleIndex extends Component
      *
      * @var string
      */
+    #[Url(as: 'search')]
     public string $employeeSearch = '';
 
     /**
@@ -49,6 +51,7 @@ class EmployeeRoleIndex extends Component
      *
      * @var string|null
      */
+    #[Url(as: 'speciality')]
     public ?string $specialityTypeFilter = null;
 
     /**
@@ -56,6 +59,7 @@ class EmployeeRoleIndex extends Component
      *
      * @var array|string[]
      */
+    #[Url(as: 'status')]
     public array $statusFilter = ['ACTIVE'];
 
     /**
@@ -74,8 +78,6 @@ class EmployeeRoleIndex extends Component
      */
     public string $syncStatus = '';
 
-    private LegalEntity $legalEntity;
-
     #[Computed]
     public function isSync(): bool
     {
@@ -89,7 +91,7 @@ class EmployeeRoleIndex extends Component
      */
     protected function getSyncStatus(): string
     {
-        return legalEntity()?->getEntityStatus(LegalEntity::ENTITY_EMPLOYEE_ROLE) ?? '';
+        return legalEntity()->getEntityStatus(LegalEntity::ENTITY_EMPLOYEE_ROLE) ?? '';
     }
 
     /**
@@ -100,7 +102,7 @@ class EmployeeRoleIndex extends Component
     protected function isSyncProcessing(): bool
     {
         // Get the sync status for whole Legal Entity
-        $legalEntitySyncStatus = legalEntity()?->getEntityStatus();
+        $legalEntitySyncStatus = legalEntity()->getEntityStatus();
 
         // Set the sync status only for Employee Role
         $this->syncStatus = $this->getSyncStatus();
@@ -137,9 +139,9 @@ class EmployeeRoleIndex extends Component
 
     public function resetFilters(): void
     {
-        $this->employeeSearch = '';
-        $this->specialityTypeFilter = null;
-        $this->statusFilter = ['ACTIVE', 'INACTIVE'];
+        $this->reset(['employeeSearch', 'specialityTypeFilter', 'statusFilter']);
+
+        $this->resetPage();
     }
 
     public function deactivate(EmployeeRole $employeeRole): void
@@ -147,7 +149,7 @@ class EmployeeRoleIndex extends Component
         $employeeRole->loadMissing('healthcareService:id,legal_entity_id');
 
         if (Auth::user()->cannot('deactivate', $employeeRole)) {
-            Session::flash('error', 'У вас немає дозволу на деактивування ролі');
+            Session::flash('error', __('employee-roles.policy.deactivate'));
 
             return;
         }
@@ -161,10 +163,10 @@ class EmployeeRoleIndex extends Component
         }
 
         try {
-            Repository::employeeRole()->update($employeeRole->uuid, $response->validate());
+            Repository::employeeRole()->update($employeeRole, $response->validate());
 
             $this->dispatch('deactivate-success');
-            Session::flash('success', 'Роль успішно деактивовано');
+            Session::flash('success', __('employee-roles.success.deactivated'));
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors($exception, "Failed to deactivate $employeeRole->uuid employee role");
 
@@ -175,7 +177,7 @@ class EmployeeRoleIndex extends Component
     public function sync(): void
     {
         if (Auth::user()->cannot('viewAny', EmployeeRole::class)) {
-            Session::flash('error', 'У вас немає дозволу на синхронізацію ролей співробітників');
+            Session::flash('error', __('employee-roles.policy.sync'));
 
             return;
         }
@@ -208,14 +210,14 @@ class EmployeeRoleIndex extends Component
         }
 
         try {
-            $validated = $this->normalizeDate($response->validate());
+            $validated = $response->validate();
 
             Repository::employeeRole()->sync($response->map($validated));
         } catch (Throwable $exception) {
             $this->handleDatabaseErrors(
                 $exception,
                 'Error while synchronizing employee roles with eHealth: ',
-                'Виникла помилка. Оновіть список співробітників і послуги та спробуйте ще раз'
+                __('employee-roles.errors.sync_failed')
             );
 
             return;
@@ -226,16 +228,16 @@ class EmployeeRoleIndex extends Component
             try {
                 Auth::user()->notify(new SyncNotification('employee_role', 'started'));
                 $this->dispatchNextSyncJobs($user, $token);
-                Session::flash('success', __('Синхронізацію успішно розпочато.'));
+                Session::flash('success', __('forms.success.sync_started'));
             } catch (Throwable $exception) {
                 Log::error('Failed to dispatch EmployeeRole batch', ['exception' => $exception]);
 
                 Auth::user()->notify(new SyncNotification('employee_role', 'failed'));
             }
         } else {
-            legalEntity()?->setEntityStatus(JobStatus::COMPLETED, LegalEntity::ENTITY_EMPLOYEE_ROLE);
+            legalEntity()->setEntityStatus(JobStatus::COMPLETED, LegalEntity::ENTITY_EMPLOYEE_ROLE);
 
-            Session::flash('success', __('Інформацію успішно оновлено'));
+            Session::flash('success', __('forms.success.updated'));
         }
     }
 
@@ -270,7 +272,7 @@ class EmployeeRoleIndex extends Component
             if ($batch->name === self::BATCH_NAME) {
                 Log::info('Resuming Employee sync batch: ' . $batch->name . ' id: ' . $batch->id);
 
-                legalEntity()?->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_EMPLOYEE_ROLE);
+                legalEntity()->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_EMPLOYEE_ROLE);
 
                 $this->restartBatch($batch, $user, $encryptedToken, legalEntity());
 
@@ -282,6 +284,8 @@ class EmployeeRoleIndex extends Component
     /**
      * Dispatch next sync jobs for remaining pages.
      *
+     * @param  User  $user
+     * @param  string  $token
      * @return void
      * @throws Throwable
      */
@@ -304,7 +308,7 @@ class EmployeeRoleIndex extends Component
             ->name(self::BATCH_NAME)
             ->dispatch();
 
-        legalEntity()?->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_EMPLOYEE_ROLE);
+        legalEntity()->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_EMPLOYEE_ROLE);
     }
 
     public function render(): View
