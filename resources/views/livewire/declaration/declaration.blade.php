@@ -40,7 +40,6 @@
                     }}"
                     type="submit"
                     class="button-primary"
-                    :disabled="$isNeedToUpdatePerson"
                 >
                     {{ $status === Status::NEW
                         ? __('declarations.approve_declaration_request')
