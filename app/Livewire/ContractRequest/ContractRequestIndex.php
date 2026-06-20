@@ -162,7 +162,18 @@ class ContractRequestIndex extends Component
             $detailsJob = $this->getContractRequestDetailsStartJob($currentLegalEntity, null);
 
             if ($detailsJob !== null) {
-                Bus::dispatch($detailsJob)->onQueue('sync');
+                Bus::batch([$detailsJob])
+                    ->withOption('legal_entity_id', $currentLegalEntity->id)
+                    ->withOption('token', $encryptedToken)
+                    ->withOption('user', $user)
+                    ->then(fn (Batch $batch) => $user->notify(new SyncNotification('contract_request', 'completed')))
+                    ->catch(function (Batch $batch, \Throwable $e) use ($user) {
+                        Log::error('ContractRequest details batch failed.', ['err' => $e->getMessage()]);
+                        $user->notify(new SyncNotification('contract_request', 'failed'));
+                    })
+                    ->onQueue('sync')
+                    ->name('Contract Request Details Sync')
+                    ->dispatch();
                 $currentLegalEntity->setEntityStatus(JobStatus::PROCESSING, LegalEntity::ENTITY_CONTRACT_REQUEST);
                 $msg = __('contracts.sync_details_started', ['count' => $syncedCount]);
             } else {
