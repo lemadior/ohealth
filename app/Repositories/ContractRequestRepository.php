@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Classes\eHealth\Api\ContractRequest as ApiMapper;
 use App\Models\Contracts\ContractRequest;
+use App\Models\Employee\Employee;
 
 class ContractRequestRepository
 {
@@ -42,7 +43,8 @@ class ContractRequestRepository
         if (!isset($attributes['contractor_owner_id']) || empty($attributes['contractor_owner_id'])) {
             $attributes['contractor_owner_id'] = $eHealthData['contractor_owner_id']
                 ?? $eHealthData['contractor_owner']['id']
-                ?? legalEntity()->owner_id;
+                ?? $eHealthData['contractor_owner']['uuid']
+                ?? Employee::query()->activeOwners(legalEntity()->id)->value('uuid');
         }
 
         // 4. Handle JSON Data Column

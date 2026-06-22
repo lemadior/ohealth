@@ -6,7 +6,11 @@ namespace Tests\Feature\Contract;
 
 use App\Enums\Contract\Type;
 use App\Enums\JobStatus;
+use App\Enums\Status;
+use App\Enums\User\Role;
+use App\Models\Employee\Employee;
 use App\Models\LegalEntity;
+use App\Models\Relations\Party;
 use App\Repositories\ContractRequestRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -83,6 +87,54 @@ class ContractRequestRepositoryTest extends TestCase
     {
         $this->assertSame('REIMBURSEMENT', Type::REIMBURSEMENT->value);
         $this->assertSame('CAPITATION', Type::CAPITATION->value);
+    }
+
+    public function test_save_from_ehealth_falls_back_to_active_owner_uuid(): void
+    {
+        $ownerUuid = (string) Str::uuid();
+        $this->createActiveOwner($ownerUuid);
+
+        $payload = $this->eHealthContractRequestPayload();
+        unset($payload['contractor_owner_id']);
+
+        $contractRequest = $this->repository->saveFromEHealth($payload, 'REIMBURSEMENT');
+
+        $this->assertSame($ownerUuid, $contractRequest->contractor_owner_id);
+    }
+
+    public function test_save_from_ehealth_extracts_contractor_owner_uuid_from_nested_object(): void
+    {
+        $ownerUuid = (string) Str::uuid();
+        $payload = $this->eHealthContractRequestPayload();
+        unset($payload['contractor_owner_id']);
+        $payload['contractor_owner'] = ['uuid' => $ownerUuid];
+
+        $contractRequest = $this->repository->saveFromEHealth($payload, 'REIMBURSEMENT');
+
+        $this->assertSame($ownerUuid, $contractRequest->contractor_owner_id);
+    }
+
+    private function createActiveOwner(string $uuid): Employee
+    {
+        $party = Party::create([
+            'uuid' => (string) Str::uuid(),
+            'first_name' => 'Owner',
+            'last_name' => 'Test',
+            'tax_id' => '1234567890',
+            'birth_date' => '1970-01-01',
+            'gender' => 'MALE',
+        ]);
+
+        return Employee::create([
+            'uuid' => $uuid,
+            'employee_type' => Role::OWNER->value,
+            'status' => Status::APPROVED->value,
+            'legal_entity_id' => $this->legalEntity->id,
+            'is_active' => true,
+            'position' => 'Owner',
+            'start_date' => now()->format('Y-m-d'),
+            'party_id' => $party->id,
+        ]);
     }
 
     /**

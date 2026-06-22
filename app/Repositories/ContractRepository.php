@@ -30,7 +30,7 @@ class ContractRepository
         $attributes['contractor_owner_id'] = $eHealthData['contractor_owner']['id']
             ?? $eHealthData['contractor_owner']['uuid']
             ?? $eHealthData['contractor_owner_id']
-            ?? Employee::activeOwners(legalEntity()->id)->value('uuid');
+            ?? Employee::query()->activeOwners(legalEntity()->id)->value('uuid');
 
         return Contract::updateOrCreate(
             ['uuid' => $attributes['uuid']],
