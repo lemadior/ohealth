@@ -174,7 +174,7 @@ input:-webkit-autofill:active {
 }
 
 .input-select option {
-    @apply py-2 px-3 text-base leading-relaxed
+    @apply py-2 px-3 text-base leading-relaxed bg-white text-gray-900 dark:bg-gray-800 dark:text-white
 }
 
 .input-error {

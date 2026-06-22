@@ -20,6 +20,14 @@
         'request_write' => $currentUser->can('employee_request:write'),
         'request_delete' => $currentUser->can('employee_request:write'),
     ];
+
+    $statusOptions = [
+        Status::APPROVED->value => __('forms.status.active'),
+        Status::NEW->value => __('forms.draft'),
+        Status::SIGNED->value => __('forms.status.sent'),
+        Status::DISMISSED->value => __('forms.dismissed'),
+        Status::REORGANIZED->value => __('forms.reorganized'),
+    ];
     @endphp
 
     <x-header-navigation class="items-start" x-data="{ showFilter: false }">
@@ -31,7 +39,9 @@
         <div class="mt-3 ml-0 flex flex-col sm:flex-row sm:flex-wrap gap-2 self-start">
             @can('create', EmployeeRequest::class)
             <a href="{{ route('employee-request.create', ['legalEntity' => $currentLegalEntityId]) }}"
-                class="button-primary">{{ __('forms.new_employee') }}</a>
+                class="button-primary flex items-center gap-2">
+                @icon('plus', 'w-4 h-4')
+                {{ __('forms.new_employee') }}</a>
             @endcan
 
             @can('sync', Employee::class)
@@ -145,85 +155,13 @@
                                     </select>
                                     <label for="filter_division" class="label">Медичний заклад</label>
                                 </div>
-                                <div class="form-group group"
-                                     x-data="{ open: false, selectedStatuses: $wire.entangle('status') }">
-                                    <label for="statusFilter" class="label">{{ __('forms.status.label') }}</label>
-                                    <div class="relative">
-
-                                        <input type="text"
-                                               id="statusFilter"
-                                               class="input peer w-full cursor-pointer text-gray-500 dark:text-gray-400"
-                                               placeholder="Оберіть статуси"
-                                               x-on:click="open = !open"
-                                               :value="selectedStatuses.length ? selectedStatuses.map(s => {
-                                                   if (s === 'APPROVED') return '{{ __('forms.status.active') }}';
-                                                   if (s === 'NEW') return '{{ __('forms.draft') }}';
-                                                   if (s === 'SIGNED') return '{{ __('forms.status.sent') }}';
-                                                   if (s === 'DISMISSED') return '{{ __('forms.dismissed') }}';
-                                                   if (s === 'REORGANIZED') return '{{ __('forms.reorganized') }}';
-{{--                                                   if (s === 'VERIFIED') return '{{ __('forms.verified') ';--}}
-{{--                                                   if (s === 'NOT_VERIFIED') return '{{ __('forms.not_verified') ';--}}
-
-                                                   return s;
-                                               }).join(', ') : ''"
-                                               readonly
-                                        />
-                                        <svg
-                                            class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
-                                            fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path d="M19 9l-7 7-7-7"></path>
-                                        </svg>
-                                        <div x-show="open"
-                                             x-on:click.away="open = false"
-                                             x-transition:enter="transition ease-out duration-100"
-                                             x-transition:enter-start="transform opacity-0 scale-95"
-                                             x-transition:enter-end="transform opacity-100 scale-100"
-                                             x-transition:leave="transition ease-in duration-75"
-                                             x-transition:leave-start="transform opacity-100 scale-100"
-                                             x-transition:leave-end="transform opacity-0 scale-95"
-                                             class="absolute z-10 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg">
-                                            <ul class="py-2 px-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                                                <li>
-                                                    <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="{{ Status::APPROVED->value }}" wire:model="status"
-                                                               class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
-                                                        <span>{{ __('forms.status.active') }}</span>
-                                                    </label>
-                                                </li>
-                                                <li>
-                                                    <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="{{ Status::NEW->value }}" wire:model="status"
-                                                               class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
-                                                        <span>{{ __('forms.draft') }}</span>
-                                                    </label>
-                                                </li>
-
-                                                <li>
-                                                    <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="{{ Status::SIGNED->value }}" wire:model="status"
-                                                               class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
-                                                        <span>{{ __('forms.status.sent') }}</span>
-                                                    </label>
-                                                </li>
-
-                                                <li>
-                                                    <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="{{ Status::DISMISSED->value }}" wire:model="status"
-                                                               class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
-                                                        <span>{{ __('forms.dismissed') }}</span>
-                                                    </label>
-                                                </li>
-
-                                                <li>
-                                                    <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" value="{{ Status::REORGANIZED->value }}" wire:model="status"
-                                                               class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent" />
-                                                        <span>{{ __('forms.reorganized') }}</span>
-                                                    </label>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
+                                <div class="form-group group">
+                                    <x-forms.multiselect
+                                        bind="status"
+                                        :options="$statusOptions"
+                                        label="{{ __('forms.status.label') }}"
+                                        placeholder="Оберіть статуси"
+                                    />
                                 </div>
                             </div>
                         </div>

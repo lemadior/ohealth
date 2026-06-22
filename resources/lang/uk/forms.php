@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     // General Actions & Navigation
+    'home' => 'Головна',
     'action' => 'Дія',
     'actions' => 'Дії',
     'activate' => 'Активувати',
@@ -59,7 +60,7 @@ return [
     'email_confirmation' => 'Підтвердження електронної пошти',
     'email_restriction' => 'Цей email не може бути використаний',
     'phones_owner' => 'Контактні телефони керівника НМП',
-    'document_issued_by' => 'Орган яким виданий документ',
+    'document_issued_by' => 'Ким виданий документ',
     'document_issued_at' => 'Дата видачі документа',
     'additional_search_parameters' => 'Додаткові параметри пошуку',
     'yes' => 'Так',

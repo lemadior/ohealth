@@ -233,7 +233,9 @@
                     </div>
                 </fieldset>
             @empty
-                <x-nothing-found class="shift-content" />
+                <div class="shift-content max-w-6xl">
+                    <x-nothing-found />
+                </div>
             @endforelse
         </div>
 

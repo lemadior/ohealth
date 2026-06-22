@@ -11,7 +11,7 @@
             <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <div class="flex items-center gap-4">
                     <div class="form-group group w-72">
-                        <select wire:model.live="dracsDeathStatus" id="dracsDeathStatus" class="input peer px-4 py-2">
+                        <select wire:model.live="dracsDeathStatus" id="dracsDeathStatus" class="input-select peer px-4 py-2">
                             <option value="">{{ __('forms.all') }}</option>
                             <option value="VERIFIED">{{ __('party_verification.statuses.VERIFIED') }}</option>
                             <option value="NOT_VERIFIED">{{ __('party_verification.statuses.NOT_VERIFIED') }}</option>

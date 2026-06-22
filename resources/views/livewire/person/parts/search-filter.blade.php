@@ -1,4 +1,17 @@
-<div x-show="showFilter" wire:key="{{ time() }}">
+<div x-show="showFilter"
+     wire:key="{{ time() }}"
+     x-data="{
+         focusNext(el) {
+             let container = el.closest('.breadcrumb-form, [x-data]');
+             if (!container) return;
+             let elements = Array.from(container.querySelectorAll('input:not([readonly]):not([type=hidden]), button.button-primary')).filter(e => e.offsetWidth > 0 && e.offsetHeight > 0);
+             let index = elements.indexOf(el);
+             if (index > -1 && elements[index + 1]) {
+                 elements[index + 1].focus();
+             }
+         }
+     }"
+>
     <div class="form-row-3">
         <div class="form-group group">
             <input wire:model="form.firstName"
@@ -9,6 +22,7 @@
                    placeholder=" "
                    required
                    autocomplete="off"
+                   x-on:keydown.enter.prevent="focusNext($el)"
             />
             <label for="filterFirstName" class="label">
                 {{ __('forms.first_name') }}
@@ -30,6 +44,7 @@
                    placeholder=" "
                    required
                    autocomplete="off"
+                   x-on:keydown.enter.prevent="focusNext($el)"
             />
             <label for="filterLastName" class="label">
                 {{ __('forms.last_name') }}
@@ -53,6 +68,7 @@
                        placeholder=" "
                        required
                        autocomplete="off"
+                       x-on:keydown.enter.prevent="focusNext($el)"
                 />
                 <label for="filterBirthDate" class="wrapped-label">
                     {{ __('forms.birth_date') }}
@@ -86,6 +102,7 @@
                            class="input peer @error('form.secondName') input-error @enderror"
                            placeholder=" "
                            autocomplete="off"
+                           x-on:keydown.enter.prevent="focusNext($el)"
                     />
                     <label for="filterSecondName" class="label">
                         {{ __('forms.second_name') }}
@@ -107,6 +124,7 @@
                            placeholder=" "
                            maxlength="10"
                            autocomplete="off"
+                           x-on:keydown.enter.prevent="focusNext($el)"
                     />
                     <label for="filterTaxId" class="label">
                         {{ __('forms.rnokpp') }} ({{ __('forms.ipn') }})
@@ -130,6 +148,7 @@
                            placeholder=" "
                            autocomplete="off"
                            x-mask="+380999999999"
+                           x-on:keydown.enter.prevent="focusNext($el)"
                     />
                     <label for="filterPhoneNumber" class="label">
                         {{ __('forms.phone_number') }}
@@ -150,6 +169,7 @@
                            class="input peer @error('form.birthCertificate') input-error @enderror"
                            placeholder=" "
                            autocomplete="off"
+                           x-on:keydown.enter.prevent="focusNext($el)"
                     />
                     <label for="filterBirthCertificate" class="label">
                         {{ __('forms.birth_certificate') }}

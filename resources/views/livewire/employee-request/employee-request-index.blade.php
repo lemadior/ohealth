@@ -44,7 +44,7 @@
                     </div>
 
                     <div class="form-group group">
-                        <select wire:model.live="status" class="input peer">
+                        <select wire:model.live="status" class="input-select peer">
                             <option value="">Всі статуси</option>
                             @foreach($statuses as $st)
                                 <option value="{{ $st->value }}">{{ $st->label() }}</option>

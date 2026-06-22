@@ -36,7 +36,7 @@
                 <div class="flex mb-4 flex-col lg:flex-row items-stretch lg:items-end gap-2 lg:gap-4 w-full">
                     <div class="w-full lg:w-96">
                         <label for="searchByName"
-                               class="text-sm font-medium text-gray-900 dark:text-white block mb-2 items-center gap-1"
+                               class="flex items-center gap-1 font-semibold text-gray-900 dark:text-white mb-2"
                         >
                             @icon('search-outline', 'w-4.5 h-4.5')
                             <span>{{ __('equipments.search') }}</span>
@@ -112,104 +112,20 @@
 
                     <div class="form-row-3">
                         {{-- Filter by status --}}
-                        <div class="form-group group"
-                             x-data="{ open: false, selectedStatuses: $wire.entangle('statusFilter') }"
-                        >
-                            <label for="statusFilter" class="label">{{ __('forms.status.label') }}</label>
-                            <div class="relative">
-                                <input type="text"
-                                       id="statusFilter"
-                                       class="input peer w-full cursor-pointer text-gray-500 dark:text-gray-400"
-                                       placeholder="{{ __('forms.select') }}"
-                                       @click="open = !open"
-                                       :value="selectedStatuses.length ? selectedStatuses.map(status => {
-                                           if (status === 'active') return '{{ __('equipments.status.active') }}';
-                                           if (status === 'inactive') return '{{ __('equipments.status.inactive') }}';
-                                           if (status === 'DRAFT') return '{{ __('equipments.status.draft') }}';
-                                           if (status === 'entered_in_error') return '{{ __('equipments.status.entered_in_error') }}';
-                                           return status;
-                                       }).join(', ') : ''"
-                                       readonly
-                                />
-                                @icon('chevron-down', 'w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none')
-
-                                <div x-show="open"
-                                     @click.away="open = false"
-                                     x-transition:enter="transition ease-out duration-100"
-                                     x-transition:enter-start="transform opacity-0 scale-95"
-                                     x-transition:enter-end="transform opacity-100 scale-100"
-                                     x-transition:leave="transition ease-in duration-75"
-                                     x-transition:leave-start="transform opacity-100 scale-100"
-                                     x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute z-10 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg"
-                                >
-                                    <ul class="py-2 px-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                                        @foreach(Status::options() as $value => $label)
-                                            <li>
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox"
-                                                           value="{{ $value }}"
-                                                           wire:model="statusFilter"
-                                                           class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
-                                                    />
-                                                    <span>{{ $label }}</span>
-                                                </label>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+                        <x-forms.multiselect
+                            bind="statusFilter"
+                            :options="Status::options()"
+                            label="{{ __('forms.status.label') }}"
+                            placeholder="{{ __('forms.select') }}"
+                        />
 
                         {{-- Filter by availability status --}}
-                        <div class="form-group group"
-                             x-data="{ open: false, selectedStatuses: $wire.entangle('availabilityStatusFilter') }"
-                        >
-                            <label for="statusFilter" class="label">{{ __('forms.status.label') }}</label>
-                            <div class="relative">
-                                <input type="text"
-                                       id="statusFilter"
-                                       class="input peer w-full cursor-pointer text-gray-500 dark:text-gray-400"
-                                       placeholder="{{ __('forms.select') }}"
-                                       @click="open = !open"
-                                       :value="selectedStatuses.length ? selectedStatuses.map(status => {
-                                           if (status === 'available') return '{{ __('equipments.availability_status.available') }}';
-                                           if (status === 'damaged') return '{{ __('equipments.availability_status.damaged') }}';
-                                           if (status === 'destroyed') return '{{ __('equipments.availability_status.destroyed') }}';
-                                           if (status === 'lost') return '{{ __('equipments.availability_status.lost') }}';
-                                           return status;
-                                       }).join(', ') : ''"
-                                       readonly
-                                />
-                                @icon('chevron-down', 'w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none')
-
-                                <div x-show="open"
-                                     @click.away="open = false"
-                                     x-transition:enter="transition ease-out duration-100"
-                                     x-transition:enter-start="transform opacity-0 scale-95"
-                                     x-transition:enter-end="transform opacity-100 scale-100"
-                                     x-transition:leave="transition ease-in duration-75"
-                                     x-transition:leave-start="transform opacity-100 scale-100"
-                                     x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute z-10 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg"
-                                >
-                                    <ul class="py-2 px-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                                        @foreach(AvailabilityStatus::options() as $value => $label)
-                                            <li>
-                                                <label class="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox"
-                                                           value="{{ $value }}"
-                                                           wire:model="availabilityStatusFilter"
-                                                           class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
-                                                    />
-                                                    <span>{{ $label }}</span>
-                                                </label>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+                        <x-forms.multiselect
+                            bind="availabilityStatusFilter"
+                            :options="AvailabilityStatus::options()"
+                            label="{{ __('forms.status.label') }}"
+                            placeholder="{{ __('forms.select') }}"
+                        />
                     </div>
                 </div>
 
@@ -235,14 +151,14 @@
                     <table class="index-table">
                         <thead class="index-table-thead">
                         <tr>
-                            <th class="index-table-th w-[15%]">{{ __('forms.name') }}</th>
-                            <th class="index-table-th w-[10%]">{{ __('equipments.inventory_number') }}</th>
-                            <th class="index-table-th w-[20%]">{{ __('forms.type') }}</th>
-                            <th class="index-table-th w-[15%]">{{ __('forms.institution') }}</th>
-                            <th class="index-table-th w-[10%]">{{ __('forms.created_at') }}</th>
-                            <th class="index-table-th w-[10%]">{{ __('forms.status.label') }}</th>
-                            <th class="index-table-th w-[14%]">{{ __('equipments.availability_status.label') }}</th>
-                            <th class="index-table-th w-[6%]">{{ __('forms.action') }}</th>
+                            <th class="index-table-th w-[13%]">{{ __('forms.name') }}</th>
+                            <th class="index-table-th w-[9%]">{{ __('equipments.inventory_number') }}</th>
+                            <th class="index-table-th w-[15%]">{{ __('forms.type') }}</th>
+                            <th class="index-table-th w-[13%]">{{ __('forms.institution') }}</th>
+                            <th class="index-table-th w-[11%]">{{ __('forms.created_at') }}</th>
+                            <th class="index-table-th w-[15%]">{{ __('forms.status.label') }}</th>
+                            <th class="index-table-th w-[19%]">{{ __('equipments.availability_status.label') }}</th>
+                            <th class="index-table-th w-[5%]">{{ __('forms.action') }}</th>
                         </tr>
                         </thead>
 
@@ -265,8 +181,10 @@
                                 <td class="index-table-td">
                                     {{ $equipment->division?->name ?? '-' }}
                                 </td>
-                                <td class="index-table-td">
-                                    {{ $equipment->ehealthInsertedAt?->format(config('app.date_format')) ?? $equipment->createdAt->format(config('app.date_format')) }}
+                                <td class="index-table-td !whitespace-nowrap">
+                                    <span class="whitespace-nowrap">
+                                        {{ $equipment->ehealthInsertedAt?->format(config('app.date_format')) ?? $equipment->createdAt->format(config('app.date_format')) }}
+                                    </span>
                                 </td>
                                 <td class="index-table-td">
                                     <span class="inline-flex items-center whitespace-nowrap {{
@@ -281,7 +199,7 @@
                                     </span>
                                 </td>
                                 <td class="index-table-td">
-                                    <span class="{{
+                                    <span class="inline-flex items-center whitespace-nowrap {{
                                         match($equipment->availabilityStatus) {
                                             AvailabilityStatus::AVAILABLE => 'badge-green',
                                             AvailabilityStatus::DAMAGED, AvailabilityStatus::DESTROYED, AvailabilityStatus::LOST => 'badge-red',

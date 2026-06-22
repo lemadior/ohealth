@@ -70,58 +70,13 @@
                         @endphp
 
                         <div class="form-row-3">
-                            <div class="form-group group">
-                                <label for="statusFilter" class="label">{{ __('forms.status.label') }}</label>
-                                <div
-                                    class="relative"
-                                    x-data="{
-                                        open: false,
-                                        selectedStatuses: $wire.entangle('statusFilter'),
-                                        labels: @js($statusOptions)
-                                    }"
-                                >
-                                    <input
-                                        type="text"
-                                        id="statusFilter"
-                                        class="input peer"
-                                        value="{{ collect($statusFilter)->map(fn (string $status) => $statusOptions[$status] ?? $status)->implode(', ') ?: collect($statusOptions)->implode(', ') }}"
-                                        :value="selectedStatuses.length ? selectedStatuses.map(status => labels[status] ?? status).join(', ') : Object.values(labels).join(', ')"
-                                        @click="open = !open"
-                                        readonly
-                                    />
-                                    <svg stroke="currentColor"
-                                         class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none"
-                                         fill="none"
-                                         stroke-width="2"
-                                         viewBox="0 0 24 24"
-                                    >
-                                        <path d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                    <div
-                                        x-show="open"
-                                        x-cloak
-                                        @click.away="open = false"
-                                        x-transition
-                                        class="absolute z-10 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg"
-                                    >
-                                        <ul class="py-2 px-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                                            @foreach($statusOptions as $statusValue => $statusLabel)
-                                                <li wire:key="status-option-{{ $statusValue }}">
-                                                    <label class="flex items-center space-x-2 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            value="{{ $statusValue }}"
-                                                            wire:model.live="statusFilter"
-                                                            class="rounded-sm text-blue-600 focus:ring-blue-500 border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:checked:bg-blue-600 dark:checked:border-transparent"
-                                                        />
-                                                        <span>{{ $statusLabel }}</span>
-                                                    </label>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
+                            <x-forms.multiselect
+                                bind="statusFilter"
+                                :options="$statusOptions"
+                                label="{{ __('forms.status.label') }}"
+                                :showAllIfEmpty="true"
+                                :live="true"
+                            />
                         </div>
                     </div>
 
