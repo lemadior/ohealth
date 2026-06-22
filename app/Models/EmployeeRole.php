@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Casts\EHealthTimestampAsDateCast;
 use App\Casts\EHealthTimestampCast;
-use App\Enums\Status;
+use App\Enums\EmployeeRole\Status;
 use App\Models\Employee\Employee;
 use Eloquence\Behaviours\HasCamelCasing;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -39,8 +38,8 @@ class EmployeeRole extends Model
     ];
 
     protected $casts = [
-        'start_date' => EHealthTimestampAsDateCast::class,
-        'end_date' => EHealthTimestampAsDateCast::class,
+        'start_date' => 'immutable_datetime',
+        'end_date' => 'immutable_datetime',
         'ehealth_inserted_at' => EHealthTimestampCast::class,
         'ehealth_updated_at' => EHealthTimestampCast::class,
         'status' => Status::class
@@ -54,6 +53,26 @@ class EmployeeRole extends Model
     public function healthcareService(): BelongsTo
     {
         return $this->belongsTo(HealthcareService::class);
+    }
+
+    /**
+     * User who created the role in eHealth, resolved from the inserted_by UUID.
+     *
+     * @return BelongsTo
+     */
+    public function insertedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ehealth_inserted_by', 'uuid');
+    }
+
+    /**
+     * User who last updated the role in eHealth, resolved from the updated_by UUID.
+     *
+     * @return BelongsTo
+     */
+    public function updatedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ehealth_updated_by', 'uuid');
     }
 
     /**

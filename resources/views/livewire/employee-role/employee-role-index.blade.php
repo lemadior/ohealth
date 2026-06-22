@@ -1,4 +1,4 @@
-@use('App\Enums\Status')
+@use('App\Enums\EmployeeRole\Status')
 @use('App\Enums\JobStatus')
 @use('App\Models\EmployeeRole')
 
@@ -152,7 +152,7 @@
                             <th class="index-table-th w-1/5">{{ __('employees.doctor_full_name') }}</th>
                             <th class="index-table-th w-[15%]">{{ __('employee-roles.speciality_type') }}</th>
                             <th class="index-table-th w-[18%]">{{ __('forms.divisions') }}</th>
-                            <th class="index-table-th w-[15%]">{{ __('employee-roles.providing_condition') }}</th>
+                            <th class="index-table-th w-[15%]">{{ __('forms.providing_condition') }}</th>
                             <th class="index-table-th w-[10%]">{{ __('forms.created_at') }}</th>
                             <th class="index-table-th w-[10%]">{{ __('employee-roles.end_date') }}</th>
                             <th class="index-table-th w-[13%]">{{ __('employee-roles.status') }}</th>
@@ -176,10 +176,10 @@
                                     {{ $dictionaries['PROVIDING_CONDITION'][$employeeRole->healthcareService->providingCondition] }}
                                 </td>
                                 <td class="index-table-td">
-                                    {{ $employeeRole->startDate }}
+                                    {{ formatDisplayDate($employeeRole->startDate) }}
                                 </td>
                                 <td class="index-table-td">
-                                    {{ $employeeRole->endDate }}
+                                    {{ formatDisplayDate($employeeRole->endDate) ?: '-' }}
                                 </td>
                                 <td class="index-table-td">
                                     <span class="{{
@@ -227,6 +227,16 @@
                                                     :id="$id('dropdown-button')"
                                                     class="absolute right-0 mt-2 w-auto min-w-40 max-w-[20rem] rounded-md bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 shadow-md z-50"
                                                 >
+                                                    @can('view', $employeeRole)
+                                                        <a
+                                                            href="{{ route('employee-role.view', [legalEntity(), $employeeRole->id]) }}"
+                                                            class="flex items-center gap-2 w-full px-4 py-2.5 text-left text-sm text-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                                        >
+                                                            @icon('eye', 'w-5 h-5 text-gray-600 dark:text-gray-300')
+                                                            {{ __('forms.view') }}
+                                                        </a>
+                                                    @endcan
+
                                                     @can('deactivate', $employeeRole)
                                                         <button
                                                             @click.prevent="show = true"

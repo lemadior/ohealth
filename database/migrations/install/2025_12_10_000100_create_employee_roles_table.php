@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Enums\Status;
+use App\Enums\EmployeeRole\Status;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignId('healthcare_service_id')->constrained();
             $table->timestamp('start_date');
             $table->timestamp('end_date')->nullable();
-            $table->enum('status', [Status::ACTIVE, Status::INACTIVE]);
+            $table->enum('status', Status::values());
             $table->boolean('is_active');
             $table->timestamp('ehealth_inserted_at');
             $table->string('ehealth_inserted_by');

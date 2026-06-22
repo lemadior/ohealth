@@ -160,7 +160,7 @@
                         <div class="text-gray-900 dark:text-white font-medium">{{ $intent ?: '-' }}</div>
                     </div>
                     <div>
-                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Умови надання послуг</div>
+                        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{{ __('forms.providing_condition') }}</div>
                         <div class="text-gray-900 dark:text-white font-medium">{{ $tos ?: '-' }}</div>
                     </div>
 

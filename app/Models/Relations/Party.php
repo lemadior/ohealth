@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Casts\EHealthDateCast;
 use App\Models\Employee\Employee;
 use App\Traits\SyncsMorphManyRelations;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Employee\EmployeeRequest;
 use Eloquence\Behaviours\HasCamelCasing;
@@ -47,17 +48,21 @@ class Party extends Model
      * Get the party's full name.
      * This is an accessor, allowing you to use it like a property: $party->fullName
      *
-     * @return string
+     * @return Attribute
      */
-    public function getFullNameAttribute(): string
+    protected function fullName(): Attribute
     {
-        $fullName = trim($this->last_name . ' ' . $this->first_name);
+        return Attribute::make(
+            get: function (): string {
+                $fullName = trim($this->lastName . ' ' . $this->firstName);
 
-        if (!empty($this->second_name)) {
-            $fullName .= ' ' . $this->second_name;
-        }
+                if (!empty($this->secondName)) {
+                    $fullName .= ' ' . $this->secondName;
+                }
 
-        return $fullName;
+                return $fullName;
+            }
+        );
     }
 
     /**
@@ -91,15 +96,5 @@ class Party extends Model
     public function phones(): MorphMany
     {
         return $this->morphMany(Phone::class, 'phoneable');
-    }
-
-    /**
-     * Checks whether a person has an active role as an Owner in a given institution.
-     */
-    public function hasActiveOwnerRole(int $legalEntityId): bool
-    {
-        return $this->employees()
-            ->activeOwners($legalEntityId)
-            ->exists();
     }
 }

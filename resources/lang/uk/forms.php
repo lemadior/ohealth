@@ -169,6 +169,7 @@ return [
 
     //Healthcare Service
     'services' => 'Послуги',
+    'providing_condition' => 'Умови надання послуг',
     'comment' => 'Коментар',
     'opened_by' => 'Відчиняється о',
     'closed_by' => 'Закривається о',

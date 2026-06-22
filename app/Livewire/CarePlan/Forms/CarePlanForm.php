@@ -80,7 +80,7 @@ class CarePlanForm extends Form
             'description' => __('care-plan.extended_description'),
             'note' => __('care-plan.notes'),
             'informWith' => __('care-plan.inform_with'),
-            'termsOfService' => __('care-plan.terms_of_service') ?? 'Умови надання послуг',
+            'termsOfService' => __('forms.providing_condition'),
             'knedp' => __('forms.knedp') ?? 'КНЕДП',
             'keyContainerUpload' => __('forms.key_container') ?? 'Ключ-контейнер',
             'password' => __('forms.password'),

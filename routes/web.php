@@ -43,6 +43,7 @@ use App\Livewire\Employee\EmployeeShow;
 use App\Livewire\EmployeeRequest\EmployeeRequestIndex;
 use App\Livewire\EmployeeRole\EmployeeRoleCreate;
 use App\Livewire\EmployeeRole\EmployeeRoleIndex;
+use App\Livewire\EmployeeRole\EmployeeRoleView;
 use App\Livewire\Equipment\EquipmentCreate;
 use App\Livewire\Equipment\EquipmentEdit;
 use App\Livewire\Equipment\EquipmentIndex;
@@ -197,12 +198,18 @@ Route::middleware(['auth:ehealth', 'verified'])->group(function () {
                 ->name('party.verification.show');
             Route::get('/party/{party}/edit', PartyEdit::class)->name('party.edit');
 
-            Route::get('/employee-role', EmployeeRoleIndex::class)
-                ->name('employee-role.index')
-                ->can('viewAny', EmployeeRole::class);
-            Route::get('/employee-role/create', EmployeeRoleCreate::class)
-                ->name('employee-role.create')
-                ->can('create', EmployeeRole::class);
+            Route::prefix('employee-role')->name('employee-role.')->group(static function () {
+                Route::get('/', EmployeeRoleIndex::class)
+                    ->name('index')
+                    ->can('viewAny', EmployeeRole::class);
+                Route::get('/create', EmployeeRoleCreate::class)
+                    ->name('create')
+                    ->can('create', EmployeeRole::class);
+                Route::get('/{employeeRole}', EmployeeRoleView::class)
+                    ->name('view')
+                    ->whereNumber('employeeRole')
+                    ->can('view', 'employeeRole');
+            });
 
             // --- Group of Contracts (Already signed/active) ---
             Route::prefix('contract')->name('contract.')->group(function () {

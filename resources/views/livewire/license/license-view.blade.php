@@ -157,11 +157,7 @@
                 </div>
             </div>
 
-            <a
-                href="{{ route('license.index', ['legalEntity' => legalEntity()]) }}"
-                type="submit"
-                class="button-minor"
-            >
+            <a href="{{ route('license.index', legalEntity()) }}" type="submit" class="button-minor">
                 {{ __('forms.back') }}
             </a>
         </fieldset>

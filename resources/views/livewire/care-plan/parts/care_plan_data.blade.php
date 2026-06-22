@@ -100,7 +100,7 @@
 
     <div class="form-group group">
         <label for="terms_of_service" class="label">
-            {{ __('care-plan.terms_of_service') }}
+            {{ __('forms.providing_condition') }}
         </label>
         <select id="terms_of_service"
                 name="terms_of_service"

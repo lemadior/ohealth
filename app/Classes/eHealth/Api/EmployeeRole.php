@@ -42,6 +42,22 @@ class EmployeeRole extends Request
     }
 
     /**
+     * Get employee role by id.
+     *
+     * @param  string  $id
+     * @return PromiseInterface|EHealthResponse
+     * @throws EHealthConnectionException|EHealthValidationException|EHealthResponseException
+     *
+     * @see https://uaehealthapi.docs.apiary.io/#reference/public.-medical-service-provider-integration-layer/employee-roles/get-employee-role-by-id
+     */
+    public function getById(string $id): PromiseInterface|EHealthResponse
+    {
+        $this->setValidator($this->validateResponse(...));
+
+        return $this->get(self::URL . "/$id");
+    }
+
+    /**
      * Add employee role.
      *
      * @param  array  $data
