@@ -24,11 +24,7 @@ class PersonRequestEdit extends PersonComponent
         if ($this->isIncapacitated) {
             $person = $personRequest->confidantPersons->first()->person->toArray();
 
-            // Change id to uuid
-            $person['id'] = $person['uuid'];
-            unset($person['uuid']);
-
-            $this->selectedConfidantPersonId = $person['id'];
+            $this->selectedConfidantPersonId = $person['uuid'];
             $this->confidantPerson = [$person];
         }
 

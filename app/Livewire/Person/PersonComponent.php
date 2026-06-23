@@ -66,6 +66,13 @@ class PersonComponent extends Component
     public array $uploadedDocuments = [];
 
     /**
+     * Current authentication method returned in eHealth urgent data for approving the person request.
+     *
+     * @var array
+     */
+    public array $authenticationMethodCurrent = [];
+
+    /**
      * Content that shows to the patient when signing the leaflet.
      *
      * @var string
@@ -106,6 +113,8 @@ class PersonComponent extends Component
      * @var bool
      */
     public bool $isIncapacitated = false;
+
+    public bool $canManageConfidantRelationships = false;
 
     /**
      * UUID of a person who is younger than 18 y/o.
@@ -296,8 +305,10 @@ class PersonComponent extends Component
                 return;
             }
 
+            $urgent = $response->getUrgent();
             $this->form->person['id'] = $response->getData()['id'];
-            $this->uploadedDocuments = $response->getUrgent()['documents'];
+            $this->uploadedDocuments = $urgent['documents'] ?? [];
+            $this->authenticationMethodCurrent = $urgent['authentication_method_current'] ?? [];
             $this->showInformationMessageModal = true;
         }
     }
@@ -419,7 +430,9 @@ class PersonComponent extends Component
         }
 
         if ($this->selectedConfidantPersonId || !empty($this->form->uploadedDocuments)) {
-            $this->uploadDocuments();
+            if (!$this->uploadDocuments()) {
+                return;
+            }
         }
 
         try {
@@ -503,8 +516,16 @@ class PersonComponent extends Component
             return;
         }
 
-        if ($this->selectedConfidantPersonId && $this->form->uploadedDocuments) {
-            $this->uploadDocuments();
+        if (!empty($this->uploadedDocuments)) {
+            if (count($this->form->uploadedDocuments) !== count($this->uploadedDocuments)) {
+                Session::flash('error', __('patients.messages.upload_all_files'));
+
+                return;
+            }
+
+            if (!$this->uploadDocuments()) {
+                return;
+            }
         }
 
         try {
@@ -674,18 +695,18 @@ class PersonComponent extends Component
     }
 
     /**
-     * Upload documents to URLs that EHealth provide.
+     * Upload documents to URLs that eHealth provided for the person request.
      *
-     * @return void
+     * @return bool
      */
-    protected function uploadDocuments(): void
+    protected function uploadDocuments(): bool
     {
         $totalFiles = count($this->form->uploadedDocuments);
         // Check that all provided files were uploaded
         if ($totalFiles !== count($this->uploadedDocuments)) {
             Session::flash('error', __('patients.messages.upload_all_files'));
 
-            return;
+            return false;
         }
 
         $successCount = 0;
@@ -719,7 +740,11 @@ class PersonComponent extends Component
         // Show final status message
         if ($successCount === $totalFiles) {
             Session::flash('success', __('patients.messages.files_uploaded_successfully'));
+
+            return true;
         }
+
+        return false;
     }
 
     /**

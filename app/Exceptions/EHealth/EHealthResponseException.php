@@ -45,7 +45,13 @@ class EHealthResponseException extends EHealthException
             'error_message' => $this->getDetails()
         ]);
 
-        Session::flash('error', $flashMessage ?? __('messages.ehealth_error', ['message' => $this->getMessage()]));
+        $message = $flashMessage ?? __('messages.ehealth_error', ['message' => $this->getMessage()]);
+
+        if ($flashMessage === null && $this->response->status() === 409) {
+            $message = $this->response->json('error.message') ?? $this->getMessage();
+        }
+
+        Session::flash('error', $message);
     }
 
     /**

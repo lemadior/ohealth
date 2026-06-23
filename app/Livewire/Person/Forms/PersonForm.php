@@ -18,9 +18,11 @@ use Illuminate\Validation\ValidationException;
 
 class PersonForm extends BaseForm
 {
-    protected const int NO_SELF_AUTH_AGE = 14;
+    public const int NO_SELF_AUTH_AGE = 14;
     protected const int NO_SELF_REGISTRATION_AGE = 14;
     protected const int PERSON_FULL_LEGAL_CAPACITY_AGE = 18;
+    private const string EXPIRATION_DATE_ISSUED_AT_CONDITIONAL_TYPE = 'PERMANENT_RESIDENCE_PERMIT';
+    private const string EXPIRATION_DATE_ISSUED_AT_REQUIRED_FROM = '2018-06-01';
 
     // For search
     public string $firstName;
@@ -56,7 +58,7 @@ class PersonForm extends BaseForm
 
     public int $verificationCode;
 
-    public array $uploadedDocuments;
+    public array $uploadedDocuments = [];
 
     private int $personAge;
 
@@ -165,12 +167,21 @@ class PersonForm extends BaseForm
                 'before:today',
                 'after:person.birthDate'
             ],
-            'person.documents.*.expirationDate' => ['nullable', 'date_format:' . config('app.date_format'), 'after:today'],
+            'person.documents.*.expirationDate' => [
+                'nullable',
+                'date_format:' . config('app.date_format'),
+                'after:today'
+            ],
 
             'person.noTaxId' => ['nullable', 'boolean'],
             'person.taxId' => ['nullable', 'required_if:person.noTaxId,false', 'numeric', 'digits:10'],
             'person.secret' => ['required', 'string', 'min:6'],
-            'person.email' => ['nullable', 'email', 'string'],
+            'person.email' => [
+                'nullable',
+                'email',
+                'string',
+                Rule::unique('persons', 'email')->ignore($this->person['uuid'], 'uuid')
+            ],
 
             'person.phones.*.type' => ['nullable', 'string', 'distinct', 'required_with:person.phones.*.number'],
             'person.phones.*.number' => [
@@ -278,8 +289,8 @@ class PersonForm extends BaseForm
             'person.taxId.required_if' => __('validation.custom.person.tax_id_required_when_not_absent')
         ];
 
-        // Add translated message for document expiration date
         $messages['person.documents.*.expirationDate.required_if'] = $this->getExpirationDateRequiredMessage();
+        $messages['person.documents.*.expirationDate.required'] = $this->getExpirationDateRequiredMessage();
 
         return $messages;
     }
@@ -294,11 +305,11 @@ class PersonForm extends BaseForm
     {
         $requiredTypes = config('ehealth.expiration_date_exists');
 
-        // Simply add required_if rule that checks if document type is in required types
-        $rules['person.documents.*.expirationDate'][] = 'required_if:person.documents.*.type,' . implode(
-            ',',
-            $requiredTypes
-        );
+        foreach ($this->person['documents'] as $index => $document) {
+            if ($this->isExpirationDateRequiredForDocument($document, $requiredTypes)) {
+                $rules["person.documents.$index.expirationDate"][] = 'required';
+            }
+        }
     }
 
     /**
@@ -313,15 +324,62 @@ class PersonForm extends BaseForm
             $requiredTypes = config('ehealth.expiration_date_exists', []);
 
             foreach ($this->person['documents'] as $document) {
-                if (empty($document['expirationDate'] && in_array($document['type'], $requiredTypes, true))) {
+                if (
+                    empty($document['expirationDate'])
+                    && $this->isExpirationDateRequiredForDocument($document, $requiredTypes)
+                ) {
                     $translatedType = __("patients.documents.{$document['type']}") ?: $document['type'];
 
-                    return __('validation.custom.person.expiration_date_required_for_type', ['document_type' => $translatedType]);
+                    return __(
+                        'validation.custom.person.expiration_date_required_for_type',
+                        ['document_type' => $translatedType]
+                    );
                 }
             }
         }
 
         return __('validation.custom.person.expiration_date_required_general');
+    }
+
+    /**
+     * Determine whether a person document must have an expiration date.
+     *
+     * @param  array  $document
+     * @param  array  $requiredTypes
+     * @return bool
+     */
+    private function isExpirationDateRequiredForDocument(array $document, array $requiredTypes): bool
+    {
+        $documentType = $document['type'];
+
+        if (!in_array($documentType, $requiredTypes, true)) {
+            return false;
+        }
+
+        if ($documentType !== self::EXPIRATION_DATE_ISSUED_AT_CONDITIONAL_TYPE) {
+            return true;
+        }
+
+        return $this->issuedAtRequiresExpirationDate($document['issuedAt'] ?? null);
+    }
+
+    /**
+     * Check whether a conditional document issue date falls on or after the eHealth cutoff.
+     *
+     * @param  string|null  $issuedAt
+     * @return bool
+     */
+    private function issuedAtRequiresExpirationDate(?string $issuedAt): bool
+    {
+        if (empty($issuedAt)) {
+            return false;
+        }
+
+        $issuedAtDate = CarbonImmutable::createFromFormat(config('app.date_format'), $issuedAt)->startOfDay();
+
+        return $issuedAtDate->greaterThanOrEqualTo(
+            CarbonImmutable::parse(self::EXPIRATION_DATE_ISSUED_AT_REQUIRED_FROM)->startOfDay()
+        );
     }
 
     /**
@@ -482,7 +540,10 @@ class PersonForm extends BaseForm
             if (!in_array($document['type'], (array)$allAllowedTypes, true)) {
                 $documentTypeName = __('patients.documents.' . $document['type']) ?: $document['type'];
                 throw ValidationException::withMessages([
-                    'person.documents' => __('validation.custom.person.document_type_not_allowed', ['document_type' => $documentTypeName])
+                    'person.documents' => __(
+                        'validation.custom.person.document_type_not_allowed',
+                        ['document_type' => $documentTypeName]
+                    )
                 ]);
             }
         }
@@ -494,7 +555,10 @@ class PersonForm extends BaseForm
                 if (in_array($document['type'], $personLegalCapacityDocumentTypes, true)) {
                     $documentTypeName = __('patients.documents.' . $document['type']) ?: $document['type'];
                     throw ValidationException::withMessages([
-                        'person.documents' => __('validation.custom.person.document_type_not_allowed_for_person', ['document_type' => $documentTypeName])
+                        'person.documents' => __(
+                            'validation.custom.person.document_type_not_allowed_for_person',
+                            ['document_type' => $documentTypeName]
+                        )
                     ]);
                 }
             }
@@ -550,7 +614,10 @@ class PersonForm extends BaseForm
                 $allowedTypesList = implode(', ', $translatedTypes);
 
                 throw ValidationException::withMessages([
-                    'person.documents' => __('validation.custom.person.invalid_document_types_for_age', ['allowed_types' => $allowedTypesList])
+                    'person.documents' => __(
+                        'validation.custom.person.invalid_document_types_for_age',
+                        ['allowed_types' => $allowedTypesList]
+                    )
                 ]);
             }
         }

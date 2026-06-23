@@ -168,7 +168,7 @@
             {{ __('forms.save') }}
         </button>
 
-        @if($this instanceof \App\Livewire\Person\PersonUpdate)
+        @if($canManageConfidantRelationships)
             <button type="button"
                     class="button-primary"
                     wire:click.prevent="createNewConfidantPersonRelationshipRequest"
