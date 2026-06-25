@@ -150,8 +150,12 @@
                             </label>
                         </div>
 
+                        {{-- Remove an archive data --}}
                         <template x-if="archives.length > 1 && index > 0">
-                            <button x-on:click.prevent="archives.splice(index, 1)" {{-- Remove an archive data --}}
+                            <button
+                                x-cloak
+                                x-show="!@json($isDetails ?? false)"
+                                x-on:click.prevent="archives.splice(index, 1)"
                                 class="item-remove justify-self-start text-xs"
                             >
                                 {{__('forms.delete')}}
@@ -160,11 +164,13 @@
                     </div>
                 </template>
 
+                {{-- Add new archive data --}}
                 <button
+                    x-cloak
                     x-show="!@json($isDetails ?? false)"
-                    x-on:click.prevent="archives.push({ date: '', place: '' })" {{-- Add new archive data --}}
+                    x-on:click.prevent="archives.push({ date: '', place: '' })"
                     class="item-add"
-                    :class="{ 'lg:justify-self-start': index > 0 }" {{-- Apply this style only if it's not a first arhive data group --}}
+                    :class="{ 'lg:justify-self-start': index > 0 }" {{-- Apply this style only if it's not a first archive data group --}}
                 >
                     {{ __('forms.archive_add') }}
                 </button>
