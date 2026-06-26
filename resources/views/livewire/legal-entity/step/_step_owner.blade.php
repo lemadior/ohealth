@@ -414,13 +414,23 @@
     {{-- OWNER DOCUMENTS --}}
     <div
         class="space-y-2"
-        x-data="{ documents: $wire.entangle('legalEntityForm.owner.documents'), defaultDoc: { type: '', number: '', issuedBy: '', issuedAt: '' } }"
+        x-data="{ 
+            documents: $wire.entangle('legalEntityForm.owner.documents'), 
+            defaultDoc: { type: '', number: '', issuedBy: '', issuedAt: '' },
+            keysMap: new WeakMap(),
+            getKey(doc) {
+                if (!this.keysMap.has(doc)) {
+                    this.keysMap.set(doc, crypto.randomUUID());
+                }
+                return this.keysMap.get(doc);
+            }
+        }"
         x-init="if (!Array.isArray(documents) || documents.length === 0) { documents = [{ ...defaultDoc }] }"
         x-id="['doc']"
     >
         <h3 class="font-bold text-sm text-gray-600 mb-6">{{ __('forms.documents_owner') }} *</h3>
 
-        <template x-for="(doc, index) in documents" :key="index">
+        <template x-for="(doc, index) in documents" :key="getKey(doc)">
             <div
                 x-data="{errors: [] }"
                 x-init="errors = @js($errors->getMessages())"
