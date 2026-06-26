@@ -28,7 +28,7 @@ class ObservationRepository extends BaseRepository
     {
         parent::__construct($model);
 
-        $this->employeeUuid = Auth::user()?->getWriterEmployeeByRolePriority(Role::DOCTOR, Role::SPECIALIST)?->uuid;
+        $this->employeeUuid = Auth::user()?->getDiagnosticReportWriterEmployee()?->uuid;
     }
 
     public function getByDiagnosticReportId(int $diagnosticReportId): array

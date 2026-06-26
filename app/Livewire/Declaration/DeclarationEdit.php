@@ -31,6 +31,4 @@ class DeclarationEdit extends DeclarationComponent
 
         $this->status = $declarationRequest->status;
     }
-
-   
 }
