@@ -140,6 +140,8 @@ abstract class DeclarationComponent extends Component
      */
     protected string $patientUuid;
 
+    public bool $isSyncing = false;
+
     public function boot(): void
     {
         $this->getDictionary();
@@ -162,10 +164,12 @@ abstract class DeclarationComponent extends Component
         $this->authMethods = $this->getPersonAuthMethods();
 
         // Use 'documents_exists' dynamic attribute (added by withExists) to determine if we need to update person data (for one haven't OTP authentication method)
-        $this->isNeedToPersonUpdate = !$patient->documents_exists && 
+        $this->isNeedToPersonUpdate = !$patient->documents_exists &&
             collect($this->authMethods)->where('type', AuthenticationMethod::OTP->value)->isEmpty();
 
         $this->isNeedToResign = Repository::declarationRequest()->checkIfNeedToResign($this->patientUuid);
+
+        $this->isSyncing = $patient->isSyncing;
     }
 
     public function openSignatureModal(): void

@@ -1,6 +1,6 @@
 <div x-data="{ showAuthModal: $wire.entangle('showConfirmationUpdateModal') }">
     <template x-teleport="body">
-        <div x-cloak 
+        <div x-cloak
             x-show="showAuthModal"
             style="display: none"
             @keydown.escape.prevent.stop="showAuthModal = false"

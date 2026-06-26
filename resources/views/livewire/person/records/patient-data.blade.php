@@ -220,7 +220,7 @@
                         @icon('edit-user-outline', 'w-5 h-5 text-gray-400 shrink-0')
                     </button>
                 </h2>
-          /div>
+            </div>
         </div>
 
         <div class="mt-8">
