@@ -128,6 +128,8 @@ class DeclarationDetailsSync extends EHealthJob
 
         if (!empty($validatedData)) {
             $this->declaration->update($validatedData);
+
+            $this->declaration->refresh();
         }
 
         if ($this->legalEntity->status === Status::REORGANIZED->value) {
@@ -150,9 +152,16 @@ class DeclarationDetailsSync extends EHealthJob
     // Get next entity job if needed
     protected function getNextEntityJob(): ?EHealthJob
     {
-        return $this->standalone || !$this->nextEntity
+        // After declaration's details sync, we need to sync the person's authentication methods if they exist
+        $personAuthMethodJob = $this->declaration?->person
+            ? new PersonAuthMethodSync($this->declaration->person, $this->legalEntity, $this->nextEntity)
+            : null;
+
+        $nextEntity = $personAuthMethodJob ?? $this->nextEntity;
+
+        return $this->standalone || !$nextEntity
             ? new CompleteSync($this->legalEntity, isFirstLogin: $this->isFirstLogin)
-            : $this->getConfidantPersonStartJob($this->legalEntity, $this->nextEntity);
+            : $nextEntity;
     }
 
     /**

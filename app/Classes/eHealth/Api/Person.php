@@ -471,6 +471,15 @@ class Person extends Request
 
         $replaced = self::replaceEHealthPropNames($data);
 
+        // Save alias for third person auth method if it is not set
+        $replaced = Arr::map($replaced, function ($item) {
+            if (isset($item['type']) && $item['type'] === AuthenticationMethod::THIRD_PERSON->value && !isset($item['alias'])) {
+                $item['alias'] = __('UNKNOWN');
+            }
+
+            return $item;
+        });
+
         $validator = Validator::make($replaced, [
             '*.uuid' => ['required', 'uuid'],
             '*.type' => ['required', 'string', Rule::in(AuthenticationMethod::values())],

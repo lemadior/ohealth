@@ -110,10 +110,10 @@ class ConfidantPersonSync extends EHealthJob
     protected function getPersonSearchData(): array
     {
         return [
-            'first_name' => $this->person->first_name,
-            'last_name' => $this->person->last_name,
-            'birth_date' => convertToYmd($this->person->birth_date),
-            'tax_id' => $this->person->tax_id ?? null,
+            'first_name' => $this->person->firstName,
+            'last_name' => $this->person->lastName,
+            'birth_date' => convertToYmd($this->person->birthDate),
+            'tax_id' => $this->person->taxId ?? null,
             'phone_number' => $this->person->phones->first()?->number ?? null,
         ];
     }
@@ -129,10 +129,10 @@ class ConfidantPersonSync extends EHealthJob
      */
     protected function checkPersonData(array $data): bool
     {
-        return $data['first_name'] === $this->person->first_name
-            && $data['last_name'] === $this->person->last_name
-            && $data['birth_date'] === convertToYmd($this->person->birth_date)
-            && ($this->person->tax_id === null || $data['tax_id'] === $this->person->tax_id);
+        return $data['first_name'] === $this->person->firstName
+            && $data['last_name'] === $this->person->lastName
+            && $data['birth_date'] === convertToYmd($this->person->birthDate)
+            && ($this->person->taxId === null || $data['tax_id'] === $this->person->taxId);
     }
 
     /**

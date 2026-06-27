@@ -93,7 +93,8 @@ return [
         'party_request' => 30,
         'declaration' => 10,
         'declaration_request' => 20,
-        'legal_entity_legators' => 2
+        'legal_entity_legators' => 2,
+        'person_authentication_method' => 20,
     ],
     'employee_type' => [
         'OWNER' => [
@@ -449,7 +450,7 @@ return [
     'legal_entity_emergency_providing_conditions' => ['FIELD'],
 
     // https://e-health-ua.atlassian.net/wiki/spaces/ESOZ/pages/17570234464/DRAFT+REST+API+Create+Declaration+Request+V3+API-005-014-0001#Validate-Legal-Entity-Type
-    'declaration_request_legal_entity_types' => ['MSP', 'PRIMARY_CARE', 'MSP_PHARMACY'],
+    'declaration_request_legal_entity_types' => ['MSP', 'PRIMARY_CARE', 'MSP_PHARMACY', 'MSP_LIMITED'],
 
     // https://e-health-ua.atlassian.net/wiki/spaces/EH/pages/18504778043/NEW+Equipment+dictionaries+and+configurable+parameters+OMB-126
     'equipment_types_with_required_serial_number' => ['Z1203010502'],

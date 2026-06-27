@@ -25,7 +25,7 @@ class DeclarationPolicy
         $legalEntity = legalEntity();
 
         if (
-            $legalEntity->status !== LegalEntityStatus::ACTIVE->value
+            ($legalEntity->status !== LegalEntityStatus::ACTIVE->value && $legalEntity->status !== LegalEntityStatus::REORGANIZED->value)
             || !in_array($legalEntity->type->name, config('ehealth.declaration_request_legal_entity_types'), true)
         ) {
             return Response::denyWithStatus(404);
@@ -55,7 +55,7 @@ class DeclarationPolicy
             return Response::denyWithStatus(404);
         }
 
-        if ($user->hasAllowedRole(Role::OWNER) && $declaration->legalEntityId === legalEntity()->id) {
+        if ($user->hasAllowedRole([Role::OWNER, Role::REORGANIZATION_OWNER]) && $declaration->legalEntityId === legalEntity()->id) {
             return Response::allow();
         }
 
@@ -86,10 +86,10 @@ class DeclarationPolicy
      */
     public function sync(User $user): Response
     {
-        if ($user->cannot('declaration:read') || $user->cannot('declaration_request:read') || $user->cannot('person:read')) {
-            return Response::denyWithStatus(404);
+        if ($user->can('declaration:read') && $user->can('declaration_request:read') && $user->can('person:read')) {
+            return Response::allow();
         }
 
-        return Response::allow();
+        return Response::denyWithStatus(404);
     }
 }

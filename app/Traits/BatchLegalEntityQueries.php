@@ -18,6 +18,7 @@ use App\Models\Employee\Employee;
 use App\Models\DeclarationRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use App\Jobs\PersonAuthMethodSync;
 use Illuminate\Support\Facades\Bus;
 use App\Jobs\EmployeeDetailsUpsert;
 use Illuminate\Bus\BatchRepository;
@@ -26,6 +27,7 @@ use App\Models\Employee\EmployeeRequest;
 use App\Models\Relations\ConfidantPerson;
 use App\Jobs\EmployeeRequestDetailsUpsert;
 use App\Jobs\DeclarationRequestDetailsSync;
+use App\Models\Relations\AuthenticationMethod;
 
 /**
  * Trait for querying batches by legal_entity_id
@@ -393,7 +395,8 @@ trait BatchLegalEntityQueries
      *
      * @param  LegalEntity  $legalEntity
      * @param  EHealthJob|null  $nextEntity  The job to be executed after the chain completes (or null)
-     * @return EHealthJob|null The first job in the EmployeeDetailsUpsert chain, or null if there are no employees
+     *
+     * @return EHealthJob|null The first job in the ConfidantPersonSync chain, or null if there are no confidant_persons
      */
     protected function getConfidantPersonStartJob(LegalEntity $legalEntity, ?EHealthJob $nextEntity): ?EHealthJob
     {
@@ -410,6 +413,44 @@ trait BatchLegalEntityQueries
         foreach ($models->reverse() as $index => $model) {
             $job = new ConfidantPersonSync(
                 confidantPerson: $model,
+                legalEntity: $legalEntity,
+                nextEntity: $previousJob
+            );
+
+            $previousJob = $job;
+        }
+
+        // Here $job is the first job in the chain (or null if no employees)
+        return $job ?? $previousJob;
+    }
+
+    /**
+     * TODO: leave it for now, but we can remove it later if we don't need it anymore
+     * Creates a chain of PersonAuthMethodSync jobs for all authentication methods with PARTIAL sync status.
+     *
+     * Jobs are created in reverse order, each next job receives the previous one as nextEntity.
+     * Returns the first job in the chain (or null if there are no authentication methods).
+     * So the jobs will be executed in the original order one by one.
+     *
+     * @param  LegalEntity  $legalEntity
+     * @param  EHealthJob|null  $nextEntity  The job to be executed after the chain completes (or null)
+     *
+     * @return EHealthJob|null The first job in the PersonAuthMethodSync chain, or null if there are no authentication methods
+     */
+    protected function getPersonAuthMethodStartJob(LegalEntity $legalEntity, ?EHealthJob $nextEntity): ?EHealthJob
+    {
+        $job = null;
+
+        // The incoming $nextEntity will be executed after the whole chain
+        $previousJob = $nextEntity;
+
+        $models = AuthenticationMethod::with('authenticatable')
+            ->where('authenticatable_type', 'App\Models\Person\Person')
+            ->get();
+
+        foreach ($models->reverse() as $model) {
+            $job = new PersonAuthMethodSync(
+                person: $model->authenticatable,
                 legalEntity: $legalEntity,
                 nextEntity: $previousJob
             );

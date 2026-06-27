@@ -127,7 +127,7 @@ class DeclarationRequestDetailsSync extends EHealthJob
                 echo "Confidant Person for this person has been synced: " . PHP_EOL;
             }
         }
-    
+
         $validatedData['sync_status'] = JobStatus::COMPLETED->value;
 
         $this->declarationRequest->update($validatedData);
@@ -141,7 +141,7 @@ class DeclarationRequestDetailsSync extends EHealthJob
     protected function getAdditionalMiddleware(): array
     {
         return [
-            new RateLimited('ehealth-declaration-get')
+            new RateLimited('ehealth-declaration-request-get')
         ];
     }
 
