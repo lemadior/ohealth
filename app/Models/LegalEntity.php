@@ -268,6 +268,10 @@ class LegalEntity extends Model
      */
     public function setEntityStatus(JobStatus $status, string $entityType = ''): void
     {
+        if (!$this->hasAttribute($entityType . 'sync_status')) {
+            return;
+        }
+
         $this->{$entityType . 'sync_status'} = $status->value;
         $this->save();
         $this->refresh();
