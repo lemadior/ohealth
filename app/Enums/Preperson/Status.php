@@ -10,14 +10,16 @@ enum Status: string
 {
     use EnumUtils;
 
-    case ACTIVE = 'ACTIVE';
-    case INACTIVE = 'INACTIVE';
+    case ACTIVE = 'active';
+    case INACTIVE = 'inactive';
+    case DRAFT = 'draft';
 
     public function label(): string
     {
         return match ($this) {
             self::ACTIVE => __('forms.status.active'),
-            self::INACTIVE => __('forms.status.non_active')
+            self::INACTIVE => __('forms.status.non_active'),
+            self::DRAFT => __('forms.status.draft')
         };
     }
 }

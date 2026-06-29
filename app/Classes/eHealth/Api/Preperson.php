@@ -7,6 +7,7 @@ namespace App\Classes\eHealth\Api;
 use App\Classes\eHealth\EHealthRequest as Request;
 use App\Classes\eHealth\EHealthResponse;
 use App\Enums\Person\Gender;
+use App\Enums\Preperson\Status;
 use App\Exceptions\EHealth\EHealthConnectionException;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
@@ -115,7 +116,12 @@ class Preperson extends Request
             'emergency_contact.phones.*.type' => ['nullable', new InDictionary('PHONE_TYPE')],
             'emergency_contact.phones.*.number' => ['nullable', new PhoneNumber()],
             'death_date' => ['nullable', 'date'],
-            'note' => ['nullable', 'string']
+            'note' => ['nullable', 'string'],
+            'status' => ['required', new Enum(Status::class)],
+            'ehealth_inserted_at' => ['required', 'date'],
+            'ehealth_inserted_by' => ['required', 'uuid'],
+            'ehealth_updated_at' => ['required', 'date'],
+            'ehealth_updated_by' => ['required', 'uuid']
         ];
     }
 
@@ -132,6 +138,10 @@ class Preperson extends Request
         foreach ($properties as $name => $value) {
             $newName = match ($name) {
                 'id' => 'uuid',
+                'inserted_at' => 'ehealth_inserted_at',
+                'inserted_by' => 'ehealth_inserted_by',
+                'updated_at' => 'ehealth_updated_at',
+                'updated_by' => 'ehealth_updated_by',
                 default => $name
             };
 
