@@ -49,8 +49,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('persons')->group(static function () {
     Route::name('persons.')->group(static function () {
         Route::get('/', PersonIndex::class)->can('viewAny', Person::class)->name('index');
-        Route::get('/unidentified', \App\Livewire\Person\UnidentifiedPersonIndex::class)
-            ->name('unidentified');
+        Route::get('/prepersons', \App\Livewire\Person\PrepersonIndex::class)
+            ->name('preperson');
         Route::get('/create', PersonCreate::class)->can('create', PersonRequest::class)->name('create');
         Route::get('/edit/{personRequest}', PersonRequestEdit::class)
             ->can('create', PersonRequest::class)

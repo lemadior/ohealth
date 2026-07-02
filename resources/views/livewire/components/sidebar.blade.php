@@ -269,7 +269,7 @@
                 @if(Auth::user()->can('viewAny', Person::class) || Auth::user()->can('viewAny', PersonRequest::class))
                     <li>
                         <a href="{{ route('persons.index', [legalEntity()]) }}"
-                           class="menu-item-simple {{ (request()->routeIs('persons.*') && !request()->routeIs('persons.unidentified') && !request()->routeIs('care-plan.*') && !request()->routeIs('persons.care-plans') && !request()->routeIs('persons.treatment-plans')) ? 'menu-item-active' : '' }}"
+                           class="menu-item-simple {{ (request()->routeIs('persons.*') && !request()->routeIs('persons.preperson') && !request()->routeIs('care-plan.*') && !request()->routeIs('persons.care-plans') && !request()->routeIs('persons.treatment-plans')) ? 'menu-item-active' : '' }}"
                         >
                             @icon('patients')
                             <span>{{ __('patients.patients') }}</span>
@@ -279,8 +279,8 @@
 
                 @if(Auth::user()->can('viewAny', Person::class) || Auth::user()->can('viewAny', PersonRequest::class))
                     <li>
-                        <a href="{{ route('persons.unidentified', [legalEntity()]) }}"
-                           class="menu-item-simple {{ request()->routeIs('persons.unidentified') ? 'menu-item-active' : '' }}"
+                        <a href="{{ route('persons.preperson', [legalEntity()]) }}"
+                           class="menu-item-simple {{ request()->routeIs('persons.preperson') ? 'menu-item-active' : '' }}"
                         >
                             @icon('person')
                             <span>{{ __('patients.unidentified_patients') }}</span>
