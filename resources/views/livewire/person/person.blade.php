@@ -1,7 +1,7 @@
 @use('App\Models\Person\PersonRequest')
 @use('App\Livewire\Person\PersonUpdate')
 
-<div x-data="{ patientType: $wire.entangle('form.patientType') }">
+<div x-data="{ patientType: $wire.entangle('patientType') }">
     <x-header-navigation class="breadcrumb-form">
         <x-slot name="title">{{ __('patients.add_patient') }}</x-slot>
     </x-header-navigation>

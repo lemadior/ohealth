@@ -22,4 +22,13 @@ enum Status: string
             self::DRAFT => __('forms.status.draft')
         };
     }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::ACTIVE => 'badge-green',
+            self::INACTIVE => 'badge-red',
+            self::DRAFT => 'badge-dark'
+        };
+    }
 }

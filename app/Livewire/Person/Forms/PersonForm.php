@@ -33,13 +33,6 @@ class PersonForm extends BaseForm
     public string $phoneNumber;
     public string $birthCertificate;
 
-    /**
-     * Selected patient type that toggles the form between an identified person and an unidentified preperson.
-     *
-     * @var string
-     */
-    public string $patientType = 'person';
-
     public array $person = [
         'documents' => [],
         'phones' => [['type' => null, 'number' => null]],

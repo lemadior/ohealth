@@ -70,7 +70,7 @@ class CarePlanCreate extends BasePatientComponent
         if ($encounterRouteParam) {
             if (\Illuminate\Support\Str::isUuid((string) $encounterRouteParam)) {
                 $resolvedEncounter = \App\Models\MedicalEvents\Sql\Encounter::where('uuid', $encounterRouteParam)->first();
-            } else if (is_numeric($encounterRouteParam)) {
+            } elseif (is_numeric($encounterRouteParam)) {
                 $resolvedEncounter = \App\Models\MedicalEvents\Sql\Encounter::where('id', (int) $encounterRouteParam)->first();
             }
             if ($resolvedEncounter) {
@@ -84,7 +84,7 @@ class CarePlanCreate extends BasePatientComponent
             $possibleEncounter = null;
             if (\Illuminate\Support\Str::isUuid((string) $personId)) {
                 $possibleEncounter = \App\Models\MedicalEvents\Sql\Encounter::where('uuid', $personId)->first();
-            } else if (is_numeric($personId)) {
+            } elseif (is_numeric($personId)) {
                 $possibleEncounter = \App\Models\MedicalEvents\Sql\Encounter::where('id', (int) $personId)->first();
             }
 
@@ -97,7 +97,7 @@ class CarePlanCreate extends BasePatientComponent
         }
 
         $this->personId = (int) $resolvedPersonId;
-        parent::mount($legalEntity, $this->personId);
+        parent::mount($legalEntity);
 
         $person = Person::find($this->personId);
         if ($person) {
@@ -458,6 +458,7 @@ class CarePlanCreate extends BasePatientComponent
             $encounter = \App\Models\MedicalEvents\Sql\Encounter::where('uuid', $encounterUuid)->first();
             if ($encounter) {
                 $this->redirectRoute('encounter.edit', [legalEntity(), $this->personId, $encounter->id], navigate: true);
+
                 return;
             }
         }

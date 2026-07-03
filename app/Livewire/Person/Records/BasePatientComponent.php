@@ -75,7 +75,7 @@ abstract class BasePatientComponent extends Component
     {
         if ($preperson !== null) {
             $this->prepersonId = $preperson->id;
-        } else {
+        } elseif ($person !== null) {
             $this->personId = $person->id;
         }
 

@@ -114,11 +114,11 @@ class EncounterComponent extends Component
     public string $employeeFullName;
 
     /**
-     * Patient UUID for API requests.
+     * Patient UUID for API requests. Null for a preperson that is not yet registered in eHealth.
      *
-     * @var string
+     * @var string|null
      */
-    public string $patientUuid;
+    public ?string $patientUuid = null;
 
     /**
      * Legal entity type of auth user.
@@ -720,6 +720,10 @@ class EncounterComponent extends Component
      */
     protected function getEpisodes(): void
     {
+        if ($this->patientUuid === null) {
+            return;
+        }
+
         try {
             $this->episodes = EHealth::episode()
                 ->getBySearchParams(

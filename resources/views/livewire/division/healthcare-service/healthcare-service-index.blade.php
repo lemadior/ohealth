@@ -159,7 +159,7 @@
     <div class="flow-root mt-8 shift-content pl-3.5"
          wire:key="healthcare-services-table-page-{{ $healthcareServices->total() }}-{{ $healthcareServices->currentPage() }}"
     >
-        <div class="max-w-screen-xl">
+        <div class="max-w-7xl">
             @if($healthcareServices->isNotEmpty())
                 <div class="index-table-wrapper">
                     <table class="index-table">
@@ -327,7 +327,7 @@
                 <x-nothing-found />
             @endif
 
-            @if($healthcareServices->isNotEmpty())
+            @if($healthcareServices->hasPages())
                 <div class="pagination">
                     {{ $healthcareServices->links() }}
                 </div>

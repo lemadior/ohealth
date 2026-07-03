@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Preperson\Forms;
 
 use App\Core\BaseForm;
-use App\Enums\Preperson\UnidentifiedReason;
+use App\Enums\Preperson\Reason;
 use App\Rules\InDictionary;
 use App\Rules\NameFields;
 use App\Rules\PhoneNumber;
@@ -20,12 +20,12 @@ class PrepersonForm extends BaseForm
     ];
 
     public array $reasonContext = [
-        'unidentifiedReason' => '',
+        'reason' => '',
         'ambulanceCardNumber' => '',
         'policeReportId' => '',
         'policeReportDate' => '',
         'childBirthTime' => '',
-        'unidentifiedOtherReason' => ''
+        'otherReason' => ''
     ];
 
     /**
@@ -36,8 +36,9 @@ class PrepersonForm extends BaseForm
     public function rulesForCreate(): array
     {
         $emergencyContactRequired = $this->hasEmergencyContactData()
-            || $this->reasonContext['unidentifiedReason'] === UnidentifiedReason::NEWBORN_WITHOUT_CERTIFICATE->value;
+            || $this->reasonContext['reason'] === Reason::NEWBORN_WITHOUT_CERTIFICATE->value;
 
+        // todo: перевірити і додати валідацію згідно ТЗ, NameFields треба вроді як, але енівей глянуть
         return [
             'person.firstName' => ['nullable', 'min:3', new NameFields()],
             'person.lastName' => ['nullable', 'min:3', new NameFields()],
@@ -61,38 +62,38 @@ class PrepersonForm extends BaseForm
                 'required_with:person.emergencyContact.phones.*.type'
             ],
 
-            'reasonContext.unidentifiedReason' => [
+            'reasonContext.reason' => [
                 'nullable',
                 Rule::when(
-                    filled($this->reasonContext['unidentifiedReason']),
-                    [Rule::enum(UnidentifiedReason::class)]
+                    filled($this->reasonContext['reason']),
+                    [Rule::enum(Reason::class)]
                 )
             ],
             'reasonContext.ambulanceCardNumber' => [
                 'nullable',
-                'required_if:reasonContext.unidentifiedReason,' . UnidentifiedReason::EMERGENCY_HOSPITALIZATION->value,
+                'required_if:reasonContext.reason,' . Reason::EMERGENCY_HOSPITALIZATION->value,
                 'string',
                 'max:255'
             ],
             'reasonContext.policeReportId' => [
                 'nullable',
-                'required_if:reasonContext.unidentifiedReason,' . UnidentifiedReason::POLICE_HOSPITALIZATION->value,
+                'required_if:reasonContext.reason,' . Reason::POLICE_HOSPITALIZATION->value,
                 'string',
                 'max:255'
             ],
             'reasonContext.policeReportDate' => [
                 'nullable',
-                'required_if:reasonContext.unidentifiedReason,' . UnidentifiedReason::POLICE_HOSPITALIZATION->value,
+                'required_if:reasonContext.reason,' . Reason::POLICE_HOSPITALIZATION->value,
                 'date_format:' . config('app.date_format')
             ],
             'reasonContext.childBirthTime' => [
                 'nullable',
-                'required_if:reasonContext.unidentifiedReason,' . UnidentifiedReason::NEWBORN_WITHOUT_CERTIFICATE->value,
+                'required_if:reasonContext.reason,' . Reason::NEWBORN_WITHOUT_CERTIFICATE->value,
                 'date_format:H:i'
             ],
-            'reasonContext.unidentifiedOtherReason' => [
+            'reasonContext.otherReason' => [
                 'nullable',
-                'required_if:reasonContext.unidentifiedReason,' . UnidentifiedReason::OTHER_HOSPITALIZATION->value,
+                'required_if:reasonContext.reason,' . Reason::OTHER_HOSPITALIZATION->value,
                 'string',
                 'max:255'
             ]
@@ -121,24 +122,24 @@ class PrepersonForm extends BaseForm
      */
     public function buildNote(): string
     {
-        $reason = UnidentifiedReason::tryFrom($this->reasonContext['unidentifiedReason']);
+        $reason = Reason::tryFrom($this->reasonContext['reason']);
 
         if ($reason === null) {
             return '';
         }
 
         return match ($reason) {
-            UnidentifiedReason::EMERGENCY_HOSPITALIZATION => __('patients.unidentified_notes.ambulance', [
+            Reason::EMERGENCY_HOSPITALIZATION => __('preperson.notes.ambulance', [
                 'number' => $this->reasonContext['ambulanceCardNumber']
             ]),
-            UnidentifiedReason::POLICE_HOSPITALIZATION => __('patients.unidentified_notes.police', [
+            Reason::POLICE_HOSPITALIZATION => __('preperson.notes.police', [
                 'id' => $this->reasonContext['policeReportId'],
                 'date' => $this->reasonContext['policeReportDate']
             ]),
-            UnidentifiedReason::NEWBORN_WITHOUT_CERTIFICATE => __('patients.unidentified_notes.newborn', [
+            Reason::NEWBORN_WITHOUT_CERTIFICATE => __('preperson.notes.newborn', [
                 'time' => $this->reasonContext['childBirthTime']
             ]),
-            UnidentifiedReason::OTHER_HOSPITALIZATION => $this->reasonContext['unidentifiedOtherReason']
+            Reason::OTHER_HOSPITALIZATION => $this->reasonContext['otherReason']
         };
     }
 }

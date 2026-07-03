@@ -20,4 +20,12 @@ enum Gender: string
             self::FEMALE => __('жіноча')
         };
     }
+
+    public function icon(): string
+    {
+        return match ($this) {
+            self::MALE => 'men',
+            self::FEMALE => 'women'
+        };
+    }
 }

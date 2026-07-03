@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Throwable;
@@ -47,6 +48,15 @@ class PersonComponent extends Component
     public int $personId;
 
     public string $mode = 'create';
+
+    /**
+     * Selected patient type that toggles the form between an identified person and an unidentified preperson.
+     * Bound to the "type" query parameter so the create page can be opened directly on a given type.
+     *
+     * @var string
+     */
+    #[Url(as: 'type')]
+    public string $patientType = 'person';
 
     public Form $form;
 
@@ -160,11 +170,6 @@ class PersonComponent extends Component
             $this->dictionaries['DOCUMENT_TYPE'],
             array_flip(config('ehealth.person_registration_document_types'))
         );
-
-        $type = request()->query('type');
-        if ($type === 'unidentified') {
-            $this->form->person['patientType'] = 'unidentified';
-        }
     }
 
     /**

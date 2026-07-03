@@ -6,10 +6,10 @@
     <div class="form-row-2">
         <div class="form-group">
             <select
-                wire:model="form.patientType"
+                wire:model="patientType"
                 name="patientType"
                 id="patientType"
-                class="input-select peer @error('form.patientType') input-error @enderror"
+                class="input-select peer @error('patientType') input-error @enderror"
                 required
             >
                 <option value="person">{{ __('patients.identified') }}</option>

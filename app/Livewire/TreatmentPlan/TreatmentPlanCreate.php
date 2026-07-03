@@ -51,7 +51,8 @@ class TreatmentPlanCreate extends BasePatientComponent
 
     public function mount(LegalEntity $legalEntity, int $personId): void
     {
-        parent::mount($legalEntity, $personId);
+        $this->personId = $personId;
+        parent::mount($legalEntity);
     }
 
     protected function initializeComponent(): void

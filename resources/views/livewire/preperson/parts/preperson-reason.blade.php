@@ -1,8 +1,8 @@
-@use(App\Enums\Preperson\UnidentifiedReason)
+@use(App\Enums\Preperson\Reason)
 
 <fieldset class="fieldset">
     <legend class="legend">
-        {{ __('patients.unidentified_reason') }}
+        {{ __('preperson.reason') }}
     </legend>
 
     <div
@@ -10,33 +10,33 @@
         <div class="flex items-center gap-2">
             @icon('alert-circle', 'w-5 h-5 text-red-600 dark:text-red-400')
             <h4 class="font-bold text-red-600 dark:text-red-400 text-lg">
-                {{ __('patients.unidentified_warning_title') }}
+                {{ __('preperson.warning_title') }}
             </h4>
         </div>
         <div class="text-red-500 dark:text-red-300 text-sm leading-relaxed whitespace-pre-line">
-            {{ __('patients.unidentified_warning_text') }}
+            {{ __('preperson.warning_text') }}
         </div>
     </div>
 
     <div class="form-row-2">
         <div class="form-group">
             <select
-                x-model="unidentifiedReason"
+                x-model="reason"
                 name="reason"
                 id="reason"
-                class="input-select peer @error('form.reasonContext.unidentifiedReason') input-error @enderror"
+                class="input-select peer @error('form.reasonContext.reason') input-error @enderror"
                 required
             >
                 <option value="" selected>{{ __('forms.select') }}</option>
-                @foreach(UnidentifiedReason::options() as $value => $label)
+                @foreach(Reason::options() as $value => $label)
                     <option value="{{ $value }}">{{ $label }}</option>
                 @endforeach
             </select>
             <label for="reason" class="label">
-                {{ __('patients.unidentified_reason') }}
+                {{ __('preperson.reason') }}
             </label>
 
-            @error('form.reasonContext.unidentifiedReason')
+            @error('form.reasonContext.reason')
             <p class="text-error">
                 {{ $message }}
             </p>
@@ -45,7 +45,7 @@
     </div>
 
     <!-- EMERGENCY_HOSPITALIZATION -->
-    <div class="form-row-2" x-show="unidentifiedReason === 'EMERGENCY_HOSPITALIZATION'" x-cloak>
+    <div class="form-row-2" x-show="reason === 'EMERGENCY_HOSPITALIZATION'" x-cloak>
         <div class="form-group group">
             <div class="relative w-full">
                 <input
@@ -58,7 +58,7 @@
                     autocomplete="off"
                 />
                 <label for="ambulanceCardNumber" class="label">
-                    {{ __('patients.ambulance_card_number') }}
+                    {{ __('preperson.ambulance_card_number') }}
                 </label>
                 <button
                     type="button"
@@ -79,7 +79,7 @@
     </div>
 
     <!-- POLICE_HOSPITALIZATION -->
-    <div class="form-row-2" x-show="unidentifiedReason === 'POLICE_HOSPITALIZATION'" x-cloak>
+    <div class="form-row-2" x-show="reason === 'POLICE_HOSPITALIZATION'" x-cloak>
         <div class="form-group group">
             <div class="relative w-full">
                 <input
@@ -90,10 +90,10 @@
                     class="input peer @error('form.reasonContext.policeReportId') input-error @enderror"
                     placeholder=" "
                     autocomplete="off"
-                    :required="unidentifiedReason === 'POLICE_HOSPITALIZATION'"
+                    :required="reason === 'POLICE_HOSPITALIZATION'"
                 />
                 <label for="policeReportId" class="label">
-                    {{ __('patients.police_report_id') }}
+                    {{ __('preperson.police_report_id') }}
                 </label>
                 <button
                     type="button"
@@ -123,10 +123,10 @@
                     class="datepicker-input with-leading-icon input peer @error('form.reasonContext.policeReportDate') input-error @enderror"
                     placeholder=" "
                     autocomplete="off"
-                    :required="unidentifiedReason === 'POLICE_HOSPITALIZATION'"
+                    :required="reason === 'POLICE_HOSPITALIZATION'"
                 />
                 <label for="policeReportDate" class="wrapped-label">
-                    {{ __('patients.police_report_date') }}
+                    {{ __('preperson.police_report_date') }}
                 </label>
             </div>
 
@@ -139,10 +139,10 @@
     </div>
 
     <!-- NEWBORN_WITHOUT_CERTIFICATE -->
-    <div class="form-row-2" x-show="unidentifiedReason === 'NEWBORN_WITHOUT_CERTIFICATE'" x-cloak>
+    <div class="form-row-2" x-show="reason === 'NEWBORN_WITHOUT_CERTIFICATE'" x-cloak>
         <div class="form-group w-full">
             <label for="childBirthTime" class="label">
-                <span>{{ __('patients.child_birth_time') }}</span>
+                <span>{{ __('preperson.child_birth_time') }}</span>
             </label>
             <div class="relative w-full">
                 <div class="absolute inset-y-0 start-0 flex items-center pointer-events-none">
@@ -156,7 +156,7 @@
                     class="input timepicker-uk text-gray-900 dark:text-white border-t-0 border-r-0 border-l-0 border-b border-gray-300 focus:ring-0 px-0 ps-8 @error('form.reasonContext.childBirthTime') input-error @enderror"
                     placeholder="00:00"
                     autocomplete="off"
-                    :required="unidentifiedReason === 'NEWBORN_WITHOUT_CERTIFICATE'"
+                    :required="reason === 'NEWBORN_WITHOUT_CERTIFICATE'"
                 />
             </div>
 
@@ -169,23 +169,23 @@
     </div>
 
     <!-- OTHER_HOSPITALIZATION -->
-    <div class="form-row-2" x-show="unidentifiedReason === 'OTHER_HOSPITALIZATION'" x-cloak>
+    <div class="form-row-2" x-show="reason === 'OTHER_HOSPITALIZATION'" x-cloak>
         <div class="form-group group">
-            <label for="unidentifiedOtherReason" class="label-secondary">
-                {{ __('patients.unidentified_other_reason') }} *
+            <label for="otherReason" class="label-secondary">
+                {{ __('preperson.other_reason') }} *
             </label>
             <textarea
-                wire:model="form.reasonContext.unidentifiedOtherReason"
-                id="unidentifiedOtherReason"
-                name="unidentifiedOtherReason"
+                wire:model="form.reasonContext.otherReason"
+                id="otherReason"
+                name="otherReason"
                 rows="4"
-                class="textarea @error('form.reasonContext.unidentifiedOtherReason') input-error @enderror"
+                class="textarea @error('form.reasonContext.otherReason') input-error @enderror"
                 placeholder="Текст для введення"
                 autocomplete="off"
-                :required="unidentifiedReason === 'OTHER_HOSPITALIZATION'"
+                :required="reason === 'OTHER_HOSPITALIZATION'"
             ></textarea>
 
-            @error('form.reasonContext.unidentifiedOtherReason')
+            @error('form.reasonContext.otherReason')
             <p class="text-error">
                 {{ $message }}
             </p>

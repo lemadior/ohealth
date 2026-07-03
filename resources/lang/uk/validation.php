@@ -135,11 +135,11 @@ return [
             'PHARMACY_DRUGS' => __('licenses.type.pharmacy_drugs')
         ],
         'reasonContext' => [
-            'unidentifiedReason' => [
-                'EMERGENCY_HOSPITALIZATION' => __('patients.unidentified_reasons.EMERGENCY_HOSPITALIZATION'),
-                'POLICE_HOSPITALIZATION' => __('patients.unidentified_reasons.POLICE_HOSPITALIZATION'),
-                'NEWBORN_WITHOUT_CERTIFICATE' => __('patients.unidentified_reasons.NEWBORN_WITHOUT_CERTIFICATE'),
-                'OTHER_HOSPITALIZATION' => __('patients.unidentified_reasons.OTHER_HOSPITALIZATION')
+            'reason' => [
+                'EMERGENCY_HOSPITALIZATION' => __('preperson.reasons.EMERGENCY_HOSPITALIZATION'),
+                'POLICE_HOSPITALIZATION' => __('preperson.reasons.POLICE_HOSPITALIZATION'),
+                'NEWBORN_WITHOUT_CERTIFICATE' => __('preperson.reasons.NEWBORN_WITHOUT_CERTIFICATE'),
+                'OTHER_HOSPITALIZATION' => __('preperson.reasons.OTHER_HOSPITALIZATION')
             ]
         ]
     ],
@@ -286,12 +286,12 @@ return [
     'attributes' => [
         'name' => 'ім\'я',
         'phone' => 'телефон',
-        'reasonContext.unidentifiedReason' => 'причина створення неідентифікованого пацієнта',
+        'reasonContext.reason' => 'причина створення неідентифікованого пацієнта',
         'reasonContext.ambulanceCardNumber' => '№ картки виїзду швидкої медичної допомоги',
         'reasonContext.policeReportId' => 'ідентифікатор заяви в поліцію',
         'reasonContext.policeReportDate' => 'дата подання заяви в поліцію',
         'reasonContext.childBirthTime' => 'час народження дитини',
-        'reasonContext.unidentifiedOtherReason' => 'причини та обставини звернення пацієнта',
+        'reasonContext.otherReason' => 'причини та обставини звернення пацієнта',
         'issued' => 'час внесення',
         'effective_period_start' => 'час початку прийому',
         'performed_period_start' => 'час початку процедури',
@@ -392,7 +392,7 @@ return [
             'policeReportId' => 'ідентифікатор заяви в поліцію',
             'policeReportDate' => 'дата подання заяви в поліцію',
             'childBirthTime' => 'час народження дитини',
-            'unidentifiedOtherReason' => 'причини та обставини звернення пацієнта',
+            'otherReason' => 'причини та обставини звернення пацієнта',
             'ambulanceCardNumber' => '№ картки виїзду швидкої медичної допомоги',
 
             'emergencyContact' => [

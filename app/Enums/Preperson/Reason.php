@@ -6,7 +6,7 @@ namespace App\Enums\Preperson;
 
 use App\Traits\EnumUtils;
 
-enum UnidentifiedReason: string
+enum Reason: string
 {
     use EnumUtils;
 
@@ -16,12 +16,12 @@ enum UnidentifiedReason: string
     case OTHER_HOSPITALIZATION = 'OTHER_HOSPITALIZATION';
 
     /**
-     * Human-readable label for the unidentified patient registration reason.
+     * Human-readable label for the preperson registration reason.
      *
      * @return string
      */
     public function label(): string
     {
-        return __('patients.unidentified_reasons.' . $this->value);
+        return __('preperson.reasons.' . $this->value);
     }
 }
