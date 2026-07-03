@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\EHealthDateCast;
 use App\Enums\Person\Gender;
+use App\Enums\Preperson\Reason;
 use App\Enums\Preperson\Status;
 use Eloquence\Behaviours\HasCamelCasing;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -44,7 +46,8 @@ class Preperson extends Model
         'gender' => Gender::class,
         'emergency_contact' => 'array',
         'reason_context' => 'array',
-        'status' => Status::class
+        'status' => Status::class,
+        'birth_date' => EHealthDateCast::class
     ];
 
     /**
@@ -56,6 +59,42 @@ class Preperson extends Model
     {
         return Attribute::make(
             get: fn (): string => trim("$this->lastName $this->firstName $this->secondName")
+        );
+    }
+
+    /**
+     * Build a human-readable note from the stored reason context:
+     * the reason label followed by its reason-specific detail.
+     *
+     * @return Attribute
+     */
+    protected function reasonNote(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $context = $this->reasonContext ?? [];
+                $reason = Reason::tryFrom($context['reason'] ?? '');
+
+                if ($reason === null) {
+                    return '';
+                }
+
+                $detail = match ($reason) {
+                    Reason::EMERGENCY_HOSPITALIZATION => __('preperson.notes.ambulance', [
+                        'number' => $context['ambulance_card_number'] ?? ''
+                    ]),
+                    Reason::POLICE_HOSPITALIZATION => __('preperson.notes.police', [
+                        'id' => $context['police_report_id'] ?? '',
+                        'date' => $context['police_report_date'] ?? ''
+                    ]),
+                    Reason::NEWBORN_WITHOUT_CERTIFICATE => __('preperson.notes.newborn', [
+                        'time' => $context['child_birth_time'] ?? ''
+                    ]),
+                    Reason::OTHER_HOSPITALIZATION => $context['other_reason'] ?? ''
+                };
+
+                return $detail === '' ? $reason->label() : $reason->label() . '. ' . $detail;
+            }
         );
     }
 

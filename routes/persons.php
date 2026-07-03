@@ -26,6 +26,7 @@ use App\Livewire\Person\Records\PatientImmunizations;
 use App\Livewire\Person\Records\PatientObservations;
 use App\Livewire\Person\Records\PatientSummary;
 use App\Livewire\Preperson\PrepersonData;
+use App\Livewire\Preperson\PrepersonIndex;
 use App\Livewire\Procedure\ProcedureCreate;
 use App\Livewire\Procedure\ProcedureEdit;
 use App\Models\DeclarationRequest;
@@ -35,6 +36,7 @@ use App\Models\MedicalEvents\Sql\Episode;
 use App\Models\MedicalEvents\Sql\Procedure;
 use App\Models\Person\Person;
 use App\Models\Person\PersonRequest;
+use App\Models\Preperson;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -51,8 +53,6 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('persons')->group(static function () {
     Route::name('persons.')->group(static function () {
         Route::get('/', PersonIndex::class)->can('viewAny', Person::class)->name('index');
-        Route::get('/prepersons', \App\Livewire\Preperson\PrepersonIndex::class)
-            ->name('preperson');
         Route::get('/create', PersonCreate::class)->can('create', PersonRequest::class)->name('create');
         Route::get('/edit/{personRequest}', PersonRequestEdit::class)
             ->can('create', PersonRequest::class)
@@ -124,6 +124,8 @@ Route::prefix('prepersons')
     ->name('prepersons.')
     ->whereNumber('preperson')
     ->group(static function () {
+        Route::get('/', PrepersonIndex::class)->can('viewAny', Preperson::class)->name('index');
+
         Route::get('/{preperson}/patient-data', PrepersonData::class)->can('view', 'preperson')->name('patient-data');
         Route::get('/{preperson}/summary', PatientSummary::class)->can('view', 'preperson')->name('summary');
         Route::get('/{preperson}/episodes', PatientEpisodes::class)->can('view', 'preperson')->name('episodes');

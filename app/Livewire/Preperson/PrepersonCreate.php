@@ -96,7 +96,7 @@ class PrepersonCreate extends Component
         }
 
         Session::flash('success', __('patients.messages.preperson_draft_created'));
-        $this->redirectRoute('persons.index', [legalEntity()], navigate: true);
+        $this->redirectRoute('prepersons.index', [legalEntity()], navigate: true);
     }
 
     /**

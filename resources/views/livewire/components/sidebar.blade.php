@@ -279,7 +279,7 @@
 
                 @if(Auth::user()->can('viewAny', Person::class) || Auth::user()->can('viewAny', PersonRequest::class))
                     <li>
-                        <a href="{{ route('persons.preperson', [legalEntity()]) }}"
+                        <a href="{{ route('prepersons.index', [legalEntity()]) }}"
                            class="menu-item-simple {{ request()->routeIs('persons.preperson') ? 'menu-item-active' : '' }}"
                         >
                             @icon('person')

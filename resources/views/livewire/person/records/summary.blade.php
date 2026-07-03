@@ -131,7 +131,7 @@
                                             class="w-8 h-8 mb-4 opacity-50 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
                                             @icon($item['icon'])
                                         </div>
-                                        <p class="text-[15px] font-medium">Дані відсутні</p>
+                                        <p class="text-[15px] font-medium">{{ __('forms.no_data') }}</p>
                                         <p class="text-[13px] mt-1 text-gray-400">В цьому розділі поки немає
                                             інформації</p>
                                     </div>

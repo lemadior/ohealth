@@ -40,6 +40,7 @@ return [
     'information' => 'Інформація',
     'write_comment_here' => 'Напишіть коментар тут',
     'nothing_found' => 'Нічого не знайдено',
+    'no_data' => 'Дані відсутні',
     'type_to_search' => 'Введіть текст для пошуку',
     'changing_search_parameters' => 'Спробуйте змінити параметри пошуку.',
     'number' => 'Номер',
