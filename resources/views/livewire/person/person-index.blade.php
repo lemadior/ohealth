@@ -55,14 +55,7 @@
 
                             @if($patient['birthDate'])
                                 <span class="flex items-center gap-1.5">
-                                    <svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true"
-                                         xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-                                         viewBox="0 0 24 24">
-                                           <path stroke="currentColor" stroke-linecap="round" stroke-width="2"
-                                                 d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H8z" />
-                                           <path stroke="currentColor" stroke-linecap="round" stroke-width="2"
-                                                 d="M16 2v4M8 2v4M3 10h18" />
-                                        </svg>
+                                    @icon('calendar-outline', 'w-6 h-6 text-gray-800 dark:text-white')
                                     <span>{{ $patient['birthDate'] }}</span>
                                 </span>
                             @endif
