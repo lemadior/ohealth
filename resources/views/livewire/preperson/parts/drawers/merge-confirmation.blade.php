@@ -44,10 +44,10 @@
 
         <div>
             <button type="button"
-                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition-colors cursor-pointer"
-                    @click="window.print()"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 text-sm font-medium rounded-lg opacity-60 cursor-not-allowed"
+                    disabled
             >
-                @icon('printer', 'w-4 h-4 text-gray-600 dark:text-gray-400')
+                @icon('printer', 'w-4 h-4 text-gray-400 dark:text-gray-500')
                 <span>{{ __('preperson.merge.print_memo') }}</span>
             </button>
         </div>
@@ -86,5 +86,6 @@
         >
             {{ __('forms.confirm') }}
         </button>
+    </div>
     </div>
 </x-dialog-drawer>

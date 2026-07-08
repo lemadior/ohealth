@@ -92,4 +92,5 @@
             {{ __('forms.confirm') }}
         </button>
     </div>
+    </div>
 </x-dialog-drawer>
