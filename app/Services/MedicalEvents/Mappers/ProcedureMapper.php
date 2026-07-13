@@ -203,6 +203,7 @@ class ProcedureMapper implements FhirMapperContract
             'status' => data_get($data, 'status', ProcedureStatus::COMPLETED->value),
             'categoryCode' => data_get($data, 'category.coding.0.code', ''),
             'codeValue' => data_get($data, 'code.identifier.value', ''),
+            'encounterId' => data_get($data, 'encounter.identifier.value', ''),
             'primarySource' => data_get($data, 'primarySource'),
             'reportOriginCode' => data_get($data, 'reportOrigin.coding.0.code', ''),
             'reportOriginText' => data_get($data, 'reportOrigin.text', ''),
@@ -228,7 +229,7 @@ class ProcedureMapper implements FhirMapperContract
                         'id' => $uuid,
                         'type' => data_get($reasonReference, 'identifier.type.coding.0.code'),
                         'ehealthInsertedAt' => $details['ehealthInsertedAt'] ?? null,
-                        'codeCode' => $details['codeCode'],
+                        'codeCode' => data_get($details, 'codeCode', ''),
                         'codeSystem' => $details['codeSystem'] ?? null
                     ];
                 },
@@ -254,9 +255,9 @@ class ProcedureMapper implements FhirMapperContract
 
                     return [
                         'id' => $uuid,
-                        'ehealthInsertedAt' => $details['ehealthInsertedAt'] ?? null,
-                        'codeCode' => $details['codeCode'],
-                        'codeSystem' => $details['codeSystem']
+                        'ehealthInsertedAt' => data_get($details, 'ehealthInsertedAt'),
+                        'codeCode' => data_get($details, 'codeCode', ''),
+                        'codeSystem' => data_get($details, 'codeSystem'),
                     ];
                 },
                 data_get($data, 'complicationDetails', [])

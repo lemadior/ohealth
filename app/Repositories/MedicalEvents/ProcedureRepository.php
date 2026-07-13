@@ -31,14 +31,14 @@ class ProcedureRepository extends BaseRepository
      *
      * @param  array  $data
      * @param  Person|Preperson  $patient
-     * @return void
+     * @return int
      * @throws Throwable
      */
-    public function store(array $data, Person|Preperson $patient): void
+    public function store(array $data, Person|Preperson $patient): int
     {
         [$ownerColumn, $ownerId] = $this->resolveOwner($patient);
 
-        DB::transaction(function () use ($data, $ownerColumn, $ownerId) {
+        return DB::transaction(function () use ($data, $ownerColumn, $ownerId) {
             foreach ($data as $datum) {
                 $basedOn = null;
                 if (isset($datum['basedOn'])) {
