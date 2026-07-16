@@ -13,6 +13,14 @@ use Illuminate\Translation\PotentiallyTranslatedString;
 
 class TaxId implements ValidationRule, DataAwareRule
 {
+    // The allowed document types for validation when noTaxId is true.
+    protected const array ALLOWED_DOCUMENT_TYPES = [
+        'PASSPORT',
+        'NATIONAL_ID',
+        'REFUGEE_CERTIFICATE',
+        'PERMANENT_RESIDENCE_PERMIT',
+    ];
+
     /**
      * The entire data array under validation.
      *
@@ -61,7 +69,9 @@ class TaxId implements ValidationRule, DataAwareRule
      *
      * @var string|null
      */
-    protected ?string $edrpou = '';
+    // TODO: check EDRPOU here was commented out, but it might be needed for owner LE registration when noTaxId is true.
+    // This need to be checked with appropriate documents using noTaxId KEP
+    // protected ?string $edrpou = '';
 
     /**
      * The documents of user (party or owner) data array under validation.
@@ -96,7 +106,7 @@ class TaxId implements ValidationRule, DataAwareRule
                 ? ($contextData['documents'] ?? [])
                 : ($data['documents'] ?? $this->user?->party?->documents?->toArray() ?? []);
 
-            $this->edrpou = Arr::get($data, 'edrpou', '');
+            // $this->edrpou = Arr::get($data, 'edrpou', '');
         }
 
         return $this;
@@ -111,9 +121,13 @@ class TaxId implements ValidationRule, DataAwareRule
     {
         // Check if the validation is for a passport/national ID.
         if ($this->noTaxId) {
-            if (empty(array_filter($this->documents, fn (array $doc) => $doc['type'] === 'NATIONAL_ID' || $doc['type'] === 'PASSPORT'))) {
-                // If a no any document of type NATIONAL_ID or PASSPORT exists, raise an error.
-                $fail(__('validation.employee.owner_passport_mandatory_no_tax_id'));
+            $identityDoc = collect($this->documents)->first(
+                fn (array $doc) => in_array($doc['type'] ?? '', self::ALLOWED_DOCUMENT_TYPES, true)
+                    && !empty($doc['number'])
+            );
+
+            if (!$identityDoc) {
+                $fail(__('forms.no_tax_id_document_required'));
 
                 return;
             }
@@ -133,11 +147,10 @@ class TaxId implements ValidationRule, DataAwareRule
                 return;
             }
 
-            // If the EDRPOU is set and it not in the standard format (10 digits), we need to ensure that it matches the provided value.
-            // TODO: check is it important for OWNER only
-            if ($this->isOwner && !preg_match('/^([0-9]{10})$/', $this->edrpou) && $this->edrpou !== $value) {
-                $fail(__('validation.custom.mismatch_edrpou_no_tax_id'));
-            }
+            // Owner LE registration: when EDRPOU is a passport-like value, it must match tax_id.
+            // if ($this->isOwner && !preg_match('/^([0-9]{8,10}|[А-ЯЁЇІЄҐ]{2}\d{6})$/u', (string) $this->edrpou) && $this->edrpou !== $value) {
+            //     $fail(__('validation.custom.mismatch_edrpou_no_tax_id'));
+            // }
 
             return;
         }
