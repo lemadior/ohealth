@@ -11,8 +11,8 @@
                   item: 0,
                   dictionary: $wire.dictionaries['DOCUMENT_TYPE'],
                   issuingCountryDictionary: $wire.dictionaries['ISSUING_COUNTRY'],
-                  uaOnlyTypes: ['{{ implode("', '", config('ehealth.document_types_issuing_country_ua_only')) }}'],
-                  notUaTypes: ['{{ implode("', '", config('ehealth.document_types_issuing_country_not_ua')) }}']
+                  uaOnlyTypes: ['{{ implode("', '", config('ehealth.document_types_issuing_country_ua_only') ?? []) }}'],
+                  notUaTypes: ['{{ implode("', '", config('ehealth.document_types_issuing_country_not_ua') ?? []) }}']
               }"
     >
         <legend class="legend">

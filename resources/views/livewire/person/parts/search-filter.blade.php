@@ -13,30 +13,6 @@
      }"
 >
     <div class="form-row-4">
-        <div class="form-group">
-            <label for="filterLanguage" class="label">
-                {{ __('patients.name_language') }}
-            </label>
-            <select
-                wire:model="form.language"
-                name="filterLanguage"
-                id="filterLanguage"
-                class="input-select peer @error('form.language') input-error @enderror"
-                required
-            >
-                <option value="">{{ __('forms.select') }} *</option>
-                @foreach($this->dictionaries['LANGUAGE'] as $key => $language)
-                    <option value="{{ $key }}">{{ $language }}</option>
-                @endforeach
-            </select>
-
-            @error('form.language')
-            <p class="text-error">
-                {{ $message }}
-            </p>
-            @enderror
-        </div>
-
         <div class="form-group group">
             <input
                 wire:model="form.firstName"
@@ -91,6 +67,30 @@
             </div>
 
             @error('form.lastName')
+            <p class="text-error">
+                {{ $message }}
+            </p>
+            @enderror
+        </div>
+
+        <div class="form-group">
+            <label for="filterLanguage" class="label">
+                {{ __('patients.name_language') }}
+            </label>
+            <select
+                wire:model="form.language"
+                name="filterLanguage"
+                id="filterLanguage"
+                class="input-select peer @error('form.language') input-error @enderror"
+                required
+            >
+                <option value="">{{ __('forms.select') }} *</option>
+                @foreach($this->dictionaries['LANGUAGE'] as $key => $language)
+                    <option value="{{ $key }}">{{ $language }}</option>
+                @endforeach
+            </select>
+
+            @error('form.language')
             <p class="text-error">
                 {{ $message }}
             </p>

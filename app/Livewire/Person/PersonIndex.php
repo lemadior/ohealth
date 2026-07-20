@@ -157,6 +157,7 @@ class PersonIndex extends Component
                 'id',
                 'uuid',
                 'gender',
+                'birth_country',
                 'birth_settlement',
                 'birth_date',
                 'tax_id',
@@ -181,6 +182,7 @@ class PersonIndex extends Component
                 'id',
                 'status',
                 'gender',
+                'birth_country',
                 'birth_settlement',
                 'birth_date',
                 'tax_id'

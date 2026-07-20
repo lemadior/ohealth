@@ -46,29 +46,34 @@
                 <fieldset wire:key="patient-{{ $patient['id'] }}"
                           class="shift-content p-4 sm:p-8 sm:pb-10 mb-16 mt-6 border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 max-w-6xl"
                 >
-                    <legend class="legend">
+                    <legend class="legend flex flex-wrap items-center gap-3">
                         @foreach($patient['names'] ?? [] as $name)
-                            <span wire:key="patient-{{ $patient['id'] }}-name-{{ $loop->index }}" class="block">
-                                {{ trim(($name['lastName'] ?? '') . ' ' . $name['firstName'] . ' ' . ($name['secondName'] ?? '')) }}
+                            <span wire:key="patient-{{ $patient['id'] }}-name-{{ $loop->index }}" class="inline-flex items-center gap-2">
+                                <span>{{ trim(($name['lastName'] ?? '') . ' ' . $name['firstName'] . ' ' . ($name['secondName'] ?? '')) }}</span>
+                                @if(!empty($name['language']))
+                                    <span class="inline-flex items-center border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded px-2 py-0.5 text-xs font-normal bg-white dark:bg-gray-800">
+                                        {{ $this->dictionaries['LANGUAGE'][$name['language']] ?? $name['language'] }}
+                                    </span>
+                                @endif
                             </span>
                         @endforeach
                     </legend>
 
-                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-700 pb-4">
-                        <div class="flex items-center flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 mt-2">
+                    <div class="flex flex-wrap items-center justify-between gap-4 pb-4 mt-2">
+                        <div class="flex items-center flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500">
 
                             @if($patient['birthDate'])
-                                <span class="flex items-center gap-1.5">
-                                    @icon('calendar-outline', 'w-6 h-6 text-gray-800 dark:text-white')
-                                    <span>{{ $patient['birthDate'] }}</span>
+                                <span class="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                                    @icon('calendar-outline', 'w-5 h-5 text-gray-800 dark:text-white')
+                                    <span>{{ __('forms.birth_date_abbreviated') }} {{ ltrim($patient['birthDate'], '0') }}</span>
                                 </span>
                             @endif
 
                             @if(isset($patient['phones'][0]['number']))
-                                <span class="flex items-center gap-1.5 min-w-0">
-                                    @icon('tabler-phone', 'w-6 h-6 text-gray-800 dark:text-white')
+                                <span class="flex items-center gap-1.5 min-w-0 font-medium text-gray-700 dark:text-gray-300">
+                                    @icon('tabler-phone', 'w-5 h-5 text-gray-800 dark:text-white')
                                     <a href="tel:{{ $patient['phones'][0]['number'] }}"
-                                       class="truncate hover:underline font-medium text-gray-900 dark:text-gray-200 text-base"
+                                       class="truncate hover:underline"
                                        title="{{ $patient['phones'][0]['number'] }}"
                                     >
                                         {{ $patient['phones'][0]['number'] }}
@@ -77,43 +82,93 @@
                             @endif
 
                             @if(isset($patient['gender']))
-                                <span class="flex items-center gap-1.5">
+                                <span class="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
                                     @if($patient['gender'] === Gender::MALE->value)
-                                        @icon('men', 'w-6 h-6 text-gray-800 dark:text-white')
+                                        @icon('men', 'w-5 h-5 text-gray-800 dark:text-white')
                                         <span>{{ __('patients.male') }}</span>
                                     @elseif($patient['gender'] === Gender::FEMALE->value)
-                                        @icon('women', 'w-6 h-6 text-gray-800 dark:text-white')
+                                        @icon('women', 'w-5 h-5 text-gray-800 dark:text-white')
                                         <span>{{ __('patients.female') }}</span>
                                     @endif
                                 </span>
                             @endif
                         </div>
 
-                        <div class="flex items-center space-x-6">
+                        <div class="flex items-center space-x-6" x-data="{ openInteractionDropdown: false }" @click.outside="openInteractionDropdown = false">
                             @if($patient['source'] === 'request')
                                 <a href="{{ route('persons.edit', [legalEntity(), $patient['id']]) }}"
-                                   class="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-medium"
+                                   class="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-medium text-sm"
                                 >
                                     @icon('file-lines', 'w-4 h-4')
-                                    <span class="text-sm">{{ __('patients.continue_registration') }}</span>
+                                    <span>{{ __('patients.continue_registration') }}</span>
                                 </a>
                             @else
                                 @can('view', Person::class)
                                     <button wire:click="redirectTo('{{ $patient['id'] }}', 'persons.patient-data')"
-                                            class="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-medium"
+                                            class="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-medium text-sm"
                                     >
-                                        @icon('file-lines', 'w-4 h-4')
-                                        <span class="text-sm">{{ __('patients.view_record') }}</span>
+                                        @icon('file-lines', 'w-4 h-4 text-blue-600')
+                                        <span>{{ __('patients.view_record') }}</span>
                                     </button>
                                 @endcan
-                                @can('create', Encounter::class)
-                                    <button wire:click="redirectTo('{{ $patient['id'] }}', 'encounter.create')"
-                                            class="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-medium"
-                                    >
-                                        @icon('plus', 'w-4 h-4')
-                                        <span class="text-sm">{{ __('patients.start_interacting') }}</span>
-                                    </button>
-                                @endcan
+
+                                @canany(['create', 'view'], [DeclarationRequest::class, DiagnosticReport::class, Procedure::class, Episode::class])
+                                    <div class="relative">
+                                        <button @click="openInteractionDropdown = !openInteractionDropdown"
+                                                class="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1.5 font-medium text-sm"
+                                                type="button"
+                                        >
+                                            @icon('plus', 'w-4 h-4 text-blue-600')
+                                            <span>{{ __('patients.start_interacting') }}</span>
+                                        </button>
+
+                                        <div x-show="openInteractionDropdown"
+                                             x-transition
+                                             x-cloak
+                                             class="absolute right-0 mt-2 z-10 w-64 bg-white rounded-lg shadow-md border border-gray-200 dark:bg-gray-700 dark:border-gray-600 py-1"
+                                        >
+                                            @can('create', DeclarationRequest::class)
+                                                <a wire:click="redirectTo('{{ $patient['id'] }}', 'declaration.create')"
+                                                   class="dropdown-button !flex items-center gap-2 px-4 py-2.5 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
+                                                   @click="openInteractionDropdown = false"
+                                                >
+                                                    @icon('file-text', 'w-4 h-4 text-gray-400')
+                                                    {{ __('patients.sign_declaration') }}
+                                                </a>
+                                            @endcan
+
+                                            @can('create', DiagnosticReport::class)
+                                                <a wire:click="redirectTo('{{ $patient['id'] }}', 'diagnostic-report.create')"
+                                                   class="dropdown-button !flex items-center gap-2 px-4 py-2.5 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
+                                                   @click="openInteractionDropdown = false"
+                                                >
+                                                    @icon('activity', 'w-4 h-4 text-gray-400')
+                                                    {{ __('patients.create_diagnostic_report') }}
+                                                </a>
+                                            @endcan
+
+                                            @can('create', Procedure::class)
+                                                <a wire:click="redirectTo('{{ $patient['id'] }}', 'procedure.create')"
+                                                   class="dropdown-button !flex items-center gap-2 px-4 py-2.5 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
+                                                   @click="openInteractionDropdown = false"
+                                                >
+                                                    @icon('settings', 'w-4 h-4 text-gray-400')
+                                                    {{ __('patients.create_procedure') }}
+                                                </a>
+                                            @endcan
+
+                                            @can('view', Episode::class)
+                                                <a wire:click="redirectTo('{{ $patient['id'] }}', 'persons.episodes.create')"
+                                                   class="dropdown-button !flex items-center gap-2 px-4 py-2.5 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
+                                                   @click="openInteractionDropdown = false"
+                                                >
+                                                    @icon('book', 'w-4 h-4 text-gray-400')
+                                                    {{ __('patients.create_episode') }}
+                                                </a>
+                                            @endcan
+                                        </div>
+                                    </div>
+                                @endcanany
                             @endif
                         </div>
                     </div>
@@ -123,24 +178,36 @@
                             <table class="table-input w-full table-auto">
                                 <thead class="thead-input">
                                 <tr>
-                                    <th scope="col" class="th-input">{{ __('forms.city') }}</th>
-                                    <th scope="col" class="th-input">{{ __('forms.rnokpp') }}</th>
-                                    <th scope="col" class="th-input">{{ __('forms.document_type') }}</th>
-                                    <th scope="col" class="th-input">{{ __('forms.document_number') }}</th>
-                                    <th scope="col" class="th-input">{{ __('forms.status.label') }}</th>
-                                    <th scope="col" class="th-input text-center">{{ __('forms.actions') }}</th>
+                                    <th scope="col" class="th-input text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{{ __('patients.birth_country_and_settlement') }}</th>
+                                    <th scope="col" class="th-input text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{{ __('forms.rnokpp') }}(ІПН)</th>
+                                    <th scope="col" class="th-input text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{{ __('forms.document_type') }}</th>
+                                    <th scope="col" class="th-input text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{{ __('forms.document_number') }}</th>
+                                    <th scope="col" class="th-input text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{{ __('forms.status.label') }}</th>
+                                    <th scope="col" class="th-input text-center text-xs font-bold text-gray-500 uppercase tracking-wider">{{ __('forms.action') }}</th>
                                 </tr>
                                 </thead>
 
                                 <tbody>
                                 <tr>
-                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-top font-bold text-gray-900 dark:text-white">
-                                        {{ $patient['birthSettlement'] ?? '-' }}
+                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-middle font-normal text-gray-900 dark:text-white">
+                                        @php
+                                            $birthPlace = '';
+                                            if (!empty($patient['birthCountry']) && !empty($patient['birthSettlement'])) {
+                                                if (in_array(mb_strtolower($patient['birthCountry']), ['ua', 'україна', 'ukraine'])) {
+                                                    $birthPlace = $patient['birthCountry'] . ', ' . $patient['birthSettlement'];
+                                                } else {
+                                                    $birthPlace = $patient['birthSettlement'] . ', ' . $patient['birthCountry'];
+                                                }
+                                            } else {
+                                                $birthPlace = $patient['birthSettlement'] ?? $patient['birthCountry'] ?? '-';
+                                            }
+                                        @endphp
+                                        {{ $birthPlace }}
                                     </td>
-                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-top font-bold text-gray-900 dark:text-white">
+                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-middle font-normal text-gray-900 dark:text-white">
                                         {{ $patient['taxId'] ?? '-' }}
                                     </td>
-                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-top font-bold text-gray-900 dark:text-white">
+                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-middle font-normal text-gray-900 dark:text-white">
                                         @forelse($patient['documents'] ?? [] as $document)
                                             <span class="block">
                                                 {{ $this->dictionaries['DOCUMENT_TYPE'][$document['type']] ?? $document['type'] }}
@@ -149,14 +216,14 @@
                                             -
                                         @endforelse
                                     </td>
-                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-top font-bold text-gray-900 dark:text-white">
+                                    <td class="td-input whitespace-nowrap overflow-hidden text-ellipsis align-middle font-normal text-gray-900 dark:text-white">
                                         @forelse($patient['documents'] ?? [] as $document)
                                             <span class="block">{{ $document['number'] }}</span>
                                         @empty
                                             -
                                         @endforelse
                                     </td>
-                                    <td class="td-input whitespace-nowrap align-top">
+                                    <td class="td-input whitespace-nowrap align-middle">
                                         @php
                                             if ($patient['source'] === 'request') {
                                                 $color = Status::from($patient['status'])->color();
@@ -172,78 +239,34 @@
 
                                         <span class="{{ $color }} px-2 py-0.5 rounded text-xs">{{ $label }}</span>
                                     </td>
-                                    <td class="td-input text-center">
-                                        <div class="relative"
-                                             x-data="{ openDropdown: false }"
-                                             @click.outside="openDropdown = false"
-                                        >
-                                            <button @click="openDropdown = !openDropdown"
-                                                    type="button"
-                                                    class="cursor-pointer p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                            >
-                                                @icon('edit-user-outline', 'w-6 h-6 text-gray-800 dark:text-gray-200')
-                                            </button>
-
-                                            <div x-show="openDropdown"
-                                                 x-transition
-                                                 x-cloak
-                                                 class="absolute right-0 z-10 w-56 bg-white rounded shadow-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600"
-                                            >
-                                                @if($patient['source'] === 'request')
-                                                    <div class="py-1" @click="openDropdown = false">
-                                                        <button wire:click="deleteDraft({{ $patient['id'] }})"
-                                                                class="dropdown-button !flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                                                type="button"
-                                                        >
-                                                            @icon('delete', 'w-5 h-5')
-                                                            {{ __('forms.delete') }}
-                                                        </button>
-                                                    </div>
-                                                @else
-                                                    <div class="py-1">
-                                                        @can('create', DeclarationRequest::class)
-                                                            <a wire:click="redirectTo('{{ $patient['id'] }}', 'declaration.create')"
-                                                               class="dropdown-button !flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
-                                                               @click="openDropdown = false"
-                                                            >
-                                                                @icon('file-text', 'w-4 h-4')
-                                                                {{ __('patients.sign_declaration') }}
-                                                            </a>
-                                                        @endcan
-
-                                                        @can('create', DiagnosticReport::class)
-                                                            <a wire:click="redirectTo('{{ $patient['id'] }}', 'diagnostic-report.create')"
-                                                               class="dropdown-button !flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
-                                                               @click="openDropdown = false"
-                                                            >
-                                                                @icon('activity', 'w-4 h-4')
-                                                                {{ __('patients.create_diagnostic_report') }}
-                                                            </a>
-                                                        @endcan
-
-                                                        @can('create', Procedure::class)
-                                                            <a wire:click="redirectTo('{{ $patient['id'] }}', 'procedure.create')"
-                                                               class="dropdown-button !flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
-                                                               @click="openDropdown = false"
-                                                            >
-                                                                @icon('settings', 'w-4 h-4')
-                                                                {{ __('patients.create_procedure') }}
-                                                            </a>
-                                                        @endcan
-
-                                                        @can('view', Episode::class)
-                                                            <a wire:click="redirectTo('{{ $patient['id'] }}', 'persons.episodes.create')"
-                                                               class="dropdown-button !flex items-center gap-2 px-4 py-2 text-sm w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
-                                                               @click="openDropdown = false"
-                                                            >
-                                                                @icon('book', 'w-4 h-4')
-                                                                {{ __('patients.create_episode') }}
-                                                            </a>
-                                                        @endcan
-                                                    </div>
-                                                @endif
+                                    <td class="td-input text-center align-middle">
+                                        @if($patient['source'] === 'request')
+                                            <div class="inline-flex items-center gap-1">
+                                                <a href="{{ route('persons.edit', [legalEntity(), $patient['id']]) }}"
+                                                   class="cursor-pointer p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors inline-block"
+                                                   title="{{ __('patients.continue_registration') }}"
+                                                >
+                                                    @icon('edit-user-outline', 'w-6 h-6 text-gray-800 dark:text-gray-200')
+                                                </a>
+                                                <button wire:click="deleteDraft({{ $patient['id'] }})"
+                                                        class="cursor-pointer p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-red-600 inline-block"
+                                                        title="{{ __('forms.delete') }}"
+                                                        type="button"
+                                                >
+                                                    @icon('delete', 'w-5 h-5')
+                                                </button>
                                             </div>
-                                        </div>
+                                        @else
+                                            @can('create', PersonRequest::class)
+                                                <button wire:click="redirectTo('{{ $patient['id'] }}', 'persons.update')"
+                                                        class="cursor-pointer p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors inline-block"
+                                                        title="{{ __('forms.edit') }}"
+                                                        type="button"
+                                                >
+                                                    @icon('edit-user-outline', 'w-6 h-6 text-gray-800 dark:text-gray-200')
+                                                </button>
+                                            @endcan
+                                        @endif
                                     </td>
                                 </tr>
                                 </tbody>
