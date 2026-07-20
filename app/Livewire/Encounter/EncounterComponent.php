@@ -234,6 +234,13 @@ class EncounterComponent extends Component
     public array $equipmentOptionsByDivision = [];
 
     /**
+     * List of employees available as diagnostic report performers.
+     *
+     * @var array
+     */
+    public array $diagnosticReportEmployees = [];
+
+    /**
      * List of dictionary names.
      *
      * @var array|string[]
@@ -398,6 +405,37 @@ class EncounterComponent extends Component
                 'position' => $employee->position
             ];
         })->toArray();
+
+        $this->diagnosticReportEmployees = Employee::query()
+            ->whereLegalEntityId(legalEntity()->id)
+            ->whereStatus(Status::APPROVED)
+            ->whereIsActive(true)
+            ->whereIn('employee_type', [
+                Role::DOCTOR->value,
+                Role::SPECIALIST->value,
+                Role::ASSISTANT->value,
+                Role::LABORANT->value,
+            ])
+            ->select([
+                'uuid',
+                'party_id',
+                'position',
+                'employee_type',
+                'division_uuid',
+            ])
+            ->with('party:id,last_name,first_name,second_name')
+            ->get()
+            ->map(function (Employee $employee): array {
+                return [
+                    'uuid' => $employee->uuid,
+                    'name' => $employee->fullName,
+                    'position' => $employee->position,
+                    'employeeType' => $employee->employeeType,
+                    'divisionUuid' => $employee->divisionUuid,
+                ];
+            })
+            ->values()
+            ->toArray();
 
         $this->legalEntityType = legalEntity()->type->name;
         $this->role = $authUser->roles->first()->name;

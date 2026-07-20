@@ -71,12 +71,15 @@ class DiagnosticReport extends Model
         'effective_period_start_date',
         'effective_period_start_time',
         'effective_period_end_date',
-        'effective_period_end_time'
+        'effective_period_end_time',
+        'effective_date',
+        'effective_time',
     ];
 
     protected $casts = [
         'status' => DiagnosticReportStatus::class,
-        'issued' => EHealthTimestampCast::class
+        'issued' => EHealthTimestampCast::class,
+        'effective_date_time' => EHealthTimestampCast::class,
     ];
 
     protected function issuedDate(): Attribute
@@ -90,6 +93,20 @@ class DiagnosticReport extends Model
     {
         return Attribute::make(
             get: fn (): string => CarbonImmutable::parse($this->issued)->format('H:i'),
+        );
+    }
+
+    protected function effectiveDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): string =>  $this->effectiveDateTime ? convertToAppDateFormat($this->effectiveDateTime) : '',
+        );
+    }
+
+    protected function effectiveTime(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): string => $this->effectiveDateTime ? CarbonImmutable::parse($this->effectiveDateTime)->format('H:i') : '',
         );
     }
 
@@ -114,18 +131,16 @@ class DiagnosticReport extends Model
     protected function effectivePeriodEndDate(): Attribute
     {
         return Attribute::make(
-            get: fn (): string => $this->effectivePeriod
-                ? CarbonImmutable::parse($this->effectivePeriod->end)->format(config('app.date_format'))
-                : '',
+            get: fn (): string =>
+                $this->effectivePeriod?->end ? CarbonImmutable::parse($this->effectivePeriod->end)->format(config('app.date_format')): '',
         );
     }
 
     protected function effectivePeriodEndTime(): Attribute
     {
         return Attribute::make(
-            get: fn (): string => $this->effectivePeriod
-                ? CarbonImmutable::parse($this->effectivePeriod->end)->format('H:i')
-                : '',
+            get: fn (): string =>
+                $this->effectivePeriod?->end ? CarbonImmutable::parse($this->effectivePeriod->end)->format('H:i') : '',
         );
     }
 

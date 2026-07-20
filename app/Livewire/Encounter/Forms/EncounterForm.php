@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire\Encounter\Forms;
 
 use App\Core\BaseForm;
+use App\Enums\Status;
+use App\Enums\User\Role;
 use App\Enums\Equipment\AvailabilityStatus;
 use App\Enums\Equipment\Status as EquipmentStatus;
 use App\Enums\Person\ProcedureStatus;
@@ -346,7 +348,40 @@ class EncounterForm extends BaseForm
                 'string',
                 new InDictionary('eHealth/diagnostic_report_categories')
             ],
-            'diagnosticReports.*.codeValue' => ['required_with:diagnosticReports', 'uuid'],
+            'diagnosticReports.*.codeValue' => [
+                'required_with:diagnosticReports',
+                'uuid',
+                function (
+                    string $attribute,
+                    mixed $value,
+                    Closure $fail
+                ): void {
+                    $index = (int) explode('.', $attribute)[1];
+
+                    $categoryCode = data_get(
+                        $this->diagnosticReports,
+                        $index . '.categoryCode'
+                    );
+
+                    $service = dictionary()
+                        ->services()
+                        ->flattened()
+                        ->firstWhere('id', $value);
+
+                    if (
+                        $service === null
+                        || data_get($service, 'category') !== $categoryCode
+                    ) {
+                        $fail(
+                            __('validation.exists', [
+                                'attribute' => __(
+                                    'validation.attributes.diagnosticReports.*.codeValue'
+                                ),
+                            ])
+                        );
+                    }
+                },
+            ],
             'diagnosticReports.*.primarySource' => ['required_with:diagnosticReports', 'boolean'],
             'diagnosticReports.*.reportOriginCode' => [
                 'required_if:diagnosticReports.*.primarySource,false',
@@ -361,25 +396,163 @@ class EncounterForm extends BaseForm
                 'string',
                 new InDictionary('eHealth/ICD10_AM/condition_codes')
             ],
-            'diagnosticReports.*.conclusion' => Rule::forEach(fn (mixed $value, string $attribute) => [
-                Rule::requiredIf(
-                    in_array(
-                        $this->diagnosticReports[(int)explode('.', $attribute)[1]]['categoryCode'],
-                        ['diagnostic_procedure', 'imaging']
-                    )
-                ),
+            'diagnosticReports.*.conclusion' => [
                 'nullable',
                 'string',
-                'max:3000'
-            ]),
+                'max:3000',
+            ],
             'diagnosticReports.*.usedReferences' => ['nullable', 'array'],
             'diagnosticReports.*.usedReferences.*.id' => [
                 'nullable',
                 'uuid',
-                Rule::exists('equipments', 'uuid')->where('legal_entity_id', legalEntity()->id),
+                'distinct',
+
+                Rule::exists('equipments', 'uuid')
+                    ->where(
+                        'legal_entity_id',
+                        legalEntity()->id
+                    )
+                    ->where(
+                        'status',
+                        EquipmentStatus::ACTIVE->value
+                    )
+                    ->where(
+                        'availability_status',
+                        AvailabilityStatus::AVAILABLE->value
+                    ),
+
+                function (
+                    string $attribute,
+                    mixed $value,
+                    Closure $fail
+                ): void {
+                    if (!$value) {
+                        return;
+                    }
+
+                    $divisionUuid = data_get($this->encounter, 'divisionId');
+
+                    if (!$divisionUuid) {
+                        return;
+                    }
+
+                    $belongsToDivision = Equipment::query()
+                        ->where('uuid', $value)
+                        ->whereHas(
+                            'division',
+                            static fn ($query) =>
+                                $query->where(
+                                    'uuid',
+                                    $divisionUuid
+                                )
+                        )
+                        ->exists();
+
+                    if (!$belongsToDivision) {
+                        $fail(
+                            __('equipments.validation.not_belongs_to_division')
+                        );
+                    }
+                },
             ],
-            'diagnosticReports.*.divisionId' => ['nullable', 'uuid'],
-            'diagnosticReports.*.resultsInterpreterEmployeeId' => ['nullable', 'uuid'],
+            'diagnosticReports.*.divisionId' => [
+                'nullable',
+                'uuid',
+                Rule::in([
+                    data_get($this->encounter, 'divisionId'),
+                ]),
+            ],
+            'diagnosticReports.*.performerEmployeeId' => Rule::forEach(
+                function (mixed $value, string $attribute): array {
+                    $index = (int) explode('.', $attribute)[1];
+
+                    $primarySource = data_get(
+                        $this->diagnosticReports[$index] ?? [],
+                        'primarySource',
+                        true
+                    );
+
+                    $divisionUuid = data_get(
+                        $this->encounter,
+                        'divisionId'
+                    );
+
+                    return [
+                        Rule::exists('employees', 'uuid')->where(
+                            static function ($query) use ($divisionUuid): void {
+                                $query
+                                    ->where(
+                                        'legal_entity_id',
+                                        legalEntity()->id
+                                    )
+                                    ->where(
+                                        'status',
+                                        Status::APPROVED->value
+                                    )
+                                    ->where('is_active', true)
+                                    ->whereIn('employee_type', [
+                                        Role::DOCTOR->value,
+                                        Role::SPECIALIST->value,
+                                        Role::ASSISTANT->value,
+                                        Role::LABORANT->value,
+                                    ]);
+
+                                if (filled($divisionUuid)) {
+                                    $query->where(
+                                        'division_uuid',
+                                        $divisionUuid
+                                    );
+                                }
+                            }
+                        ),
+                    ];
+                }
+            ),
+            'diagnosticReports.*.resultsInterpreterEmployeeId'
+                => Rule::forEach(
+                    function (
+                        mixed $value,
+                        string $attribute
+                    ): array {
+                        $index = (int) explode('.', $attribute)[1];
+
+                        $categoryCode = data_get(
+                            $this->diagnosticReports[$index] ?? [],
+                            'categoryCode'
+                        );
+
+                        return [
+                            Rule::requiredIf(
+                                in_array(
+                                    $categoryCode,
+                                    [
+                                        'diagnostic_procedure',
+                                        'imaging',
+                                    ],
+                                    true
+                                )
+                            ),
+                            'nullable',
+                            'uuid',
+                            Rule::exists('employees', 'uuid')->where(
+                                static fn ($query) => $query
+                                    ->where(
+                                        'legal_entity_id',
+                                        legalEntity()->id
+                                    )
+                                    ->where(
+                                        'status',
+                                        Status::APPROVED->value
+                                    )
+                                    ->where('is_active', true)
+                                    ->whereIn('employee_type', [
+                                        Role::DOCTOR->value,
+                                        Role::SPECIALIST->value,
+                                    ])
+                            ),
+                        ];
+                    }
+                ),
             'diagnosticReports.*.issuedDate' => [
                 'required_with:diagnosticReports',
                 'date_format:' . config('app.date_format'),
@@ -390,52 +563,234 @@ class EncounterForm extends BaseForm
                 'date_format:H:i',
                 new PastDateTime($this->diagnosticReports[(int)explode('.', $attribute)[1]]['issuedDate'])
             ]),
-            'diagnosticReports.*.effectivePeriodStartDate' => [
-                'required_with:diagnosticReports',
-                'date_format:' . config('app.date_format'),
-                'before_or_equal:today'
+            'diagnosticReports.*.effectiveType' => [
+                'nullable',
+                Rule::in(['date_time', 'period']),
             ],
-            'diagnosticReports.*.effectivePeriodStartTime' => Rule::forEach(fn (mixed $value, string $attribute) => [
-                'required_with:diagnosticReports',
-                'date_format:H:i',
-                new PastDateTime($this->diagnosticReports[(int)explode('.', $attribute)[1]]['effectivePeriodStartDate'])
-            ]),
-            'diagnosticReports.*.effectivePeriodEndDate' => [
-                'required_with:diagnosticReports',
-                'date_format:' . config('app.date_format')
-            ],
-            'diagnosticReports.*.effectivePeriodEndTime' => Rule::forEach(function (mixed $value, string $attribute) {
-                $index = (int)explode('.', $attribute)[1];
-                $report = $this->diagnosticReports[$index];
 
-                return [
-                    'required_with:diagnosticReports',
-                    'date_format:H:i',
-                    new AfterOrEqualDateTime(
-                        $report['effectivePeriodEndDate'] ?? '',
-                        $report['effectivePeriodStartDate'] ?? '',
-                        $report['effectivePeriodStartTime'] ?? ''
-                    ),
-                    function (string $attribute, mixed $value, Closure $fail) use ($report) {
-                        if (empty($report['issuedDate']) || empty($report['issuedTime']) || empty($report['effectivePeriodEndDate']) || empty($value)) {
-                            return;
-                        }
+            'diagnosticReports.*.effectiveDate'
+                => Rule::forEach(
+                    function (
+                        mixed $value,
+                        string $attribute
+                    ): array {
+                        $index = (int) explode('.', $attribute)[1];
 
-                        $end = Carbon::createFromFormat(
-                            config('app.date_format') . ' H:i',
-                            $report['effectivePeriodEndDate'] . ' ' . $value
-                        );
-                        $issued = Carbon::createFromFormat(
-                            config('app.date_format') . ' H:i',
-                            $report['issuedDate'] . ' ' . $report['issuedTime']
-                        );
+                        $report = $this->diagnosticReports[$index] ?? [];
 
-                        if ($end->isAfter($issued)) {
-                            $fail(__('validation.before_or_equal', ['date' => __('validation.attributes.issued')]));
-                        }
+                        $isDateTime =
+                            ($report['effectiveType'] ?? null)
+                            === 'date_time';
+
+                        return [
+                            Rule::requiredIf($isDateTime),
+                            Rule::prohibitedIf(!$isDateTime),
+                            'nullable',
+                            'date_format:' . config('app.date_format'),
+                            'before_or_equal:today',
+                        ];
                     }
-                ];
-            }),
+                ),
+
+            'diagnosticReports.*.effectiveTime'
+                => Rule::forEach(
+                    function (
+                        mixed $value,
+                        string $attribute
+                    ): array {
+                        $index = (int) explode('.', $attribute)[1];
+
+                        $report = $this->diagnosticReports[$index] ?? [];
+
+                        $isDateTime =
+                            ($report['effectiveType'] ?? null)
+                            === 'date_time';
+
+                        return [
+                            Rule::requiredIf($isDateTime),
+                            Rule::prohibitedIf(!$isDateTime),
+                            'nullable',
+                            'date_format:H:i',
+                            new PastDateTime(
+                                $report['effectiveDate'] ?? ''
+                            ),
+                        ];
+                    }
+                ),
+
+            'diagnosticReports.*.effectivePeriodStartDate'
+                => Rule::forEach(
+                    function (
+                        mixed $value,
+                        string $attribute
+                    ): array {
+                        $index = (int) explode('.', $attribute)[1];
+
+                        $report = $this->diagnosticReports[$index] ?? [];
+
+                        $isPeriod =
+                            ($report['effectiveType'] ?? null)
+                            === 'period';
+
+                        return [
+                            Rule::requiredIf($isPeriod),
+                            Rule::prohibitedIf(!$isPeriod),
+                            'nullable',
+                            'date_format:' . config('app.date_format'),
+                            'before_or_equal:today',
+                        ];
+                    }
+                ),
+
+            'diagnosticReports.*.effectivePeriodStartTime'
+                => Rule::forEach(
+                    function (
+                        mixed $value,
+                        string $attribute
+                    ): array {
+                        $index = (int) explode('.', $attribute)[1];
+
+                        $report = $this->diagnosticReports[$index] ?? [];
+
+                        $isPeriod =
+                            ($report['effectiveType'] ?? null)
+                            === 'period';
+
+                        return [
+                            Rule::requiredIf($isPeriod),
+                            Rule::prohibitedIf(!$isPeriod),
+                            'nullable',
+                            'date_format:H:i',
+                            new PastDateTime(
+                                $report[
+                                    'effectivePeriodStartDate'
+                                ] ?? ''
+                            ),
+                        ];
+                    }
+                ),
+
+            'diagnosticReports.*.effectivePeriodEndDate'
+                => Rule::forEach(
+                    function (
+                        mixed $value,
+                        string $attribute
+                    ): array {
+                        $index = (int) explode('.', $attribute)[1];
+
+                        $report = $this->diagnosticReports[$index] ?? [];
+
+                        $isPeriod =
+                            ($report['effectiveType'] ?? null)
+                            === 'period';
+
+                        return [
+                            Rule::prohibitedIf(!$isPeriod),
+                            Rule::requiredIf(
+                                $isPeriod
+                                && !empty(
+                                    $report[
+                                        'effectivePeriodEndTime'
+                                    ]
+                                )
+                            ),
+                            'nullable',
+                            'date_format:' . config('app.date_format'),
+                            'before_or_equal:today',
+                        ];
+                    }
+                ),
+
+            'diagnosticReports.*.effectivePeriodEndTime'
+                => Rule::forEach(
+                    function (
+                        mixed $value,
+                        string $attribute
+                    ): array {
+                        $index = (int) explode('.', $attribute)[1];
+
+                        $report = $this->diagnosticReports[$index] ?? [];
+
+                        $isPeriod =
+                            ($report['effectiveType'] ?? null)
+                            === 'period';
+
+                        return [
+                            Rule::prohibitedIf(!$isPeriod),
+                            Rule::requiredIf(
+                                $isPeriod
+                                && !empty(
+                                    $report[
+                                        'effectivePeriodEndDate'
+                                    ]
+                                )
+                            ),
+                            'nullable',
+                            'date_format:H:i',
+                            new PastDateTime(
+                                $report[
+                                    'effectivePeriodEndDate'
+                                ] ?? ''
+                            ),
+                            new AfterOrEqualDateTime(
+                                $report[
+                                    'effectivePeriodEndDate'
+                                ] ?? '',
+                                $report[
+                                    'effectivePeriodStartDate'
+                                ] ?? '',
+                                $report[
+                                    'effectivePeriodStartTime'
+                                ] ?? ''
+                            ),
+                            function (
+                                string $attribute,
+                                mixed $value,
+                                Closure $fail
+                            ) use ($report): void {
+                                if (
+                                    empty($report['issuedDate'])
+                                    || empty($report['issuedTime'])
+                                    || empty(
+                                        $report[
+                                            'effectivePeriodEndDate'
+                                        ]
+                                    )
+                                    || empty($value)
+                                ) {
+                                    return;
+                                }
+
+                                $end = Carbon::createFromFormat(
+                                    config('app.date_format') . ' H:i',
+                                    $report[
+                                        'effectivePeriodEndDate'
+                                    ] . ' ' . $value
+                                );
+
+                                $issued = Carbon::createFromFormat(
+                                    config('app.date_format') . ' H:i',
+                                    $report['issuedDate']
+                                        . ' '
+                                        . $report['issuedTime']
+                                );
+
+                                if ($end->isAfter($issued)) {
+                                    $fail(
+                                        __(
+                                            'validation.before_or_equal',
+                                            [
+                                                'date' => __(
+                                                    'validation.attributes.issued'
+                                                ),
+                                            ]
+                                        )
+                                    );
+                                }
+                            },
+                        ];
+                    }
+                ),
 
             'observations' => ['nullable', 'array'],
             // for edit page

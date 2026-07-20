@@ -117,6 +117,7 @@ class DiagnosticReportRepository extends BaseRepository
                     $ownerColumn => $ownerId,
                     'status' => $datum['status'],
                     'code_id' => $code->id,
+                    'effective_date_time' => $datum['effectiveDateTime'] ?? null,
                     'issued' => $datum['issued'],
                     'conclusion' => $datum['conclusion'] ?? null,
                     'explanatory_letter' => $datum['explanatoryLetter'] ?? null,
@@ -148,10 +149,16 @@ class DiagnosticReportRepository extends BaseRepository
 
                 $diagnosticReport->category()->attach($categoryIds);
 
-                $diagnosticReport->effectivePeriod()->create([
-                    'start' => $datum['effectivePeriod']['start'],
-                    'end' => $datum['effectivePeriod']['end']
-                ]);
+                if (isset($datum['effectivePeriod'])) {
+                    $diagnosticReport->effectivePeriod()->create([
+                        'start' =>
+                            $datum['effectivePeriod']['start'],
+
+                        'end' =>
+                            $datum['effectivePeriod']['end']
+                            ?? null,
+                    ]);
+                }
 
                 if (isset($datum['performer'])) {
                     $reference = null;
@@ -421,6 +428,7 @@ class DiagnosticReportRepository extends BaseRepository
                     $ownerColumn => $ownerId,
                     'based_on_id' => $basedOn?->id,
                     'code_id' => $code->id,
+                    'effective_date_time' => $datum['effectiveDateTime'] ?? null,
                     'encounter_id' => $encounter?->id,
                     'division_id' => $division?->id,
                     'conclusion_code_id' => $conclusionCode?->id,
@@ -430,6 +438,7 @@ class DiagnosticReportRepository extends BaseRepository
                     'origin_episode_id' => $originEpisode?->id,
                     'cancellation_reason_id' => $cancellationReason?->id,
                     'status' => $data['status'],
+                    'effective_date_time' => $data['effective_date_time'] ?? null,
                     'issued' => $data['issued'],
                     'conclusion' => $data['conclusion'] ?? null,
                     'explanatory_letter' => $data['explanatory_letter'] ?? null,

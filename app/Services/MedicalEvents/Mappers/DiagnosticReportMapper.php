@@ -9,6 +9,7 @@ use App\Contracts\FhirMapperContract;
 use App\Enums\Person\DiagnosticReportStatus;
 use App\Enums\Person\ObservationStatus;
 use App\Services\MedicalEvents\FhirResource;
+use Carbon\CarbonImmutable;
 
 class DiagnosticReportMapper implements FhirMapperContract
 {
@@ -34,14 +35,6 @@ class DiagnosticReportMapper implements FhirMapperContract
                     ->coding('eHealth/diagnostic_report_categories', $data['categoryCode'])
                     ->toCodeableConcept()
             ],
-            'effectivePeriod' => [
-                'start' => convertToEHealthISO8601(
-                    $data['effectivePeriodStartDate'] . ' ' . $data['effectivePeriodStartTime']
-                ),
-                'end' => convertToEHealthISO8601(
-                    $data['effectivePeriodEndDate'] . ' ' . $data['effectivePeriodEndTime']
-                ),
-            ],
             'issued' => convertToEHealthISO8601($data['issuedDate'] . ' ' . $data['issuedTime']),
             'recordedBy' => FhirResource::make()
                 ->coding('eHealth/resources', 'employee')
@@ -51,6 +44,20 @@ class DiagnosticReportMapper implements FhirMapperContract
                 ->coding('eHealth/resources', 'legal_entity')
                 ->toIdentifier(legalEntity()->uuid)
         ];
+
+        if (($data['effectiveType'] ?? null) === 'date_time') {
+            $result['effectiveDateTime'] = convertToEHealthISO8601($data['effectiveDate'] . ' ' . $data['effectiveTime']);
+        }
+
+        if (($data['effectiveType'] ?? null) === 'period') {
+            $effectivePeriod = ['start' => convertToEHealthISO8601($data['effectivePeriodStartDate'] . ' ' . $data['effectivePeriodStartTime']),];
+
+            if (!empty($data['effectivePeriodEndDate']) && !empty($data['effectivePeriodEndTime'])) {
+                $effectivePeriod['end'] = convertToEHealthISO8601($data['effectivePeriodEndDate'] . ' ' . $data['effectivePeriodEndTime']);
+            }
+
+            $result['effectivePeriod'] = $effectivePeriod;
+        }
 
         $paperReferral = PaperReferralMapper::toFhir($data);
         if ($paperReferral !== null) {
@@ -98,12 +105,17 @@ class DiagnosticReportMapper implements FhirMapperContract
             $result['performer'] = [
                 'reference' => FhirResource::make()
                     ->coding('eHealth/resources', 'employee')
-                    ->toIdentifier($uuids['employee'])
+                    ->toIdentifier($data['performerEmployeeId']),
             ];
         } else {
             $result['reportOrigin'] = FhirResource::make()
-                ->coding('eHealth/report_origins', $data['reportOriginCode'])
-                ->toCodeableConcept($data['reportOriginText'] ?? '');
+                ->coding(
+                    'eHealth/report_origins',
+                    $data['reportOriginCode']
+                )
+                ->toCodeableConcept(
+                    $data['reportOriginText'] ?? ''
+                );
         }
 
         if (!empty($data['resultsInterpreterEmployeeId'])) {
@@ -126,6 +138,9 @@ class DiagnosticReportMapper implements FhirMapperContract
      */
     public function fromFhir(array $data, mixed ...$context): array
     {
+        $effectiveDateTime = data_get($data, 'effectiveDateTime');
+        $effectivePeriodStartDate = data_get($data, 'effectivePeriodStartDate', '');
+
         return [
             'uuid' => data_get($data, 'uuid'),
             'categoryCode' => data_get($data, 'category.0.coding.0.code'),
@@ -137,6 +152,7 @@ class DiagnosticReportMapper implements FhirMapperContract
             'conclusionCode' => data_get($data, 'conclusionCode.coding.0.code', ''),
             'conclusion' => data_get($data, 'conclusion', ''),
             'divisionId' => data_get($data, 'division.identifier.value', ''),
+            'performerEmployeeId' => data_get($data, 'performer.reference.identifier.value', ''),
             'usedReferences' => collect(data_get($data, 'usedReferences', []))
                 ->map(static fn (array $usedReference) => [
                     'id' => data_get($usedReference, 'identifier.value', ''),
@@ -147,7 +163,15 @@ class DiagnosticReportMapper implements FhirMapperContract
             'resultsInterpreterEmployeeId' => data_get($data, 'resultsInterpreter.reference.identifier.value', ''),
             'issuedDate' => data_get($data, 'issuedDate'),
             'issuedTime' => data_get($data, 'issuedTime'),
-            'effectivePeriodStartDate' => data_get($data, 'effectivePeriodStartDate', ''),
+            'effectiveType' => match (true) {
+                !empty($effectiveDateTime) => 'date_time',
+                !empty($effectivePeriodStartDate) => 'period',
+                default => '',
+            },
+
+            'effectiveDate' => data_get($data, 'effectiveDate', $effectiveDateTime ? convertToAppDateFormat($effectiveDateTime) : ''),
+            'effectiveTime' => data_get($data, 'effectiveTime', $effectiveDateTime ? CarbonImmutable::parse($effectiveDateTime)->format('H:i') : ''),
+            'effectivePeriodStartDate' => $effectivePeriodStartDate,
             'effectivePeriodStartTime' => data_get($data, 'effectivePeriodStartTime', ''),
             'effectivePeriodEndDate' => data_get($data, 'effectivePeriodEndDate', ''),
             'effectivePeriodEndTime' => data_get($data, 'effectivePeriodEndTime', '')

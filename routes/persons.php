@@ -173,6 +173,7 @@ Route::prefix('prepersons')
 
         Route::get('/{preperson}/diagnostic-report/create', DiagnosticReportCreate::class)
             ->can('view', 'preperson')
+            ->can('create', DiagnosticReport::class)
             ->name('diagnostic-report.create');
         Route::get('/{preperson}/diagnostic-report/{diagnosticReportId}', DiagnosticReportEdit::class)
             ->can('view', 'preperson')

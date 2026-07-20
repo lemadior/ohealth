@@ -7,6 +7,9 @@ namespace App\Livewire\DiagnosticReport;
 use App\Classes\Cipher\Api\CipherRequest;
 use App\Classes\eHealth\EHealth;
 use App\Core\Arr;
+use App\Enums\Status;
+use App\Enums\User\Role;
+use App\Enums\Equipment\AvailabilityStatus;
 use App\Enums\Person\DiagnosticReportStatus;
 use App\Exceptions\Cipher\CipherConnectionException;
 use App\Exceptions\Cipher\CipherException;
@@ -103,13 +106,6 @@ abstract class DiagnosticReportComponent extends Component
     public array $divisions;
 
     /**
-     * Full name of employee.
-     *
-     * @var string
-     */
-    public string $employeeFullName;
-
-    /**
      * List of LOINC observation codes per category.
      *
      * @var array
@@ -150,6 +146,8 @@ abstract class DiagnosticReportComponent extends Component
      * @var array
      */
     public array $equipmentOptions = [];
+
+    public array $equipmentOptionsByDivision = [];
 
     protected array $dictionaryNames = [
         'eHealth/diagnostic_report_categories',
@@ -205,34 +203,67 @@ abstract class DiagnosticReportComponent extends Component
                 ->error('Error while loading observation dictionary in DiagnosticReportComponent');
         }
 
-        $this->employeeFullName = $authUser->getDiagnosticReportWriterEmployee()->fullName;
-
-        $employees = $authUser->party->employees()
-            ->select(['uuid', 'party_id', 'position'])
+        $this->employees = Employee::query()
+            ->whereLegalEntityId($legalEntity->id)
+            ->whereStatus(Status::APPROVED)
+            ->whereIsActive(true)
+            ->whereIn('employee_type', [
+                Role::DOCTOR->value,
+                Role::SPECIALIST->value,
+                Role::ASSISTANT->value,
+                Role::LABORANT->value,
+            ])
+            ->select([
+                'uuid',
+                'party_id',
+                'position',
+                'employee_type',
+                'division_uuid',
+            ])
             ->with('party:id,last_name,first_name,second_name')
-            ->whereLegalEntityId(legalEntity()->id)
-            ->get();
-        $this->employees = $employees->map(function (Employee $employee) {
-            return [
-                'uuid' => $employee->uuid,
-                'name' => $employee->fullName,
-                'position' => $employee->position
-            ];
-        })->toArray();
+            ->get()
+            ->map(function (Employee $employee): array {
+                return [
+                    'uuid' => $employee->uuid,
+                    'name' => $employee->fullName,
+                    'position' => $employee->position,
+                    'employeeType' => $employee->employeeType,
+                    'divisionUuid' => $employee->divisionUuid,
+                ];
+            })
+            ->values()
+            ->toArray();
 
         $this->setPatientData();
         $this->divisions = $legalEntity->divisions()->select(['uuid', 'name'])->get()->toArray();
 
         $this->equipmentOptions = Equipment::query()
             ->whereLegalEntityId($legalEntity->id)
+            ->where(
+                'availability_status',
+                AvailabilityStatus::AVAILABLE->value
+            )
             ->active()
-            ->with('names')
+            ->with(['names', 'division:id,uuid'])
             ->get()
-            ->map(static fn (Equipment $equipment) => [
+            ->map(static fn (Equipment $equipment): array => [
                 'uuid' => $equipment->uuid,
-                'name' => $equipment->names->first()->name
+                'name' => $equipment->names->first()?->name ?? $equipment->uuid,
+                'divisionUuid' => $equipment->division?->uuid,
             ])
             ->values()
+            ->toArray();
+
+        $this->equipmentOptionsByDivision = collect($this->equipmentOptions)
+            ->filter(
+                static fn (array $equipment): bool =>
+                    !empty($equipment['divisionUuid'])
+            )
+            ->groupBy('divisionUuid')
+            ->map(
+                static fn ($items): array =>
+                    $items->values()->toArray()
+            )
             ->toArray();
     }
 

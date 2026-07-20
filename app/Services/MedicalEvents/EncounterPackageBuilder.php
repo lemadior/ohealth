@@ -63,13 +63,17 @@ class EncounterPackageBuilder
             ->toArray();
 
         $fhirDiagnosticReports = collect($data['diagnosticReports'] ?? [])
-            ->map(fn (array $diagnosticReport) => Fhir::diagnosticReport()->toFhir(
-                $diagnosticReport,
-                array_merge($uuids, [
-                    'diagnosticReport' => $diagnosticReport['uuid'] ?? Str::uuid()->toString(),
-                ]),
-                DiagnosticReportStatus::FINAL
-            ))
+            ->map(function (array $diagnosticReport) use ($data, $uuids): array {
+                $diagnosticReport['divisionId'] = data_get($data, 'encounter.divisionId');
+
+                return Fhir::diagnosticReport()->toFhir(
+                    $diagnosticReport,
+                    array_merge($uuids, [
+                        'diagnosticReport' => $diagnosticReport['uuid'] ?? Str::uuid()->toString(),
+                    ]),
+                    DiagnosticReportStatus::FINAL
+                );
+            })
             ->values()
             ->toArray();
 

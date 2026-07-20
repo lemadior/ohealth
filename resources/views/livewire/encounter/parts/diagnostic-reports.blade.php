@@ -10,6 +10,7 @@
          diagnosticReportCategoriesDictionary: $wire.dictionaries['eHealth/diagnostic_report_categories'],
          servicesDictionary: $wire.dictionaries['custom/services'],
          equipmentOptions: @js($equipmentOptions),
+         diagnosticReportEmployees: @js($diagnosticReportEmployees),
 
         addUsedReference() {
             this.modalDiagnosticReport.usedReferences.push({
@@ -20,6 +21,83 @@
         removeUsedReference(index) {
             this.modalDiagnosticReport.usedReferences.splice(index, 1);
         },
+
+        setEffectiveType(type) {
+            const now = new Date();
+
+            const startTime = new Date(
+                now.getTime() - 15 * 60 * 1000
+            );
+
+            const toFormattedDate = (date) => {
+                const [yyyy, mm, dd] = date
+                    .toISOString()
+                    .split('T')[0]
+                    .split('-');
+
+                return `${dd}.${mm}.${yyyy}`;
+            };
+
+            const timeOptions = {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+
+            this.modalDiagnosticReport.effectiveType = type;
+
+            if (type === 'date_time') {
+                this.modalDiagnosticReport.effectiveDate =
+                    this.modalDiagnosticReport.issuedDate
+                    || toFormattedDate(now);
+
+                this.modalDiagnosticReport.effectiveTime =
+                    this.modalDiagnosticReport.issuedTime
+                    || now.toLocaleTimeString(
+                        'uk-UA',
+                        timeOptions
+                    );
+
+                this.modalDiagnosticReport.effectivePeriodStartDate = '';
+                this.modalDiagnosticReport.effectivePeriodStartTime = '';
+                this.modalDiagnosticReport.effectivePeriodEndDate = '';
+                this.modalDiagnosticReport.effectivePeriodEndTime = '';
+
+                return;
+            }
+
+            if (type === 'period') {
+                this.modalDiagnosticReport.effectiveDate = '';
+                this.modalDiagnosticReport.effectiveTime = '';
+
+                this.modalDiagnosticReport.effectivePeriodStartDate =
+                    toFormattedDate(startTime);
+
+                this.modalDiagnosticReport.effectivePeriodStartTime =
+                    startTime.toLocaleTimeString(
+                        'uk-UA',
+                        timeOptions
+                    );
+
+                this.modalDiagnosticReport.effectivePeriodEndDate =
+                    toFormattedDate(now);
+
+                this.modalDiagnosticReport.effectivePeriodEndTime =
+                    now.toLocaleTimeString(
+                        'uk-UA',
+                        timeOptions
+                    );
+
+                return;
+            }
+
+            this.modalDiagnosticReport.effectiveDate = '';
+            this.modalDiagnosticReport.effectiveTime = '';
+            this.modalDiagnosticReport.effectivePeriodStartDate = '';
+            this.modalDiagnosticReport.effectivePeriodStartTime = '';
+            this.modalDiagnosticReport.effectivePeriodEndDate = '';
+            this.modalDiagnosticReport.effectivePeriodEndTime = '';
+        }
      }"
 >
 
@@ -168,7 +246,7 @@
 
         <form>
             @include('livewire.encounter.diagnostic-report-parts.main-information')
-            @include('livewire.encounter.diagnostic-report-parts.additional-information', ['context' => 'diagnostic-report'])
+            @include('livewire.encounter.diagnostic-report-parts.additional-information', ['context' => 'diagnostic-report', 'isEncounterContext' => true])
 
             <div class="mt-6 flex justify-between space-x-2">
                 <button type="button" @click="openDiagnosticReportDrawer = false" class="button-minor">
@@ -184,8 +262,12 @@
                     "
                     class="button-primary"
                     :disabled="!(
-                        modalDiagnosticReport.categoryCode.trim() &&
-                        modalDiagnosticReport.codeValue.trim()
+                        modalDiagnosticReport.categoryCode.trim()
+                        && modalDiagnosticReport.codeValue.trim()
+                        && (
+                            modalDiagnosticReport.primarySource === false
+                            || modalDiagnosticReport.performerEmployeeId.trim()
+                        )
                     )"
                 >
                     {{ __('forms.save') }}
@@ -226,6 +308,10 @@
             this.reportOriginCode = '';
             this.reportOriginText = '';
             this.divisionId = '';
+            this.performerEmployeeId = '';
+            this.effectiveType = 'period';
+            this.effectiveDate = '';
+            this.effectiveTime = '';
             this.usedReferences = [];
             this.resultsInterpreterEmployeeId = '';
             this.issuedDate = toFormattedDate(now);

@@ -386,13 +386,17 @@ return [
     'edrpou_of_the_issuing_institution' => 'ЄДРПОУ закладу, що виписав',
     'name_of_the_institution_that_issued_it' => 'Найменування закладу, що виписав',
     'the_doctor_who_interpreted_the_results' => 'Лікар, що інтерпретував результати',
-    'doctor_submitting_a_report_to_the_system' => 'Лікар, що передає в систему звіт',
     'reception_start_date_and_time' => 'Дата та час початку прийому',
     'reception_end_date_and_time' => 'Дата та час завершення прийому',
     'specimen_id' => 'ID зразка',
     'context_episode_id' => 'ID контекстного епізоду',
     'origin_episode_id' => 'ID первинного епізоду',
     'encounter_id' => 'ID взаємодії',
+    'do_not_specify' => 'Не зазначати',
+    'effective_date_time' => 'Дата та час проведення діагностики',
+    'effective_period' => 'Період проведення діагностики',
+    'effective_period_start' => 'Дата та час початку діагностики',
+    'effective_period_end' => 'Дата та час завершення діагностики',
 
     // Observations
     'value' => 'Значення',
