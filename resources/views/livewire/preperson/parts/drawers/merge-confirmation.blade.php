@@ -36,7 +36,7 @@
                 </div>
                 <div class="space-y-3 text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
                     <p class="font-semibold">
-                        {{ __('declarations.sms_or_documents_note') }}
+                        {{ __('preperson.merge.sms_or_documents_note') }}
                     </p>
                     <div class="space-y-1">
                         <p>- {{ __('preperson.merge.memo_point_1') }}</p>
@@ -84,7 +84,8 @@
                 :disabled="!consent"
                 @click="
                     showMergeConfirmationDrawer = false;
-                    if (currentMethod === '{{ AuthenticationMethod::OTP->value }}') {
+                    if (currentMethod === '{{ AuthenticationMethod::OTP->value }}'
+                        || currentMethod === '{{ AuthenticationMethod::THIRD_PERSON->value }}') {
                         showMergeSmsDrawer = true;
                     } else {
                         showMergeDocumentsDrawer = true;

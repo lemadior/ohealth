@@ -7,7 +7,7 @@
         {{ __('preperson.merge.consent_form_title') }}
     </x-slot>
 
-    <div x-data="{ consentSigned: false }">
+    <div>
         <div class="mt-8 space-y-6">
             <div class="space-y-3.5">
                 <div
@@ -37,7 +37,7 @@
                         <input
                             id="consentSigned"
                             type="checkbox"
-                            x-model="consentSigned"
+                            wire:model="patientSigned"
                             class="default-checkbox"
                         >
                     </div>
@@ -87,7 +87,7 @@
             <button
                 class="button-primary"
                 type="button"
-                :disabled="!consentSigned"
+                :disabled="!$wire.patientSigned"
                 @click="showMergeFinalConsentDrawer = false; showMergeSignatureDrawer = true"
             >
                 {{ __('forms.confirm') }}

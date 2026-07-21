@@ -28,6 +28,8 @@ class PrepersonForm extends BaseForm
         'otherReason' => ''
     ];
 
+    public ?string $deathDate = null;
+
     /**
      * Validation rules for creating an unidentified patient (preperson).
      *
@@ -115,7 +117,8 @@ class PrepersonForm extends BaseForm
      */
     public function rulesForUpdate(): array
     {
-        $emergencyContactRequired = $this->hasEmergencyContactData();
+        $emergencyContactRequired = $this->hasEmergencyContactData()
+            || ($this->reasonContext['reason'] ?? null) === Reason::NEWBORN_WITHOUT_CERTIFICATE->value;
 
         return [
             'person.firstName' => ['nullable', 'min:3', new NameFields()],
@@ -147,6 +150,18 @@ class PrepersonForm extends BaseForm
                 new PhoneNumber(),
                 'distinct'
             ]
+        ];
+    }
+
+    /**
+     * Validation rules for registering the death date of a preperson.
+     *
+     * @return array
+     */
+    public function rulesForDeath(): array
+    {
+        return [
+            'deathDate' => ['required', 'date_format:' . config('app.date_format'), 'before_or_equal:today']
         ];
     }
 

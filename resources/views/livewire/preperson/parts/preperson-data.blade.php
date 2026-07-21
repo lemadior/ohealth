@@ -6,8 +6,10 @@
 @endphp
 
 <div class="breadcrumb-form p-4 shift-content space-y-6" x-data="{ showCertificate: false }">
-    <div x-data="{ open: true }"
-         class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
+    <div
+        x-data="{ open: true }"
+        class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm"
+    >
         <h2>
             <button
                 type="button"
@@ -21,26 +23,30 @@
                 @icon('chevron-down', 'w-5 h-5 text-gray-400 transition-transform group-aria-expanded:rotate-180 shrink-0')
             </button>
         </h2>
+
         <div x-show="open" wire:ignore.self>
             <div class="px-6 pb-6 border-t border-gray-100 dark:border-gray-700 pt-4 space-y-6">
                 <div class="form-row-2">
                     <div class="flex items-center gap-2 mt-4">
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ __('preperson.ehealth_status') }}:</span>
-                        <span class="px-2 py-0.5 rounded text-xs {{ $preperson->status?->color() }}">
-                            {{ $preperson->status?->label() ?? '-' }}
+                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                            {{ __('preperson.ehealth_status') }}:
+                        </span>
+                        <span class="px-2 py-0.5 rounded text-xs {{ $preperson->status->color() }}">
+                            {{ $preperson->status->label() }}
                         </span>
                     </div>
 
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonEhealthId"
                             class="input peer"
                             placeholder=" "
-                            value="{{ $preperson->uuid ?? '' }}"
+                            value="{{ $preperson->uuid }}"
                             autocomplete="new-password"
                             readonly
                         />
-                        <label class="label">{{ __('preperson.ehealth_id') }}</label>
+                        <label for="prepersonEhealthId" class="label">{{ __('preperson.ehealth_id') }}</label>
                     </div>
                 </div>
 
@@ -51,26 +57,32 @@
                                 @icon('calendar-week', 'w-5 h-5 text-gray-500 dark:text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none')
                                 <input
                                     type="text"
+                                    id="prepersonCreatedAt"
                                     class="peer input pl-10 appearance-none text-gray-500 dark:text-gray-400"
                                     placeholder=" "
-                                    value="{{ $preperson->ehealthInsertedAt ? \Carbon\Carbon::parse($preperson->ehealthInsertedAt)->format(config('app.date_format')) : '' }}"
+                                    value="{{ formatDisplayDate($preperson->ehealthInsertedAt) }}"
                                     autocomplete="off"
                                     readonly
                                 />
-                                <label class="wrapped-label">{{ __('forms.created_at') }}</label>
+                                <label for="prepersonCreatedAt" class="wrapped-label">
+                                    {{ __('forms.created_at') }}
+                                </label>
                             </div>
 
                             <div class="form-group relative w-full">
                                 @icon('clock', 'w-5 h-5 text-gray-500 dark:text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none')
                                 <input
                                     type="text"
+                                    id="prepersonCreatedTime"
                                     class="peer input pl-10 appearance-none text-gray-500 dark:text-gray-400"
                                     placeholder=" "
-                                    value="{{ $preperson->ehealthInsertedAt ? \Carbon\Carbon::parse($preperson->ehealthInsertedAt)->format('H:i') : '' }}"
+                                    value="{{ formatDisplayDate($preperson->ehealthInsertedAt, 'H:i') }}"
                                     autocomplete="off"
                                     readonly
                                 />
-                                <label class="wrapped-label">{{ __('forms.created_time') }}</label>
+                                <label for="prepersonCreatedTime" class="wrapped-label">
+                                    {{ __('forms.created_time') }}
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -78,13 +90,14 @@
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonCreatedBy"
                             class="input peer"
                             placeholder=" "
-                            value="{{ $preperson->ehealthInsertedBy ?? '' }}"
+                            value="{{ $preperson->insertedByUser->party?->fullName ?: $preperson->ehealthInsertedBy }}"
                             autocomplete="off"
                             readonly
                         />
-                        <label class="label">{{ __('forms.created_by') }}</label>
+                        <label for="prepersonCreatedBy" class="label">{{ __('forms.created_by') }}</label>
                     </div>
                 </div>
 
@@ -95,26 +108,32 @@
                                 @icon('calendar-week', 'w-5 h-5 text-gray-500 dark:text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none')
                                 <input
                                     type="text"
+                                    id="prepersonUpdatedAt"
                                     class="peer input pl-10 appearance-none text-gray-500 dark:text-gray-400"
                                     placeholder=" "
-                                    value="{{ $preperson->ehealthUpdatedAt ? \Carbon\Carbon::parse($preperson->ehealthUpdatedAt)->format(config('app.date_format')) : '' }}"
+                                    value="{{ formatDisplayDate($preperson->ehealthUpdatedAt) }}"
                                     autocomplete="off"
                                     readonly
                                 />
-                                <label class="wrapped-label">{{ __('forms.updated_at') }}</label>
+                                <label for="prepersonUpdatedAt" class="wrapped-label">
+                                    {{ __('forms.updated_at') }}
+                                </label>
                             </div>
 
                             <div class="form-group relative w-full">
                                 @icon('clock', 'w-5 h-5 text-gray-500 dark:text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none')
                                 <input
                                     type="text"
+                                    id="prepersonUpdatedTime"
                                     class="peer input pl-10 appearance-none text-gray-500 dark:text-gray-400"
                                     placeholder=" "
-                                    value="{{ $preperson->ehealthUpdatedAt ? \Carbon\Carbon::parse($preperson->ehealthUpdatedAt)->format('H:i') : '' }}"
+                                    value="{{ formatDisplayDate($preperson->ehealthUpdatedAt, 'H:i') }}"
                                     autocomplete="off"
                                     readonly
                                 />
-                                <label class="wrapped-label">{{ __('forms.updated_time') }}</label>
+                                <label for="prepersonUpdatedTime" class="wrapped-label">
+                                    {{ __('forms.updated_time') }}
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -122,13 +141,14 @@
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonUpdatedBy"
                             class="input peer"
                             placeholder=" "
-                            value="{{ $preperson->ehealthUpdatedBy ?? '' }}"
+                            value="{{ $preperson->updatedByUser->party?->fullName ?: $preperson->ehealthUpdatedBy }}"
                             autocomplete="off"
                             readonly
                         />
-                        <label class="label">{{ __('forms.updated_by') }}</label>
+                        <label for="prepersonUpdatedBy" class="label">{{ __('forms.updated_by') }}</label>
                     </div>
                 </div>
             </div>
@@ -136,9 +156,10 @@
     </div>
 
     @can('create', MergeRequest::class)
-        @if($preperson->status !== Status::DRAFT)
-            <div x-data="{ open: true }"
-                 class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
+        @if($preperson->status === Status::ACTIVE)
+            <div
+                x-data="{ open: true }"
+                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
                 <h2>
                     <button
                         type="button"
@@ -168,8 +189,6 @@
         @endif
     @endcan
 
-
-
     <div x-data="{ open: true }"
          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
         <h2>
@@ -179,8 +198,9 @@
                 @click="open = !open"
                 :aria-expanded="open"
             >
-                <span
-                    class="text-base font-semibold text-gray-900 dark:text-white">{{ __('patients.main_info') }}</span>
+                <span class="text-base font-semibold text-gray-900 dark:text-white">
+                    {{ __('patients.main_info') }}
+                </span>
                 @icon('chevron-down', 'w-5 h-5 text-gray-400 transition-transform group-aria-expanded:rotate-180 shrink-0')
             </button>
         </h2>
@@ -190,12 +210,13 @@
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonExternalId"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->externalId }}"
                         />
-                        <label class="label">{{ __('preperson.external_id') }}</label>
+                        <label for="prepersonExternalId" class="label">{{ __('preperson.external_id') }}</label>
                     </div>
                 </div>
 
@@ -203,32 +224,35 @@
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonFirstName"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->firstName ?: '-' }}"
                         />
-                        <label class="label">{{ __('forms.first_name') }}</label>
+                        <label for="prepersonFirstName" class="label">{{ __('forms.first_name') }}</label>
                     </div>
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonLastName"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->lastName ?: '-' }}"
                         />
-                        <label class="label">{{ __('forms.last_name') }}</label>
+                        <label for="prepersonLastName" class="label">{{ __('forms.last_name') }}</label>
                     </div>
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonSecondName"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->secondName ?: '-' }}"
                         />
-                        <label class="label">{{ __('forms.second_name') }}</label>
+                        <label for="prepersonSecondName" class="label">{{ __('forms.second_name') }}</label>
                     </div>
                 </div>
 
@@ -236,34 +260,48 @@
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonGender"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->gender->label() }}"
                         />
-                        <label class="label">{{ __('forms.gender') }}</label>
+                        <label for="prepersonGender" class="label">{{ __('forms.gender') }}</label>
                     </div>
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonBirthDate"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->birthDate ?: '-' }}"
                         />
-                        <label class="label">{{ __('forms.birth_date') }}</label>
+                        <label for="prepersonBirthDate" class="label">{{ __('forms.birth_date') }}</label>
+                    </div>
+                    <div class="form-group group">
+                        <input
+                            type="text"
+                            id="prepersonDeathDate"
+                            class="input peer"
+                            placeholder=" "
+                            readonly
+                            value="{{ formatDisplayDate($preperson->deathDate) ?: '-' }}"
+                        />
+                        <label for="prepersonDeathDate" class="label">{{ __('preperson.death_date') }}</label>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group group">
-                        <label class="label-secondary">{{ __('preperson.note') }}</label>
+                        <label for="prepersonNote" class="label-secondary">{{ __('preperson.note') }}</label>
                         <textarea
+                            id="prepersonNote"
                             class="textarea w-full"
                             rows="3"
                             readonly
                             placeholder="{{ __('preperson.note') }}"
-                        >{{ $preperson->reasonNote }}</textarea>
+                        >{{ $preperson->note }}</textarea>
                     </div>
                 </div>
             </div>
@@ -294,32 +332,35 @@
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonContactFirstName"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->emergencyContact['first_name'] ?? '-' }}"
                         />
-                        <label class="label">{{ __('forms.first_name') }}</label>
+                        <label for="prepersonContactFirstName" class="label">{{ __('forms.first_name') }}</label>
                     </div>
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonContactLastName"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->emergencyContact['last_name'] ?? '-' }}"
                         />
-                        <label class="label">{{ __('forms.last_name') }}</label>
+                        <label for="prepersonContactLastName" class="label">{{ __('forms.last_name') }}</label>
                     </div>
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonContactSecondName"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->emergencyContact['second_name'] ?? '-' }}"
                         />
-                        <label class="label">{{ __('forms.second_name') }}</label>
+                        <label for="prepersonContactSecondName" class="label">{{ __('forms.second_name') }}</label>
                     </div>
                 </div>
 
@@ -327,22 +368,24 @@
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonContactPhoneType"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ dictionary()->basics()->byName('PHONE_TYPE')->asCodeDescription()->toArray()[$preperson->emergencyContact['phones'][0]['type'] ?? ''] ?? '-' }}"
                         />
-                        <label class="label">{{ __('forms.phone_type') }}</label>
+                        <label for="prepersonContactPhoneType" class="label">{{ __('forms.phone_type') }}</label>
                     </div>
                     <div class="form-group group">
                         <input
                             type="text"
+                            id="prepersonContactPhone"
                             class="input peer"
                             placeholder=" "
                             readonly
                             value="{{ $preperson->emergencyContact['phones'][0]['number'] ?? '-' }}"
                         />
-                        <label class="label">{{ __('forms.phone') }}</label>
+                        <label for="prepersonContactPhone" class="label">{{ __('forms.phone') }}</label>
                     </div>
                 </div>
             </div>
@@ -370,7 +413,7 @@
                     type="button"
                     class="button-primary"
                     style="margin: 0 !important;"
-                    @click="$wire.startEdit({{ $preperson->id }}).then(() => isEditModalOpen = true)"
+                    @click="openEdit()"
                 >
                     {{ __('patients.edit_data') }}
                 </button>
@@ -386,15 +429,16 @@
                 <span>{{ __('preperson.info_certificate') }}</span>
             </button>
 
-            <button
-                type="button"
-                class="button-primary-outline-red !me-0"
-                style="margin: 0 !important;"
-                @click="showRegisterDeathModal = true"
-            >
-                {{ __('patients.register_death') }}
-            </button>
-
+            @can('update', $preperson)
+                <button
+                    type="button"
+                    class="button-primary-outline-red !me-0"
+                    style="margin: 0 !important;"
+                    @click="showRegisterDeathModal = true"
+                >
+                    {{ __('patients.register_death') }}
+                </button>
+            @endcan
         @endif
     </div>
 

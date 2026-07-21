@@ -6,11 +6,13 @@ namespace App\Models;
 
 use App\Casts\EHealthDateCast;
 use App\Enums\Person\Gender;
-use App\Enums\Preperson\Reason;
 use App\Enums\Preperson\Status;
+use App\Models\MedicalEvents\Sql\Episode;
 use Eloquence\Behaviours\HasCamelCasing;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Preperson extends Model
 {
@@ -64,39 +66,33 @@ class Preperson extends Model
     }
 
     /**
-     * Build a human-readable note from the stored reason context:
-     * the reason label followed by its reason-specific detail.
+     * Episodes registered for this preperson.
      *
-     * @return Attribute
+     * @return HasMany
      */
-    protected function reasonNote(): Attribute
+    public function episodes(): HasMany
     {
-        return Attribute::make(
-            get: function (): string {
-                $context = $this->reasonContext ?? [];
-                $reason = Reason::tryFrom($context['reason'] ?? '');
+        return $this->hasMany(Episode::class);
+    }
 
-                if ($reason === null) {
-                    return '';
-                }
+    /**
+     * User who registered the preperson in eHealth, resolved from the inserted_by UUID.
+     *
+     * @return BelongsTo
+     */
+    public function insertedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ehealth_inserted_by', 'uuid');
+    }
 
-                $detail = match ($reason) {
-                    Reason::EMERGENCY_HOSPITALIZATION => __('preperson.notes.ambulance', [
-                        'number' => $context['ambulance_card_number'] ?? ''
-                    ]),
-                    Reason::POLICE_HOSPITALIZATION => __('preperson.notes.police', [
-                        'id' => $context['police_report_id'] ?? '',
-                        'date' => $context['police_report_date'] ?? ''
-                    ]),
-                    Reason::NEWBORN_WITHOUT_CERTIFICATE => __('preperson.notes.newborn', [
-                        'time' => $context['child_birth_time'] ?? ''
-                    ]),
-                    Reason::OTHER_HOSPITALIZATION => $context['other_reason'] ?? ''
-                };
-
-                return $detail === '' ? $reason->label() : $reason->label() . '. ' . $detail;
-            }
-        );
+    /**
+     * User who last updated the preperson in eHealth, resolved from the updated_by UUID.
+     *
+     * @return BelongsTo
+     */
+    public function updatedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ehealth_updated_by', 'uuid');
     }
 
     /**

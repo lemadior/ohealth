@@ -47,6 +47,11 @@ class PrepersonPolicy
             return Response::denyWithStatus(404);
         }
 
+        // Drafts are not registered in eHealth (no uuid, no medical events), so their record pages are unavailable.
+        if ($preperson->status === PrepersonStatus::DRAFT) {
+            return Response::denyWithStatus(404);
+        }
+
         return Response::allow();
     }
 

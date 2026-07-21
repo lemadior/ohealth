@@ -24,6 +24,7 @@ use Illuminate\Validation\Rules\RequiredIf;
 class EncounterForm extends BaseForm
 {
     public array $encounter = [
+        'typeCode' => '',
         'diagnoses' => [],
         'reasons' => [],
         'actions' => [],

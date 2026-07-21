@@ -1,9 +1,14 @@
-<fieldset class="fieldset" x-data="{ showContactPerson: {{ ($showContactPersonOpen ?? false) ? 'true' : 'false' }} }">
+<fieldset
+    class="fieldset"
+    x-data="{ showContactPerson: {{ ($showContactPersonOpen ?? false) ? 'true' : 'false' }} }"
+    x-effect="if (reason === 'NEWBORN_WITHOUT_CERTIFICATE') showContactPerson = true"
+>
     <legend class="legend flex items-baseline gap-2">
         <input
             type="checkbox"
             class="default-checkbox mb-2"
             x-model="showContactPerson"
+            :disabled="reason === 'NEWBORN_WITHOUT_CERTIFICATE'"
             @change="if (! $event.target.checked) $wire.set('form.person.emergencyContact', { phones: [{ type: null, number: null }] }, false)"
             id="showContactPerson"
         />

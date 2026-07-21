@@ -20,15 +20,15 @@
                     </h3>
 
                     <div class="space-y-4">
-                        <div class="form-group group max-w-[200px]">
+                        <div class="form-group group max-w-50">
                             <div class="datepicker-wrapper">
                                 <input
                                     type="text"
                                     id="deathDate"
                                     name="deathDate"
-                                    wire:model="deathDate"
+                                    wire:model="form.deathDate"
                                     datepicker-max-date="{{ now()->format(config('app.date_format')) }}"
-                                    class="datepicker-input with-leading-icon input peer @error('deathDate') input-error @enderror"
+                                    class="datepicker-input with-leading-icon input peer @error('form.deathDate') input-error @enderror"
                                     placeholder=" "
                                     required
                                     autocomplete="off"
@@ -38,14 +38,13 @@
                                 </label>
                             </div>
 
-                            @error('deathDate')
+                            @error('form.deathDate')
                                 <p class="text-error mt-1 text-xs">
                                     {{ $message }}
                                 </p>
                             @enderror
                         </div>
                     </div>
-
 
                     <div class="flex gap-4 xl:flex-row justify-start items-center mt-4">
                         <button
@@ -58,7 +57,7 @@
                         </button>
                         <button
                             type="button"
-                            wire:click="registerDeath"
+                            @click="$wire.registerDeath(deathPrepersonId).then(() => { if (! $wire.get('form.deathDate')) showRegisterDeathDateModal = false })"
                             class="button-danger"
                             style="margin: 0 !important;"
                         >

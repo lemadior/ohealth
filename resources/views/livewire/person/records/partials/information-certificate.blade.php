@@ -24,8 +24,7 @@
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ __('preperson.label_single') }}</p>
 
                 @php
-                    $barcodeValue = strtoupper($preperson->uuid);
-                    $barcode = new TypeCode128A()->getBarcode($barcodeValue);
+                    $barcode = new TypeCode128A()->getBarcode(strtoupper($preperson->uuid));
                     $barcodeHtml = new DynamicHtmlRenderer()->render($barcode);
                 @endphp
 
@@ -37,8 +36,8 @@
                             {!! $barcodeHtml !!}
                         </div>
                     </div>
-                    <span class="text-xs font-mono uppercase tracking-widest text-gray-900 dark:text-white">
-                        {{ $barcodeValue }}
+                    <span class="text-xs font-mono tracking-widest text-gray-900 dark:text-white">
+                        {{ $preperson->uuid }}
                     </span>
                 </div>
 
@@ -54,6 +53,7 @@
                             [__('forms.second_name') . ':', $preperson->secondName ?: '-'],
                             [__('forms.gender') . ':', $preperson->gender->label()],
                             [__('forms.birth_date') . ':', $preperson->birthDate ?: '-'],
+                            [__('preperson.note') . ':', $preperson->note ?: '-'],
                             [__('preperson.contact_first_name') . ':', $preperson->emergencyContact['first_name'] ?? '-'],
                             [__('preperson.contact_last_name') . ':', $preperson->emergencyContact['last_name'] ?? '-'],
                             [__('preperson.contact_second_name') . ':', $preperson->emergencyContact['second_name'] ?? '-'],

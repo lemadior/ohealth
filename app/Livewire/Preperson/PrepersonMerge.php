@@ -7,6 +7,7 @@ namespace App\Livewire\Preperson;
 use App\Classes\Cipher\Api\CipherRequest;
 use App\Classes\eHealth\EHealth;
 use App\Core\Arr;
+use App\Enums\MergeRequest\Status as MergeRequestStatus;
 use App\Enums\Person\EpisodeStatus;
 use App\Enums\Preperson\Status;
 use App\Exceptions\Cipher\CipherConnectionException;
@@ -22,6 +23,7 @@ use App\Traits\FormTrait;
 use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
@@ -115,6 +117,14 @@ class PrepersonMerge extends Component
      * @var array
      */
     public array $dataToBeSigned = [];
+
+    /**
+     * Whether the doctor confirmed that the patient signed the printed consent form; sent to eHealth as
+     * patient_signed when signing the merge request.
+     *
+     * @var bool
+     */
+    public bool $patientSigned = false;
 
     /**
      * Initialize the merge search drawer for the given preperson.
@@ -215,6 +225,13 @@ class PrepersonMerge extends Component
             return;
         }
 
+        // Only active prepersons can have their records merged.
+        if (Preperson::findOrFail($this->prepersonId)->status !== Status::ACTIVE) {
+            Session::flash('error', __('preperson.policy.merge'));
+
+            return;
+        }
+
         $this->selectedAuthMethodId = $authMethodId;
 
         // eHealth rejects the merge when the preperson has no episodes, so guard it before the request.
@@ -244,7 +261,15 @@ class PrepersonMerge extends Component
 
         $mergeRequest = $response->validate();
 
+        $this->storeMasterPersonLocally();
+
         try {
+            // Cancel any earlier NEW or APPROVED merge requests for this preperson before storing the new one,
+            // so only the latest request stays active.
+            MergeRequest::wherePrepersonId($this->prepersonId)
+                ->whereIn('status', [MergeRequestStatus::NEW->value, MergeRequestStatus::APPROVED->value])
+                ->update(['status' => MergeRequestStatus::CANCELLED->value]);
+
             MergeRequest::create([
                 ...$mergeRequest,
                 'preperson_id' => $this->prepersonId
@@ -425,7 +450,7 @@ class PrepersonMerge extends Component
 
         // The object to sign is the consent document returned by approve; the patient re-reads it and confirms signing.
         $dataToSign = $this->dataToBeSigned;
-        $dataToSign['patient_signed'] = true;
+        $dataToSign['patient_signed'] = $this->patientSigned;
 
         try {
             $signedContent = new CipherRequest()->signData(
@@ -457,14 +482,16 @@ class PrepersonMerge extends Component
         $validated = $response->validate();
 
         try {
-            MergeRequest::whereUuid($this->mergeRequest['uuid'])->update([
-                'status' => $validated['status'],
-                'ehealth_updated_at' => $validated['ehealth_updated_at'],
-                'ehealth_updated_by' => $validated['ehealth_updated_by']
-            ]);
+            DB::transaction(function () use ($validated): void {
+                MergeRequest::whereUuid($this->mergeRequest['uuid'])->update([
+                    'status' => $validated['status'],
+                    'ehealth_updated_at' => $validated['ehealth_updated_at'],
+                    'ehealth_updated_by' => $validated['ehealth_updated_by']
+                ]);
 
-            // eHealth deactivates the preperson once its records are merged into the identified patient.
-            Preperson::whereKey($this->prepersonId)->update(['status' => Status::INACTIVE->value]);
+                // Deactivate the preperson once its records are merged into the identified patient.
+                Preperson::whereKey($this->prepersonId)->update(['status' => Status::INACTIVE->value]);
+            });
         } catch (Throwable $exception) {
             Session::flash('error', __('messages.database_error'));
             report($exception);
@@ -490,6 +517,7 @@ class PrepersonMerge extends Component
         $this->uploadedDocuments = [];
         $this->mergeDocuments = [];
         $this->dataToBeSigned = [];
+        $this->patientSigned = false;
     }
 
     /**
@@ -521,6 +549,41 @@ class PrepersonMerge extends Component
     public function getDocumentLabel(array $document): string
     {
         return __('patients.documents.' . Str::afterLast($document['type'], '.'));
+    }
+
+    /**
+     * Ensure the chosen identified patient exists in the local persons table.
+     *
+     * @return void
+     */
+    private function storeMasterPersonLocally(): void
+    {
+        $patient = collect($this->mergeSearchPatients)->firstWhere('id', $this->selectedPersonId);
+
+        if (empty($patient)) {
+            return;
+        }
+
+        $patient = Arr::toSnakeCase($patient);
+        $personFields = Arr::except($patient, ['id', 'names', 'documents', 'phones']);
+
+        try {
+            $person = Person::firstOrCreate(['uuid' => $this->selectedPersonId], $personFields);
+
+            if ($person->wasRecentlyCreated) {
+                $person->names()->createMany($patient['names']);
+
+                if (!empty($patient['documents'])) {
+                    $person->documents()->createMany($patient['documents']);
+                }
+
+                if (!empty($patient['phones'])) {
+                    $person->phones()->createMany($patient['phones']);
+                }
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**

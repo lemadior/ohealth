@@ -14,4 +14,5 @@ enum Status: string
     case APPROVED = 'APPROVED';
     case SIGNED = 'SIGNED';
     case REJECTED = 'REJECTED';
+    case CANCELLED = 'CANCELLED';
 }

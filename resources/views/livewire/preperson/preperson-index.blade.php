@@ -5,7 +5,27 @@
 <div
     x-data="{
         showCertificate: false,
-        isEditModalOpen: false
+        isEditModalOpen: false,
+        showRegisterDeathModal: false,
+        showRegisterDeathDateModal: false,
+        deathPrepersonId: null,
+        editSnapshot: null,
+        openEdit(id) {
+            this.$wire.startEdit(id).then(() => {
+                this.editSnapshot = JSON.parse(JSON.stringify(this.$wire.get('form.person')));
+                this.isEditModalOpen = true;
+            });
+        },
+        cancelEdit() {
+            this.$wire.set('form.person', this.editSnapshot, false);
+            this.isEditModalOpen = false;
+        },
+        confirmEdit() {
+            this.$wire.saveEdit(this.$wire.get('editingId')).then(() => {
+                this.editSnapshot = JSON.parse(JSON.stringify(this.$wire.get('form.person')));
+                this.isEditModalOpen = false;
+            });
+        }
     }"
 >
     <x-header-navigation class="breadcrumb-form">
@@ -211,26 +231,27 @@
                                                         {{ __('preperson.get_certificate') }}
                                                     </button>
 
-                                                    <button
-                                                        @click="
-                                                            openDropdown = false;
-                                                            $wire.startEdit({{ $preperson->id }}).then(() => isEditModalOpen = true);
-                                                        "
-                                                        class="dropdown-button !flex items-center gap-2 px-4 py-2 text-sm border-b border-gray-100 dark:border-gray-600 w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
-                                                        type="button"
-                                                    >
-                                                        @icon('file-text', 'w-4 h-4')
-                                                        {{ __('patients.edit_data') }}
-                                                    </button>
+                                                    @can('update', $preperson)
+                                                        <button
+                                                            @click="openDropdown = false; openEdit({{ $preperson->id }})"
+                                                            class="dropdown-button !flex items-center gap-2 px-4 py-2 text-sm border-b border-gray-100 dark:border-gray-600 w-full hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer text-left text-gray-700 dark:text-gray-200"
+                                                            type="button"
+                                                        >
+                                                            @icon('file-text', 'w-4 h-4')
+                                                            {{ __('patients.edit_data') }}
+                                                        </button>
+                                                    @endcan
 
-                                                    <button
-                                                        @click=""
-                                                        class="dropdown-button !flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                                                        type="button"
-                                                    >
-                                                        @icon('trash', 'w-4 h-4')
-                                                        {{ __('patients.register_death') }}
-                                                    </button>
+                                                    @can('update', $preperson)
+                                                        <button
+                                                            @click="openDropdown = false; deathPrepersonId = {{ $preperson->id }}; showRegisterDeathModal = true"
+                                                            class="dropdown-button !flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                                            type="button"
+                                                        >
+                                                            @icon('trash', 'w-4 h-4')
+                                                            {{ __('patients.register_death') }}
+                                                        </button>
+                                                    @endcan
                                                 @endif
 
                                                 @can('delete', $preperson)
@@ -276,6 +297,9 @@
     @if($editingId)
         @include('livewire.preperson.modals.edit-preperson')
     @endif
+
+    @include('livewire.preperson.modals.register-death')
+    @include('livewire.preperson.modals.register-death-date')
 
     <livewire:components.x-message :key="now()->timestamp" />
     <x-forms.loading />

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Throwable;
@@ -35,6 +36,7 @@ class PrepersonIndex extends Component
 
     public ?string $searchBirthDate = null;
 
+    #[Locked]
     public ?int $certificatePrepersonId = null;
 
     /**
@@ -42,6 +44,7 @@ class PrepersonIndex extends Component
      *
      * @var int|null
      */
+    #[Locked]
     public ?int $editingId = null;
 
     /**
@@ -98,6 +101,8 @@ class PrepersonIndex extends Component
         $person['emergencyContact']['phones'] ??= [['type' => null, 'number' => null]];
 
         $this->form->person = $person;
+        // the reason is never edited here, but it drives the "newborn requires a contact person" update rule
+        $this->form->reasonContext['reason'] = $preperson->reasonContext['reason'] ?? '';
     }
 
     /**
@@ -167,6 +172,44 @@ class PrepersonIndex extends Component
         $preperson->delete();
 
         Session::flash('success', __('preperson.messages.draft_deleted'));
+    }
+
+    /**
+     * Validate the death date, register it in eHealth (which deactivates the record) and persist the response locally.
+     *
+     * @param  Preperson  $preperson
+     * @return void
+     */
+    public function registerDeath(Preperson $preperson): void
+    {
+        if (Auth::user()->cannot('update', $preperson)) {
+            Session::flash('error', __('preperson.policy.update'));
+
+            return;
+        }
+
+        $validated = $this->form->validate($this->form->rulesForDeath());
+
+        $payload = ['death_date' => convertToYmd($validated['deathDate'])];
+
+        try {
+            $response = EHealth::preperson()->update($preperson->uuid, $payload);
+        } catch (EHealthException|EHealthConnectionException $exception) {
+            $exception->handle('Error when registering a preperson death');
+
+            return;
+        }
+
+        try {
+            $preperson->update($response->validate());
+        } catch (Throwable $exception) {
+            $this->handleDatabaseErrors($exception, 'Failed to register preperson death');
+
+            return;
+        }
+
+        $this->form->reset('deathDate');
+        Session::flash('success', __('preperson.messages.death_registered'));
     }
 
     /**

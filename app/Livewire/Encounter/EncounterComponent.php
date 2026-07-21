@@ -380,7 +380,7 @@ class EncounterComponent extends Component
     {
         return $this->patientModel ??= ($this->prepersonId !== null
             ? Preperson::findOrFail($this->prepersonId)
-            : Person::findOrFail($this->personId));
+            : Person::with('names')->findOrFail($this->personId));
     }
 
     /**
