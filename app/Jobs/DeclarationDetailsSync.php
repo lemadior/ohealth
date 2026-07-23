@@ -96,7 +96,8 @@ class DeclarationDetailsSync extends EHealthJob
 
         Log::info('Processing DeclarationDetailsSync for declaration:' . $this->declaration->id . ', LE:' . ($this->legalEntity->id ?? 'N/A'));
 
-        $person = array_intersect_key($person, array_flip(new Person()->getFillable()));
+        $allowedKeys = [...new Person()->getFillable(), 'first_name', 'last_name', 'second_name'];
+        $person = array_intersect_key($person, array_flip($allowedKeys));
 
         $person['id'] = $person['uuid'];
         $person['addresses'] ??= [];

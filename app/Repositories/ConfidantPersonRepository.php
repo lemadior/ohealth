@@ -39,6 +39,17 @@ class ConfidantPersonRepository
 
             unset($personData['relation_type'], $personData['preferred_way_communication']);
 
+            if (empty($names)) {
+                $names = [[
+                    'language' => 'uk',
+                    'first_name' => $personData['first_name'] ?? null,
+                    'last_name' => $personData['last_name'] ?? null,
+                    'second_name' => $personData['second_name'] ?? null
+                ]];
+            }
+
+            unset($personData['first_name'], $personData['last_name'], $personData['second_name']);
+
             $primaryName = collect($names)->firstWhere('language', 'uk') ?? ($names[0] ?? []);
 
             $query = Person::whereHas('names', static function (Builder $query) use ($primaryName): void {
