@@ -8,8 +8,11 @@ use Log;
 use Throwable;
 use App\Core\Arr;
 use Carbon\Carbon;
+use App\Models\User;
 use App\Enums\Status;
+use RuntimeException;
 use App\Enums\JobStatus;
+use App\Enums\User\Role;
 use App\Models\Relations\Party;
 use App\Classes\eHealth\EHealth;
 use App\Events\EHealthUserLogin;
@@ -118,6 +121,33 @@ class EmployeeCreate
 
                 if (!$employeeRequest) {
                     continue;
+                }
+
+                // If the employee type is OWNER, we need to check if the current owner is different from the one in EHealth.
+                if ($eHealthEmployee['employee_type'] === Role::OWNER->value) {
+                    $currOwner = $event->legalEntity->getOwner();
+
+                    // $currOwner = null when the Legal Entity just created, so we don't need to change anything in this case.
+                    if ($currOwner?->uuid && $currOwner->uuid !== $eHealthEmployee['uuid']) {
+                        $currentOwnerUser = User::find($currOwner->userId);
+
+                        // Just overcautiousness
+                        if ($currentOwnerUser) {
+                            Repository::legalEntity()->setNewOwner($currentOwnerUser, $event->legalEntity);
+                        } else {
+                             Log::error('[EmployeeCreate] User not found for current owner.', [
+                                'user_id' => $currOwner->userId,
+                                'legal_entity_uuid' => $event->legalEntity->uuid,
+                                'employee_uuid' => $eHealthEmployee['uuid'] ?? null,
+                            ]);
+
+                            throw new RuntimeException(
+                                "User not found for current owner with ID: {$currOwner->userId}. " .
+                                "Legal Entity UUID: {$event->legalEntity->uuid}. " .
+                                "Employee UUID: " . ($eHealthEmployee['uuid'] ?? 'null')
+                            );
+                        }
+                    }
                 }
 
                 // If employee has already an associated user, skip attaching because it means it's already created by the stored user (user_id)
