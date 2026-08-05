@@ -368,6 +368,7 @@ return [
                 'number' => 'Серія/номер документа'
             ]
         ],
+        'beneficiary' => 'Бенефіціар',
         // Party
         'party.lastName' => __('forms.last_name'),
         'party.firstName' => __('forms.first_name'),
