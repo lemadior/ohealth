@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\View\Components\Forms;
 
-use App\Classes\eHealth\EHealth;
 use App\Traits\FormTrait;
+use Illuminate\View\Component;
+use App\Classes\eHealth\EHealth;
 use App\Exceptions\EHealth\EHealthConnectionException;
 use App\Exceptions\EHealth\EHealthException;
-use Illuminate\View\Component;
 
 abstract class Addresses extends Component
 {
     use FormTrait;
 
     public bool $readonly;
+
+    public bool $divisionView = false;
 
     public array $address = [];
 
@@ -31,9 +33,18 @@ abstract class Addresses extends Component
     /**
      * Create a new component instance.
      */
-    public function __construct($address, $districts, $settlements, $streets, $class, $readonly = false)
-    {
+    public function __construct(
+        $address,
+        $districts,
+        $settlements,
+        $streets,
+        $class,
+        $readonly = false,
+        $divisionView = false,
+        string $property = 'address'
+    ) {
         $this->readonly = $readonly;
+        $this->divisionView = $divisionView;
 
         $this->address = $address;
 

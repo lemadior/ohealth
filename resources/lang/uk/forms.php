@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+$uuid = 'Унікальний ідентифікатор';
+
 return [
     // General Actions & Navigation
     'home' => 'Головна',
@@ -91,6 +93,7 @@ return [
     'search' => 'Шукати',
     'no_tax_id_document_required' => 'Будь ласка, заповніть номер одного з документів: Паспорт, ID-картка або Посвідчення біженця.',
     'created_at' => 'Дата створення',
+    'inserted_at' => 'Дата створення',
     'created_time' => 'Час створення',
     'created_by' => 'Ким створено',
     'updated_at' => 'Дата оновлення',
@@ -102,6 +105,8 @@ return [
     'start' => 'Початок',
     'end' => 'Кінець',
     'all' => 'Всі',
+    'dont_show_again' => 'Більше не показувати це повідомлення',
+    'uuid' => $uuid,
 
     // Legal Entity
     'institution' => 'Заклад',
@@ -133,6 +138,7 @@ return [
     'reviewed_NHS' => 'Перевірено НСЗУ',
     'verified_NHS' => 'Верифіковано НСЗУ',
     'status_in_the_system' => 'Статус закладу в системі',
+    'status_division' => 'Статус місця надання послуг',
     'state_of_the_NMP' => 'Дані про СГуСОЗ',
     'participation_reorganization' => 'Участь закладу у реорганізації',
     'public_name' => 'Публічна назва',
@@ -261,6 +267,7 @@ return [
 
     // Address
     'le_address' => 'Адреса закладу',
+    'address_type' => 'Тип адреси',
     'address' => 'Адреса',
     'country' => 'Країна',
     'area' => 'Область',
@@ -269,6 +276,7 @@ return [
     'atu' => 'Населений пункт в області',
     'atu_code' => 'Код КОАТУУ',
     'settlement_type' => 'Тип населеного пункту',
+    'settlement_id' => 'ID населеного пункту',
     'street_type' => 'Тип вулиці',
     'street' => 'Вулиця',
     'house' => 'Номер основної будівлі',
@@ -420,7 +428,7 @@ return [
     'edr' => [
         'edrpou' => 'ЄДРПОУ',
         'edrStatus' => 'Стан в ЄДР',
-        'uuid' => 'Унікальний ідентифікатор',
+        'uuid' => $uuid,
         'kved' => 'Дані про коди діяльності (КВЕД)',
         'main_kved' => 'Основний КВЕД',
         'additional_kveds' => 'Додаткові КВЕДи',
