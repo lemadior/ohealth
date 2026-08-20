@@ -71,7 +71,7 @@ class ConnectionPolicy
      */
     public function sync(User $user): Response
     {
-        if ($user->can('connection:read') && $user->can('connection:write')) {
+        if ($user->can('connection:read') && $user->can('connection:write') && $user->can('client:read')) {
             return Response::allow();
         }
 

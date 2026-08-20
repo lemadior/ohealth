@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\LegalEntity\Connections;
 
 use Livewire\Component;
