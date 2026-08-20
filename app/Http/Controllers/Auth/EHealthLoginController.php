@@ -139,7 +139,7 @@ class EHealthLoginController extends Controller
 
         $user->syncPermissions($ehealthScopes);
 
-        EHealthUserLogin::dispatch($user, $legalEntity, $authUserUUID, $this->isFirstLogin, $loginedGuard);
+        EHealthUserLogin::dispatch($user, $legalEntity, $authUserUUID, $ehealthScopes, $this->isFirstLogin, $loginedGuard);
 
         $user->refresh();
 
