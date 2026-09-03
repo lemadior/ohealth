@@ -381,7 +381,7 @@ class PartyVerificationTest extends TestCase
         $mockPartyApi = Mockery::mock(PartyApi::class);
         $mockPartyApi->shouldReceive('getDetails')
             ->with($party->uuid)
-            ->twice()
+            ->times(3)
             ->andReturn($mockResponse);
         $this->instance(PartyApi::class, $mockPartyApi);
 

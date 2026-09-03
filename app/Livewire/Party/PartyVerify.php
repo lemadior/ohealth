@@ -94,13 +94,25 @@ class PartyVerify extends Component
         try {
             $response = EHealth::party()->getDetails($this->party->uuid);
             $data = is_array($response) ? $response : $response->json();
-            $payload = is_array($data['data'] ?? null) ? $data['data'] : $data;
 
-            if (is_array($payload)) {
-                $this->applyVerificationDetailsPayload($payload);
-            } else {
-                $this->verificationDetails = [];
+            $allowedStreams = ['drfo', 'dracs_death', 'dms_passport'];
+
+            if (!empty($data['data']['details']) && is_array($data['data']['details'])) {
+                $data['data']['details'] = array_filter(
+                    $data['data']['details'],
+                    static fn ($key) => in_array($key, $allowedStreams, true),
+                    ARRAY_FILTER_USE_KEY
+                );
+            } elseif (!empty($data['details']) && is_array($data['details'])) {
+                $data['details'] = array_filter(
+                    $data['details'],
+                    static fn ($key) => in_array($key, $allowedStreams, true),
+                    ARRAY_FILTER_USE_KEY
+                );
             }
+
+            $this->verificationDetails = $data['data'] ?? $data;
+
         } catch (\Throwable $e) {
             $this->verificationDetails = [];
         }
@@ -108,7 +120,8 @@ class PartyVerify extends Component
 
     /**
      * Force-sync one party verification via GET /api/parties/{uuid}/verification.
-     * Uses party_verification:details (OWNER/ADMIN/HR) — same endpoint as page load.
+     * Same pattern as EmployeeRequestIndex::syncOne / PartyVerify::updateStatus:
+     * perform eHealth call, persist, then reload UI via loadVerificationDetails().
      */
     public function syncOne(): void
     {
@@ -144,9 +157,9 @@ class PartyVerify extends Component
 
             if (is_array($data)) {
                 PartyVerificationCache::put($this->party->uuid, $data);
-                $this->applyVerificationDetailsPayload($data);
             }
 
+            $this->loadVerificationDetails();
             $this->party->refresh();
 
             $this->dispatch('flashMessage', [
@@ -168,26 +181,6 @@ class PartyVerify extends Component
         } finally {
             $this->isSyncing = false;
         }
-    }
-
-    /**
-     * Filter allowed verification streams and store them for the UI.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    private function applyVerificationDetailsPayload(array $data): void
-    {
-        $allowedStreams = ['drfo', 'dracs_death', 'dms_passport'];
-
-        if (!empty($data['details']) && is_array($data['details'])) {
-            $data['details'] = array_filter(
-                $data['details'],
-                static fn ($key) => in_array($key, $allowedStreams, true),
-                ARRAY_FILTER_USE_KEY
-            );
-        }
-
-        $this->verificationDetails = $data;
     }
 
     public function checkAndOpenModal(): void
