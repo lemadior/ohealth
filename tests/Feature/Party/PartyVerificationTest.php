@@ -361,6 +361,45 @@ class PartyVerificationTest extends TestCase
             });
     }
 
+    public function test_party_verify_sync_one_fetches_details_and_updates_cache(): void
+    {
+        ['legalEntity' => $legalEntity, 'party' => $party] = $this->createVerificationFixture('NOT_VERIFIED');
+
+        $detailResponse = [
+            'verification_status' => 'VERIFIED',
+            'details' => [
+                'drfo' => ['verification_status' => 'VERIFIED'],
+                'dracs_death' => ['verification_status' => 'VERIFIED'],
+                'dms_passport' => ['verification_status' => 'VERIFIED'],
+            ],
+        ];
+
+        $mockResponse = Mockery::mock(EHealthResponse::class);
+        $mockResponse->shouldReceive('json')->andReturn($detailResponse);
+        $mockResponse->shouldReceive('getData')->andReturn($detailResponse);
+
+        $mockPartyApi = Mockery::mock(PartyApi::class);
+        $mockPartyApi->shouldReceive('getDetails')
+            ->with($party->uuid)
+            ->twice()
+            ->andReturn($mockResponse);
+        $this->instance(PartyApi::class, $mockPartyApi);
+
+        Livewire::test(PartyVerify::class, ['legalEntity' => $legalEntity, 'party' => $party])
+            ->call('syncOne')
+            ->assertHasNoErrors()
+            ->assertSet('verificationDetails.verification_status', 'VERIFIED')
+            ->assertDispatched('flashMessage', function (string $eventName, array $params): bool {
+                $payload = isset($params['message']) ? $params : ($params[0] ?? []);
+
+                return ($payload['message'] ?? null) === __('party_verification.messages.sync_one_success')
+                    && ($payload['type'] ?? null) === 'success';
+            });
+
+        $this->assertSame('VERIFIED', $party->fresh()->verification_status);
+        $this->assertSame('VERIFIED', PartyVerificationCache::get($party->uuid)['verification_status'] ?? null);
+    }
+
     public function test_party_verify_normalizes_narrative_reason_codes_to_live_schema(): void
     {
         ['legalEntity' => $legalEntity, 'party' => $party] = $this->createVerificationFixture('NOT_VERIFIED');
