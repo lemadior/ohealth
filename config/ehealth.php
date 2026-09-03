@@ -33,6 +33,11 @@ return [
         'page_size_max' => env('EHEALTH_PAGE_SIZE_MAX', 500)
     ],
 
+    'party_verification' => [
+        // Local parties synced synchronously via getDetails before the rest go to the queue.
+        'details_sync_page_size' => (int) env('EHEALTH_PARTY_VERIFICATION_DETAILS_PAGE_SIZE', 50),
+    ],
+
     'auth' => [
         'delay_seconds' => 900,     // Amount of the seconds to another login attempt
         'max_login_attempts' => 5   // Amount of the wrong attempt before locking out
