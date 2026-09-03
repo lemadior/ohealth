@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace App\Livewire\Party;
 
-use App\Classes\eHealth\EHealth;
+use App\Auth\EHealth\Services\TokenStorage;
+use App\Jobs\PartyVerificationSync;
 use App\Models\LegalEntity;
 use App\Models\Relations\Party;
 use App\Services\Party\PartyVerificationCache;
-use App\Traits\ProcessesPartyVerificationResponses;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Crypt;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Throwable;
 
 class PartyVerificationIndex extends Component
 {
     use AuthorizesRequests;
-    use ProcessesPartyVerificationResponses;
     use WithPagination;
 
     public LegalEntity $legalEntity;
@@ -48,38 +47,36 @@ class PartyVerificationIndex extends Component
             return;
         }
 
+        $user = Auth::user();
+        $tokenScopes = app(TokenStorage::class)->getTokenScopes();
+
+        if (!$user || !in_array(PartyVerificationSync::SCOPE_REQUIRED, $tokenScopes, true)) {
+            session()->flash('error', __('party_verification.messages.sync_requires_read_scope'));
+
+            return;
+        }
+
         $this->isSyncing = true;
 
         try {
-            $parties = Party::query()
-                ->whereHas(
-                    'employees',
-                    fn ($query) => $query->where('legal_entity_id', $this->legalEntity->id)
-                )
-                ->whereNotNull('uuid')
-                ->orderBy('id')
-                ->get();
+            $token = session()->get(config('ehealth.api.oauth.bearer_token'));
 
-            foreach ($parties as $party) {
-                try {
-                    $response = EHealth::party()->getDetails($party->uuid);
+            if (!$token) {
+                session()->flash('error', __('party_verification.messages.sync_requires_ehealth_session'));
 
-                    $this->processPartyVerificationDetail($party->uuid, $response, $this->legalEntity);
-                    $payload = $response->json();
-                    $data = is_array($payload['data'] ?? null) ? $payload['data'] : $payload;
-                    if (is_array($data)) {
-                        PartyVerificationCache::put($party->uuid, $data);
-                    }
-                } catch (Throwable $e) {
-                    Log::warning('Failed to fetch party verification details during sync', [
-                        'party_uuid' => $party->uuid,
-                        'error' => $e->getMessage(),
-                        'user_id' => Auth::id(),
-                    ]);
-                }
+                return;
             }
 
-            session()->flash('success', __('party_verification.messages.sync_success'));
+            Bus::batch([new PartyVerificationSync($this->legalEntity, standalone: true)])
+                ->name('Party Verification Status Sync')
+                ->withOption('legal_entity_id', $this->legalEntity->id)
+                ->withOption('token', Crypt::encryptString($token))
+                ->withOption('user', $user)
+                ->withOption('sync_entity', LegalEntity::ENTITY_PARTY_VERIFICATION)
+                ->onQueue('sync')
+                ->dispatch();
+
+            session()->flash('success', __('party_verification.messages.sync_queued'));
         } finally {
             $this->isSyncing = false;
         }

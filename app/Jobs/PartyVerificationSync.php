@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Classes\eHealth\EHealth;
 use App\Classes\eHealth\EHealthResponse;
 use App\Core\EHealthJob;
+use App\Models\LegalEntity;
 use App\Services\Party\PartyVerificationCache;
 use App\Traits\BatchLegalEntityQueries;
 use App\Traits\ProcessesPartyVerificationResponses;
@@ -22,10 +23,12 @@ class PartyVerificationSync extends EHealthJob
 
     public const string BATCH_NAME = 'PartyVerificationFullSync';
 
-    public const string SCOPE_REQUIRED = 'party_verification:details';
+    public const string SCOPE_REQUIRED = 'party_verification:read';
+
+    public const string ENTITY = LegalEntity::ENTITY_PARTY_VERIFICATION;
 
     /**
-     * Sync via GET /api/parties/verifications (Get Party Verification Statuses List).
+     * Bulk sync via GET /api/parties/verifications (party_verification:read).
      */
     protected function sendRequest(string $token): PromiseInterface|EHealthResponse|null
     {
@@ -54,6 +57,9 @@ class PartyVerificationSync extends EHealthJob
         return [new RateLimited('ehealth-party-verification-get')];
     }
 
+    /**
+     * Handle a job failure.
+     */
     public function failed(Throwable|null $exception): void
     {
         Log::error('Job [PartyVerificationSync] failed.', [
@@ -61,8 +67,13 @@ class PartyVerificationSync extends EHealthJob
             'error' => $exception?->getMessage(),
             'trace' => $exception?->getTraceAsString(),
         ]);
+
+        parent::failed($exception);
     }
 
+    /**
+     * Get next entity job if needed.
+     */
     protected function getNextEntityJob(): ?EHealthJob
     {
         return $this->standalone || !$this->nextEntity

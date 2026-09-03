@@ -138,6 +138,8 @@ class EHealthLoginController extends Controller
             trim(data_get($validatedEHealthTokenData, 'details.scope'))
         );
 
+        app(TokenStorage::class)->storeScopes($ehealthScopes);
+
         $user->syncPermissions($ehealthScopes);
 
         try {

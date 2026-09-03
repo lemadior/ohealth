@@ -6,14 +6,16 @@ namespace Tests\Feature\Party;
 
 use App\Classes\eHealth\Api\Party as PartyApi;
 use App\Classes\eHealth\EHealthResponse;
+use App\Jobs\PartyVerificationSync;
 use App\Livewire\Party\PartyVerificationIndex;
 use App\Livewire\Party\PartyVerify;
 use App\Models\Employee\Employee;
 use App\Models\LegalEntity;
 use App\Models\Relations\Party;
 use App\Models\User;
+use App\Services\Party\PartyVerificationCache;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -118,56 +120,43 @@ class PartyVerificationTest extends TestCase
             ->assertHasNoErrors();
     }
 
-    public function test_verification_index_sync_fetches_details_from_ehealth(): void
+    public function test_verification_index_sync_queues_bulk_job_when_read_scope_present(): void
     {
-        ['legalEntity' => $legalEntity, 'party' => $party] = $this->createVerificationFixture('VERIFICATION_NEEDED');
+        Bus::fake();
 
-        $mockPartyApi = Mockery::mock(PartyApi::class);
-        $this->instance(PartyApi::class, $mockPartyApi);
+        ['legalEntity' => $legalEntity] = $this->createVerificationFixture('VERIFICATION_NEEDED');
 
-        $detailPayload = [
-            'verification_status' => 'NOT_VERIFIED',
-            'details' => [
-                'drfo' => ['verification_status' => 'VERIFIED'],
-                'dracs_death' => ['verification_status' => 'NOT_VERIFIED'],
-            ],
-        ];
+        $tokenKey = config('ehealth.api.oauth.bearer_token');
+        $scopesKey = config('ehealth.api.oauth.token_scopes');
 
-        $mockResponse = Mockery::mock(EHealthResponse::class);
-        $mockResponse->shouldReceive('json')->andReturn($detailPayload);
-
-        $mockPartyApi->shouldReceive('getDetails')
-            ->once()
-            ->with($party->uuid)
-            ->andReturn($mockResponse);
+        $this->withSession([
+            $tokenKey => 'test-token',
+            $scopesKey => ['party_verification:details', 'party_verification:write', PartyVerificationSync::SCOPE_REQUIRED],
+        ]);
 
         Livewire::test(PartyVerificationIndex::class, ['legalEntity' => $legalEntity])
             ->call('sync')
             ->assertHasNoErrors();
 
-        $this->assertSame('NOT_VERIFIED', $party->fresh()->verification_status);
-
-        $cached = Cache::get('party_verification_details:' . $party->uuid);
-        $this->assertSame('NOT_VERIFIED', $cached['details']['dracs_death']['verification_status']);
+        Bus::assertBatched(function ($batch) {
+            return $batch->name === 'Party Verification Status Sync'
+                && count($batch->jobs) === 1
+                && $batch->jobs[0] instanceof PartyVerificationSync
+                && ($batch->options['sync_entity'] ?? null) === LegalEntity::ENTITY_PARTY_VERIFICATION;
+        });
     }
 
-    public function test_verification_index_sync_keeps_local_data_when_api_fails(): void
+    public function test_verification_index_sync_requires_read_scope(): void
     {
-        ['legalEntity' => $legalEntity, 'party' => $party] = $this->createVerificationFixture('VERIFICATION_NEEDED');
+        Bus::fake();
 
-        $mockPartyApi = Mockery::mock(PartyApi::class);
-        $this->instance(PartyApi::class, $mockPartyApi);
-
-        $mockPartyApi->shouldReceive('getDetails')
-            ->with($party->uuid)
-            ->andThrow(new \RuntimeException('API unavailable'));
+        ['legalEntity' => $legalEntity] = $this->createVerificationFixture('VERIFICATION_NEEDED');
 
         Livewire::test(PartyVerificationIndex::class, ['legalEntity' => $legalEntity])
             ->call('sync')
-            ->assertSee($party->fullName)
-            ->assertSeeHtml('VERIFICATION_NEEDED');
+            ->assertHasNoErrors();
 
-        $this->assertSame('VERIFICATION_NEEDED', $party->fresh()->verification_status);
+        Bus::assertNothingBatched();
     }
 
     public function test_party_verify_allows_updating_status(): void
@@ -391,5 +380,28 @@ class PartyVerificationTest extends TestCase
             ->set('comment', '')
             ->call('updateStatus')
             ->assertHasNoErrors();
+    }
+
+    public function test_party_verification_cache_stores_and_retrieves_payload(): void
+    {
+        $partyUuid = (string) Str::uuid();
+        $apiData = [
+            'verification_status' => 'VERIFIED',
+            'details' => [
+                'drfo' => ['verification_status' => 'VERIFIED'],
+                'dracs_death' => ['verification_status' => 'NOT_VERIFIED'],
+                'dms_passport' => ['verification_status' => 'VERIFIED'],
+            ],
+        ];
+
+        PartyVerificationCache::put($partyUuid, $apiData);
+
+        $cached = PartyVerificationCache::get($partyUuid);
+
+        $this->assertNotNull($cached);
+        $this->assertSame('VERIFIED', $cached['verification_status']);
+        $this->assertSame('VERIFIED', $cached['details']['drfo']['verification_status']);
+        $this->assertSame('NOT_VERIFIED', $cached['details']['dracs_death']['verification_status']);
+        $this->assertSame('VERIFIED', $cached['details']['dms_passport']['verification_status']);
     }
 }

@@ -20,9 +20,12 @@ class TokenStorage
 
     protected string $refreshTokenKey = 'refresh_token';
 
+    protected string $tokenScopesKey;
+
     public function __construct()
     {
         $this->tokenKey = config('ehealth.api.oauth.bearer_token');
+        $this->tokenScopesKey = config('ehealth.api.oauth.token_scopes');
     }
 
     /**
@@ -37,6 +40,25 @@ class TokenStorage
         Session::put($this->expiresAtKey, $tokenData['expires_at']);
         Session::put($this->refreshTokenKey, $tokenData['details']['refresh_token']);
         Session::save();
+    }
+
+    /**
+     * @param  list<string>  $scopes
+     */
+    public function storeScopes(array $scopes): void
+    {
+        Session::put($this->tokenScopesKey, array_values(array_filter($scopes)));
+        Session::save();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getTokenScopes(): array
+    {
+        $scopes = Session::get($this->tokenScopesKey, []);
+
+        return is_array($scopes) ? $scopes : [];
     }
 
     public function hasBearerToken(): bool
@@ -71,7 +93,8 @@ class TokenStorage
         Session::forget([
             $this->tokenKey,
             $this->expiresAtKey,
-            $this->refreshTokenKey
+            $this->refreshTokenKey,
+            $this->tokenScopesKey,
         ]);
 
         Session::save();

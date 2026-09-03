@@ -20,6 +20,7 @@ return [
         'auth_ehealth' => env('EHEALTH_CODE_TOKEN', 'user_id_auth_ehealth'),
         'oauth' => [
             'bearer_token' => env('EHEALTH_OAUTH_TOKEN', 'auth_token'),
+            'token_scopes' => env('EHEALTH_OAUTH_TOKEN_SCOPES', 'auth_token_scopes'),
             'tokens' => env('EHEALTH_OAUTH_TOKENS', '/oauth/tokens'),
             'user' => env('EHEALTH_OAUTH_USER', '/oauth/user'),
             'logout' => env('EHEALTH_OAUTH_LOGOUT', '/auth/logout')
