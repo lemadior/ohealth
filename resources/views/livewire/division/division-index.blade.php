@@ -132,6 +132,54 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Filters --}}
+            <div x-cloak x-show="showFilter" class="shift-content form-group group top-3 grow max-w-xs mt-6 pb-4">
+                <div class="flex flex-col gap-4">
+                    <x-forms.multiselect
+                        bind="typeFilter"
+                        :options="$availableTypes"
+                        label="{{ __('forms.select_type') }}"
+                        placeholder="{{ __('forms.select') }}"
+                    />
+
+                    <x-forms.multiselect
+                        bind="searchByUuid"
+                        :options="$divisionUuids"
+                        label="{{ __('forms.select') }}"
+                        placeholder="{{ __('forms.uuid') }}"
+                    />
+
+                    <x-forms.multiselect
+                        bind="statusFilter"
+                        :options="DivisionStatus::entries()"
+                        label="{{ __('forms.status.label') }}"
+                        placeholder="{{ __('forms.select') }}"
+                    />
+                </div>
+            </div>
+
+            {{-- Filter buttons --}}
+            <div class="mb-9 mt-6 flex flex-col sm:flex-row gap-2 w-full">
+                @can('viewAny', Division::class)
+                    <button
+                        type="button"
+                        wire:click.prevent="search"
+                        class="button-primary"
+                    >
+                        @icon('search', 'w-4 h-4')
+                        <span>{{ __('forms.search') }}</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        wire:click="resetFilters"
+                        class="button-primary-outline-red"
+                    >
+                        {{ __('forms.reset_all_filters') }}
+                    </button>
+                @endcan
+            </div>
         </x-slot>
     </x-header-navigation>
 
