@@ -38,13 +38,6 @@ class DivisionView extends DivisionComponent
 
     public string $statusStyle = '';
 
-    #[Locked]
-    public string $divisionUuid = '';
-
-    public string $statusLabel = '';
-
-    public string $statusStyle = '';
-
     public function mount(LegalEntity $legalEntity, Division $division): void
     {
         if (!$division) {
