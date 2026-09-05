@@ -96,9 +96,7 @@ class CapitationContractCreate extends ContractComponent
         $mapped = [];
         foreach ($data['externalContractors'] as $item) {
             // Skip empty rows if any
-            if (empty($item['legalEntityId'])) {
-                continue;
-            }
+            if (empty($item['legalEntityId'])) continue;
 
             $mapped[] = [
                 'legal_entity_id' => $item['legalEntityId'],
@@ -115,7 +113,6 @@ class CapitationContractCreate extends ContractComponent
                 ]
             ];
         }
-
         return $mapped;
     }
 
