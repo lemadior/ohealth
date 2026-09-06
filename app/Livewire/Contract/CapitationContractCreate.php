@@ -115,6 +115,7 @@ class CapitationContractCreate extends ContractComponent
                 ]
             ];
         }
+
         return $mapped;
     }
 
