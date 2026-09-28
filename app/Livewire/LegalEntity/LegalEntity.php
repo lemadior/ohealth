@@ -25,7 +25,7 @@ use App\Events\LegalEntityCreate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use App\Classes\Cipher\Traits\Cipher;
+use App\Classes\Cipher\Api\CipherRequest;
 use Illuminate\Support\Facades\Cache;
 use App\Repositories\PhoneRepository;
 use Illuminate\Http\RedirectResponse;
@@ -297,21 +297,32 @@ abstract class LegalEntity extends Component
 
         Log::info('Legal Entity Success SOURCE DATA', $data);
 
-        // Sending encrypted data
-        $base64Data = $this->sendEncryptedData($data, $taxId, $data['edrpou']);
-
-        // Handle errors from encrypted data
-        if (isset($base64Data['errors'])) {
-            $this->dispatchErrorMessage($base64Data['errors']);
+        try {
+            $base64Data = new CipherRequest()->signData(
+                $data,
+                $this->legalEntityForm->knedp,
+                $this->legalEntityForm->keyContainerUpload,
+                $this->legalEntityForm->password,
+                $taxId,
+                $data['edrpou']
+            )->getBase64Data();
+        } catch (Throwable $exception) {
+            $this->dispatchErrorMessage('Сайфер: ' . $exception->getMessage());
 
             throw new Exception();
         }
 
-        // Prepare data for API request
-        $response = LegalEntitiesRequestApi::_createOrUpdate([
-            'signed_legal_entity_request' => $base64Data,
-            'signed_content_encoding' => 'base64',
-        ]);
+        try {
+            // Prepare data for API request
+            $response = LegalEntitiesRequestApi::_createOrUpdate([
+                'signed_legal_entity_request' => $base64Data,
+                'signed_content_encoding' => 'base64',
+            ]);
+        } catch (Throwable $exception) {
+            $this->dispatchErrorMessage('ЕСОЗ: ' . $exception->getMessage());
+
+            throw new Exception();
+        }
 
         // Handle errors from API request
         if (isset($response['errors']) && is_array($response['errors'])) {
