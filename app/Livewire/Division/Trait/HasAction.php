@@ -6,13 +6,16 @@ namespace App\Livewire\Division\Trait;
 
 use Exception;
 use Throwable;
+use App\Enums\Status;
 use App\Models\Division;
-use App\Enums\Division\Status;
 use App\Classes\eHealth\EHealth;
 use App\Repositories\Repository;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Enums\Division\Status as DivisionStatus;
+use App\Enums\Equipment\Status as EquipmentStatus;
 use App\Exceptions\EHealth\EHealthResponseException;
+use App\Enums\HealthcareService\Status as HealthcareServiceStatus;
 
 trait HasAction
 {
@@ -59,11 +62,11 @@ trait HasAction
             $this->divisionForm->division['status'] = $responseData['status'];
 
             if (property_exists($this, 'statusLabel')) {
-                $this->statusLabel = Status::tryFrom($responseData['status'])?->label() ?? __('forms.unknown');
+                $this->statusLabel = DivisionStatus::tryFrom($responseData['status'])?->label() ?? __('forms.unknown');
             }
 
             if (property_exists($this, 'statusStyle')) {
-                $this->statusStyle = Status::tryFrom($responseData['status'])?->cssClass() ?? 'status-alert-default';
+                $this->statusStyle = DivisionStatus::tryFrom($responseData['status'])?->cssClass() ?? 'status-alert-default';
             }
         } catch (Exception $err) {
             Log::channel('db_errors')->error(static::class . ':activateDivision:', ['message' => $err->getMessage()]);
@@ -93,6 +96,12 @@ trait HasAction
             return;
         }
 
+        if ($validationError = $this->getDeactivationValidationError($division)) {
+            session()->flash('error', $validationError);
+
+            return;
+        }
+
         try {
             $response = EHealth::division()->deactivate($division->uuid);
 
@@ -115,16 +124,43 @@ trait HasAction
             $this->divisionForm->division['status'] = $responseData['status'];
 
             if (property_exists($this, 'statusLabel')) {
-                $this->statusLabel = Status::tryFrom($responseData['status'])?->label() ?? __('forms.unknown');
+                $this->statusLabel = DivisionStatus::tryFrom($responseData['status'])?->label() ?? __('forms.unknown');
             }
 
             if (property_exists($this, 'statusStyle')) {
-                $this->statusStyle = Status::tryFrom($responseData['status'])?->cssClass() ?? 'status-alert-default';
+                $this->statusStyle = DivisionStatus::tryFrom($responseData['status'])?->cssClass() ?? 'status-alert-default';
             }
         } catch (Exception $err) {
             Log::channel('db_errors')->error(static::class . ':deactivateDivision:', ['message' => $err->getMessage()]);
 
             session()->flash('error', __('divisions.errors.deactivate'));
+        }
+    }
+
+    /**
+     * Validate local dependencies before requesting division deactivation from eHealth.
+     */
+    protected function getDeactivationValidationError(Division $division): ?string
+    {
+        // Check that there are no active healthcare services related to this division
+        if ($division->healthcareServices()
+            ->where('status', HealthcareServiceStatus::ACTIVE)
+            ->exists()) {
+            return __('divisions.errors.deactivate_active_healthcare_services');
+        }
+
+        // Check that there are no active employees related to this division
+        if ($division->employees()
+            ->where('status', Status::APPROVED)
+            ->exists()) {
+            return __('divisions.errors.deactivate_active_employees');
+        }
+
+        // Check that there are no active records in equipment table related to this division
+        if ($division->equipments()
+            ->where('status', EquipmentStatus::ACTIVE)
+            ->exists()) {
+            return __('divisions.errors.deactivate_active_equipments');
         }
     }
 

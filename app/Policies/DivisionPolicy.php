@@ -9,7 +9,6 @@ use App\Enums\Status;
 use App\Models\Division;
 use App\Enums\User\Role;
 use App\Models\LegalEntity;
-use App\Models\Employee\Employee;
 use App\Models\HealthcareService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Access\Response;
@@ -180,22 +179,7 @@ class DivisionPolicy
             return Response::denyWithStatus(404);
         }
 
-        // Divisions with at least one active service cannot be deactivated
-        if ($this->hasAnyActiveService($division)) {
-            return Response::deny();
-        }
-
-        // Divisions that have employees cannot be deactivated
-        if (Employee::where('division_id', $division->id)->exists()) {
-            return Response::deny();
-        }
-
-        // Some divisions cannot be deactivated
-        if (
-            $division->status === Status::INACTIVE ||
-            $division->status === Status::DRAFT ||
-            $division->status === Status::UNSYNCED
-        ) {
+        if ($division->status === Status::INACTIVE || $division->status === Status::DRAFT) {
             return Response::deny();
         }
 
