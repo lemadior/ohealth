@@ -335,7 +335,7 @@ trait BatchLegalEntityQueries
         // The incoming $nextEntity will be executed after the whole chain
         $previousJob = $nextEntity;
 
-        $models = EmployeeRequest::filterByLegalEntityId($legalEntity->id)
+        $models = EmployeeRequest::whereHas('legalEntity', fn ($query) => $query->where('edrpou', $legalEntity->edrpou))
             ->filterBySyncStatus(JobStatus::PARTIAL)
             ->get();
 

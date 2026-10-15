@@ -322,6 +322,7 @@ class EmployeeRequestProcessor
 
         $localPendingRequests = EmployeeRequest::query()
             ->where('legal_entity_id', $legalEntity->id)
+            ->where('legal_entity_uuid', $legalEntity->uuid)
             ->whereNull('applied_at')
             ->whereIn('uuid', $eHealthRequests->keys())
             ->with(['revision', 'employee', 'party', 'division'])
@@ -387,7 +388,7 @@ class EmployeeRequestProcessor
         }
 
         // Logic to insert missing requests from eHealth that don't exist locally
-        $localEmployeeRequestUuids = EmployeeRequest::where('legal_entity_id', $legalEntity->id)
+        $localEmployeeRequestUuids = EmployeeRequest::whereIn('uuid', $eHealthRequests->keys())
             ->pluck('uuid')
             ->toArray();
 

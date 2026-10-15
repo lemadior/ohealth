@@ -64,11 +64,22 @@ class EmployeeRequestDetailsUpsert extends EHealthJob
     {
         $validatedData = $response->validate();
 
+        $requestLegalEntity = LegalEntity::where('uuid', $validatedData['legal_entity_uuid'])->first();
+
+        if (!$requestLegalEntity) {
+            Log::info('Discarding EmployeeRequest for unknown legal entity.', [
+                'request_uuid' => $this->employeeRequest->uuid,
+                'legal_entity_uuid' => $validatedData['legal_entity_uuid'],
+            ]);
+
+            $this->employeeRequest->delete();
+
+            return;
+        }
+
         $validatedData['inserted_at'] = Carbon::parse($validatedData['inserted_at'])->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s');
 
-        Log::info('Processing EmployeeRequestDetailsUpsert for employee_request:' . $this->employeeRequest->id . ', LE:' . ($this->legalEntity->id ?? 'N/A'));
-
-        $this->employeeRequest->legalEntityUuid = $this->legalEntity?->uuid;
+        Log::info('Processing EmployeeRequestDetailsUpsert for employee_request:' . $this->employeeRequest->id . ', LE:' . $requestLegalEntity->id);
 
         $userEmail = Arr::get($validatedData, 'party.email');
 
@@ -80,7 +91,7 @@ class EmployeeRequestDetailsUpsert extends EHealthJob
         $isTerminal = in_array($remoteStatus, ['APPROVED', 'REJECTED', 'EXPIRED'], true);
 
         $fillData = array_merge(
-            $response->map($validatedData, $this->legalEntity, $employeeRequestUser?->id ?? null, $employeeRequestPartyId ?? null),
+            $response->map($validatedData, $requestLegalEntity, $employeeRequestUser?->id ?? null, $employeeRequestPartyId ?? null),
             [
                 'sync_status' => JobStatus::COMPLETED->value,
                 'inserted_at' => Carbon::parse($validatedData['inserted_at'])->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s') ?? Carbon::now(),
