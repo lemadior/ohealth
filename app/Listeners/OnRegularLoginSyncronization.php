@@ -39,8 +39,10 @@ class OnRegularLoginSyncronization implements ShouldQueue
 
         echo 'Regular login synchronization checking for ' . 'legalEntity:' . $event->legalEntity->id . PHP_EOL;
 
-        // Find all failed batches for this legal entity and retry them
-        $failedBatches = $this->findFailedBatchesByLegalEntity($event->legalEntity->id, 'ASC');
+        // Retry only failures present at login. A redelivered listener must not
+        // pick up replacement batches that failed with this same login's token.
+        $failedBatches = $this->findFailedBatchesByLegalEntity($event->legalEntity->id, 'ASC')
+            ->whereIn('id', $event->failedSyncBatchIds);
 
         if ($failedBatches->isEmpty()) {
             echo 'No failed batches found for legal entity: ' . $event->legalEntity->id . PHP_EOL;
@@ -78,7 +80,7 @@ class OnRegularLoginSyncronization implements ShouldQueue
      */
     public function failed(EHealthUserLogin $event, Throwable $exception): void
     {
-        $errorMessage = "FirstLoginOwnerSyncronization failed for legal entity ID: {$event->legalEntity->id}";
+        $errorMessage = "OnRegularLoginSyncronization failed for legal entity ID: {$event->legalEntity->id}";
         $errorDetails = "Error: {$exception->getMessage()}";
 
         // Log the error

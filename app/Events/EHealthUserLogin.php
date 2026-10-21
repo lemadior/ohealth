@@ -7,6 +7,7 @@ namespace App\Events;
 use App\Models\User;
 use App\Models\LegalEntity;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Events\Dispatchable;
 use App\Auth\EHealth\Services\TokenStorage;
@@ -22,6 +23,9 @@ class EHealthUserLogin
 
     public string $token = '';
 
+    /** @var list<string> Failed batches eligible for this login, preserved across queue retries. */
+    public array $failedSyncBatchIds = [];
+
     /**
      * @param  User  $user  The user model.
      * @param  LegalEntity  $legalEntity  The legal entity context.
@@ -36,5 +40,14 @@ class EHealthUserLogin
         public string $guard = 'ehealth'
     ) {
         $this->token = Crypt::encryptString(app(TokenStorage::class)->getBearerToken());
+
+        if (!$this->isFirstLogin) {
+            $this->failedSyncBatchIds = DB::table('job_batches')
+                ->where('legal_entity_id', $this->legalEntity->id)
+                ->where('failed_jobs', '>', 0)
+                ->orderBy('cancelled_at')
+                ->pluck('id')
+                ->all();
+        }
     }
 }

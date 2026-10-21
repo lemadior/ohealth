@@ -248,6 +248,28 @@ class PartyVerificationResumeTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function testRedeliveredLoginDoesNotResumeFailuresCreatedAfterThatLogin(): void
+    {
+        $original = $this->failedBatch([new PartyVerificationSync($this->legalEntity)]);
+        $event = new EHealthUserLogin(
+            $this->user, $this->legalEntity, $this->user->uuid, [PartyVerificationSync::SCOPE_REQUIRED]
+        );
+        // Preserve the original queue payload, as happens when a worker times out.
+        $payload = serialize($event);
+        (new OnRegularLoginSyncronization())->handle($event);
+        $this->assertDatabaseMissing('job_batches', ['id' => $original->id]);
+        $this->assertSyncJobsCount(1);
+
+        $replacementFailure = $this->failedBatch([new PartyVerificationSync($this->legalEntity)]);
+        Notification::fake();
+
+        (new OnRegularLoginSyncronization())->handle(unserialize($payload));
+
+        $this->assertDatabaseHas('job_batches', ['id' => $replacementFailure->id, 'failed_jobs' => 1]);
+        $this->assertSyncJobsCount(1);
+        Notification::assertNothingSent();
+    }
+
     public function testDispatchFailureDoesNotDeleteFailedRecords(): void
     {
         $batch = $this->failedBatch([new PartyVerificationSync($this->legalEntity)]);
@@ -368,7 +390,7 @@ class PartyVerificationResumeTest extends TestCase
     {
         return [
             'temporary failure' => [503, 'Temporarily unavailable'],
-            'another forbidden response' => [403, 'Party is not verified'],
+            'rate limit' => [429, 'Too many requests'],
         ];
     }
 

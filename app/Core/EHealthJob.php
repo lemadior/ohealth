@@ -26,6 +26,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use App\Classes\eHealth\EHealthResponse;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Exceptions\EHealth\EHealthResponseException;
 
 abstract class EHealthJob implements ShouldQueue
 {
@@ -125,7 +126,19 @@ abstract class EHealthJob implements ShouldQueue
 
         $this->token = Crypt::decryptString($this->batch()->options['token'] ?? '');
 
-        $response = $this->sendRequest($this->token);
+        try {
+            $response = $this->sendRequest($this->token);
+        } catch (EHealthResponseException $exception) {
+            if (!in_array($exception->getCode(), [401, 403], true) || $this->job === null) {
+                throw $exception;
+            }
+
+            // Authentication and access denials go straight to the failure lifecycle
+            // to select another session or pause. Rate limits retain delayed retries.
+            $this->fail($exception);
+
+            return;
+        }
 
         $this->processResponse($response);
 
