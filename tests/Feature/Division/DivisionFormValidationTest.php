@@ -182,20 +182,28 @@ class DivisionFormValidationTest extends TestCase
     {
         return [
             'arbitrary text' => ['not-a-coordinate', false, 'not-a-coordinate'],
-            'comma decimal' => ['30,52', true, 30.52],
-            'negative comma decimal' => ['-30,52', true, -30.52],
-            'comma zero' => ['0,0', true, 0.0],
+            'comma decimal' => ['30,52', true, '30.52'],
+            'negative comma decimal' => ['-30,52', true, '-30.52'],
+            'comma zero' => ['0,0', true, '0.0'],
             'multiple commas' => ['30,5,2', false, '30,5,2'],
             'mixed separators' => ['30,5.2', false, '30,5.2'],
             'comma with text' => ['30,52degrees', false, '30,52degrees'],
-            'out of range comma decimal' => ['180,1', false, 180.1],
+            'out of range comma decimal' => ['180,1', false, '180.1'],
             'numeric prefix' => ['30.52degrees', false, '30.52degrees'],
             'empty' => ['', false, ''],
             'missing' => [null, false, null],
-            'decimal' => ['30.52', true, 30.52],
-            'negative decimal' => ['-30.52', true, -30.52],
-            'zero' => ['0', true, 0.0],
-            'numeric zero' => [0, true, 0.0],
+            'decimal' => ['30.52', true, '30.52'],
+            'negative decimal' => ['-30.52', true, '-30.52'],
+            'zero' => ['0', true, '0'],
+            'numeric zero' => [0, true, 0],
+            '14 decimal places' => ['30.99999999999999', true, '30.99999999999999'],
+            'long decimal' => ['89.999999999999999999', true, '89.99999999999999'],
+            'long comma decimal' => ['89,999999999999999999', true, '89.99999999999999'],
+            'long negative decimal' => ['-30.999999999999999', true, '-30.99999999999999'],
+            'long fraction' => ['30.1234567890123456789', true, '30.12345678901234'],
+            'scientific notation' => ['3.01234567890123456789e1', true, '30.12345678901234'],
+            'small scientific notation' => ['1.234567890123456789e-10', true, '0.00000000012345'],
+            'below precision' => ['-0.000000000000001', true, '-0.00000000000000'],
         ];
     }
 
@@ -237,7 +245,7 @@ class DivisionFormValidationTest extends TestCase
         }
     }
 
-    public function test_coordinate_updates_round_only_the_changed_axis(): void
+    public function test_coordinate_updates_preserve_all_digits_and_the_other_axis(): void
     {
         foreach ([DivisionCreate::class, DivisionEdit::class] as $componentClass) {
             foreach (['latitude' => 'longitude', 'longitude' => 'latitude'] as $axis => $otherAxis) {
@@ -248,14 +256,15 @@ class DivisionFormValidationTest extends TestCase
                     'longitude' => '30.987654321',
                 ];
                 $component->hydrate();
-                $this->assertSame(50.123456789, $component->divisionForm->division['location']['latitude']);
-                $this->assertSame(30.987654321, $component->divisionForm->division['location']['longitude']);
+                $this->assertSame('50.123456789', $component->divisionForm->division['location']['latitude']);
+                $this->assertSame('30.987654321', $component->divisionForm->division['location']['longitude']);
                 $otherValue = $component->divisionForm->division['location'][$otherAxis];
 
                 $hook = 'updatedDivisionFormDivisionLocation' . ucfirst($axis);
                 $component->$hook('-12,34567891');
+                $component->hydrate();
 
-                $this->assertSame(-12.345679, $component->divisionForm->division['location'][$axis]);
+                $this->assertSame('-12.34567891', $component->divisionForm->division['location'][$axis]);
                 $this->assertSame($otherValue, $component->divisionForm->division['location'][$otherAxis]);
             }
         }

@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Classes\eHealth\Api;
 
-use App\Classes\eHealth\Api\Responses\Collections\DivisionCreate;
-use App\Exceptions\EHealth\EHealthResponseException;
-use App\Exceptions\EHealth\EHealthValidationException;
 use Exception;
+use JsonException;
 use App\Models\LegalEntity;
 use App\Traits\WorkTimeUtilities;
 use Illuminate\Support\Collection;
@@ -16,8 +14,12 @@ use GuzzleHttp\Promise\PromiseInterface;
 use App\Classes\eHealth\EHealthResponse;
 use App\Models\Division as DivisionModel;
 use Illuminate\Support\Facades\Validator;
-use App\Exceptions\EHealth\EHealthConnectionException;
+use App\Dto\Division\Location as LocationData;
 use App\Classes\eHealth\EHealthRequest as Request;
+use App\Exceptions\EHealth\EHealthValidationException;
+use App\Exceptions\EHealth\EHealthResponseException;
+use App\Exceptions\EHealth\EHealthConnectionException;
+use App\Classes\eHealth\Api\Responses\Collections\DivisionCreate;
 
 class Division extends Request
 {
@@ -106,7 +108,9 @@ class Division extends Request
 
         $this->setValidator($this->validateOne(...));
 
-        return parent::patch(self::URL . '/' . $uuid, $data);
+        $this->withBody($this->encodeRequestData($data), 'application/json');
+
+        return parent::patch(self::URL . '/' . $uuid);
     }
 
     /**
@@ -119,7 +123,62 @@ class Division extends Request
     {
         $this->setValidator($this->validateOne(...));
 
-        return parent::post(self::URL, $data);
+        $this->withBody($this->encodeRequestData($data), 'application/json');
+
+        return parent::post(self::URL);
+    }
+
+    /**
+     * Encode validated division data as a JSON request body.
+     *
+     * Coordinate strings accept comma or dot separators and are truncated to 14 decimal
+     * places without rounding. They are written as unquoted JSON numbers, preserving
+     * their digits without converting to float. Other fields use standard JSON encoding.
+     *
+     * Even 14 decimal places do not guarantee exact float representation: converting
+     * '179.99999999999999' to float produces 180 before JSON encoding. Keeping coordinates
+     * as strings until this step prevents that rounding and preserves their decimal digits.
+     *
+     * For example, latitude '30,1234567890123456789' becomes 30.12345678901234 in JSON.
+     * Send the returned JSON through withBody() to avoid encoding it again.
+     *
+     * @param  array<string, mixed>  $data  Validated division data in the eHealth request format.
+     * @return string JSON request body with numeric latitude and longitude values.
+     * @throws JsonException If the request data cannot be encoded as JSON.
+     */
+    protected function encodeRequestData(array $data): string
+    {
+        $body = json_encode($data, JSON_THROW_ON_ERROR);
+
+        // Send up to 14 decimal places as JSON numbers without float conversion.
+        foreach (['latitude', 'longitude'] as $axis) {
+            $originalValue = $data['location'][$axis] ?? null;
+            $value = LocationData::normalizeCoordinate($originalValue);
+
+            if (!\is_string($value) || !\is_numeric($value)) {
+                continue;
+            }
+
+            if (preg_match('/^([+-]?)(\d*)(?:\.(\d*))?([eE][+-]?\d+)?$/D', trim($value), $parts) !== 1) {
+                continue;
+            }
+
+            $number = ($parts[1] === '-' ? '-' : '') . (ltrim($parts[2], '0') ?: '0');
+
+            if (isset($parts[3]) && $parts[3] !== '') {
+                $number .= '.' . $parts[3];
+            }
+
+            $number .= $parts[4] ?? '';
+
+            $body = str_replace(
+                '"' . $axis . '":' . json_encode($originalValue, JSON_THROW_ON_ERROR),
+                '"' . $axis . '":' . $number,
+                $body
+            );
+        }
+
+        return $body;
     }
 
     /**
