@@ -55,8 +55,8 @@
                             id="redirect_url"
                             placeholder=" "
                             class="input peer"
-                            value="{{ $redirectUri }}"
-                            disabled
+                            wire:model="redirectUri"
+                            @disabled(!app()->isLocal())
                         >
                         <label for="redirect_url" class="label">
                             {{ __('legal-entity-connection.callback_url_label') }}

@@ -22,8 +22,6 @@ use App\Enums\LegalEntity\ConnectionStatus;
 use App\Auth\EHealth\Services\TokenStorage;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
-use App\Classes\eHealth\Api\Connection as ConnectionApi;
-use App\Livewire\LegalEntity\Connections\Form\ConnectionForm;
 
 class LegalEntityConnectionCreate extends LegalEntityConnectionComponent
 {
@@ -58,14 +56,9 @@ class LegalEntityConnectionCreate extends LegalEntityConnectionComponent
 
     public string $clientUuid = '';
 
-    #[Locked]
-    public string $redirectUri = '';
-
     public string $clientName = '';
 
     public ?int $clientType = null;
-
-    public ConnectionForm $form;
 
     public array $legalEntityTypes = [];
 
@@ -82,8 +75,6 @@ class LegalEntityConnectionCreate extends LegalEntityConnectionComponent
         parent::mount($legalEntity, $connection);
 
         $this->form->taxId = Auth::user()?->party?->taxId ?? null;
-
-        $this->redirectUri = ConnectionApi::redirectUri();
 
         $this->clientUuid = $this->legalEntity?->clientId ?? '';
 
@@ -123,7 +114,7 @@ class LegalEntityConnectionCreate extends LegalEntityConnectionComponent
         }
 
         $this->clientUuid = $clientUuid;
-        $this->redirectUri = ConnectionApi::redirectUri();
+        $this->redirectUri = $this->resolveRedirectUri();
         $this->clientName = $clientName;
 
         $this->validate($this->form->rulesForCreate(self::LEGAL_ENTITY_TYPES));

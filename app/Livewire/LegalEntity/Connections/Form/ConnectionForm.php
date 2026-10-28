@@ -50,6 +50,13 @@ class ConnectionForm extends Form
         ];
     }
 
+    public function rulesForRedirectUri(): array
+    {
+        return [
+            'redirectUri' => ['required', 'url:http,https'],
+        ];
+    }
+
     protected function validationAttributes(): array
     {
         return [

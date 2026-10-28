@@ -32,7 +32,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
 use App\Classes\eHealth\Api\Connection as ConnectionApi;
-use App\Livewire\LegalEntity\Connections\Form\ConnectionForm;
 
 class LegalEntityConnectionIndex extends LegalEntityConnectionComponent
 {
@@ -50,8 +49,6 @@ class LegalEntityConnectionIndex extends LegalEntityConnectionComponent
     public const string BATCH_SUBNAME = 'ConnectionClientSync';
 
     public bool $showSignatureModal = false;
-
-    public ConnectionForm $form;
 
     #[Locked]
     public array $dataToSign = [

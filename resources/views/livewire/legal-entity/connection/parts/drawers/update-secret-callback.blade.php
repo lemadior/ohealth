@@ -1,8 +1,6 @@
 {{-- Expects: $connection (App\Models\Connection) --}}
 {{-- Requires host x-data with: openUpdateSecretDrawer, isSecretUpdated, openUpdateCallbackDrawer, isCallbackUpdated --}}
 
-@use('App\Classes\eHealth\Api\Connection')
-
 {{-- UPDATE CLIENT SECRET --}}
 @can('updateSecret', $connection)
 <div x-data="{ updatedSecret: '' }"
@@ -258,10 +256,14 @@
                         id="callback_url_input_{{ $connection->uuid }}"
                         class="input peer"
                         placeholder=" "
-                        value="{{ Connection::redirectUri() }}"
-                        disabled
+                        wire:model="redirectUri"
+                        @disabled(!app()->isLocal())
                     >
                     <label for="callback_url_input_{{ $connection->uuid }}" class="label">{{ __('legal-entity-connection.callback_url_label') }}</label>
+
+                    @error('redirectUri')
+                        <p class="text-error">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 

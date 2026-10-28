@@ -21,6 +21,7 @@ use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthConnectionException;
 use App\Exceptions\EHealth\EHealthValidationException;
 use App\Classes\eHealth\Api\Connection as ConnectionApi;
+use App\Livewire\LegalEntity\Connections\Form\ConnectionForm;
 
 class LegalEntityConnectionComponent extends Component
 {
@@ -47,6 +48,10 @@ class LegalEntityConnectionComponent extends Component
      */
     public bool $showSignatureModal = false;
 
+    public string $redirectUri = '';
+
+    public ConnectionForm $form;
+
     /**
      * The legal entity model instance.
      *
@@ -66,6 +71,9 @@ class LegalEntityConnectionComponent extends Component
         $this->legalEntity = $legalEntity ?? request()->route('legalEntity');
 
         $this->legalEntityId = $this->legalEntity?->id;
+
+        // Sets the default (initial) redirect URI for the connection
+        $this->redirectUri = ConnectionApi::redirectUri();
 
         if ($connection) {
             abort_unless($connection->legalEntityId === $this->legalEntityId, 404);
@@ -98,6 +106,20 @@ class LegalEntityConnectionComponent extends Component
         if (!isset($this->legalEntity) && $this->legalEntityId !== null) {
             $this->legalEntity ??= LegalEntity::find($this->legalEntityId);
         }
+    }
+
+    // Resolves the appropriate redirect URI for the connection.
+    // In local environments, it validates the redirect URI from the component's state.
+    // In non-local environments, it uses the default redirect URI from the Connection API.
+    protected function resolveRedirectUri(): string
+    {
+        if (!app()->isLocal()) {
+            return ConnectionApi::redirectUri();
+        }
+
+        $validated = $this->validate($this->form->rulesForRedirectUri());
+
+        return $validated['redirectUri'];
     }
 
     /**
@@ -168,11 +190,13 @@ class LegalEntityConnectionComponent extends Component
             return;
         }
 
+        $redirectUri = $this->resolveRedirectUri();
+
         try {
             $response = EHealth::connection()->updateConnectionRedirectUri(
                 $connection->legalEntity->uuid,
                 $connection->uuid,
-                ConnectionApi::redirectUri()
+                $redirectUri
             );
 
             $connectionData = $response->validate();
