@@ -14,7 +14,7 @@ use App\Traits\ProcessesPartyVerificationResponses;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\Middleware\RateLimited;
-use Illuminate\Queue\SerializesModels;
+use App\Traits\SerializesSyncModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -26,7 +26,7 @@ class PartyVerificationDetailsUpsert extends EHealthJob
 {
     use Dispatchable;
     use ProcessesPartyVerificationResponses;
-    use SerializesModels;
+    use SerializesSyncModels;
 
     public const string BATCH_NAME = 'PartyVerificationDetailsSync';
 

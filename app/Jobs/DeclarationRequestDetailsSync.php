@@ -16,7 +16,7 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Collection;
 use App\Models\DeclarationRequest;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Queue\SerializesModels;
+use App\Traits\SerializesSyncModels;
 use App\Traits\BatchLegalEntityQueries;
 use GuzzleHttp\Promise\PromiseInterface;
 use App\Classes\eHealth\EHealthResponse;
@@ -27,7 +27,7 @@ use App\Exceptions\EHealth\EHealthConnectionException;
 class DeclarationRequestDetailsSync extends EHealthJob
 {
     use Dispatchable;
-    use SerializesModels;
+    use SerializesSyncModels;
     use BatchLegalEntityQueries;
 
     protected const int RATE_LIMIT_DELAY = 4;

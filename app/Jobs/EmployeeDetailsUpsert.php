@@ -16,7 +16,7 @@ use App\Repositories\Repository;
 use App\Classes\eHealth\EHealth;
 use App\Models\Employee\Employee;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Queue\SerializesModels;
+use App\Traits\SerializesSyncModels;
 use App\Classes\eHealth\EHealthResponse;
 use App\Models\Employee\EmployeeRequest;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -27,7 +27,7 @@ use App\Exceptions\EHealth\EHealthConnectionException;
 class EmployeeDetailsUpsert extends EHealthJob
 {
     use Dispatchable;
-    use SerializesModels;
+    use SerializesSyncModels;
 
     public const string BATCH_NAME = 'EmployeeDetailsSync';
 

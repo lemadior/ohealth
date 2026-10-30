@@ -15,7 +15,7 @@ use App\Models\LegalEntity;
 use App\Repositories\Repository;
 use App\Classes\eHealth\EHealth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Queue\SerializesModels;
+use App\Traits\SerializesSyncModels;
 use App\Classes\eHealth\EHealthResponse;
 use App\Enums\Employee\RevisionStatus;
 use App\Models\Employee\EmployeeRequest;
@@ -26,7 +26,7 @@ use Illuminate\Queue\Middleware\RateLimited;
 class EmployeeRequestDetailsUpsert extends EHealthJob
 {
     use Dispatchable;
-    use SerializesModels;
+    use SerializesSyncModels;
 
     public const string BATCH_NAME = 'EmployeeRequestDetailsSync';
 

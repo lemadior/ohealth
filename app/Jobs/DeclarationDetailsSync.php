@@ -19,7 +19,7 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Queue\SerializesModels;
+use App\Traits\SerializesSyncModels;
 use App\Classes\eHealth\EHealthResponse;
 use App\Traits\BatchLegalEntityQueries;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -33,7 +33,7 @@ class DeclarationDetailsSync extends EHealthJob
 {
     use BatchLegalEntityQueries;
     use Dispatchable;
-    use SerializesModels;
+    use SerializesSyncModels;
 
     protected const int RATE_LIMIT_DELAY = 3;
 

@@ -13,7 +13,7 @@ use App\Models\Person\Person;
 use App\Classes\eHealth\EHealth;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Collection;
-use Illuminate\Queue\SerializesModels;
+use App\Traits\SerializesSyncModels;
 use App\Classes\eHealth\EHealthResponse;
 use App\Models\Relations\ConfidantPerson;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Log;
 class ConfidantPersonSync extends EHealthJob
 {
     use Dispatchable;
-    use SerializesModels;
+    use SerializesSyncModels;
 
     protected const int RATE_LIMIT_DELAY = 3;
 
