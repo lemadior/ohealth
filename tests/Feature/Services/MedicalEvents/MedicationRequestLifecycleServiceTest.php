@@ -12,6 +12,7 @@ use App\Models\MedicalEvents\Sql\Encounter;
 use App\Models\MedicalEvents\Sql\Medications\MedicationRequestRequest;
 use App\Models\Person\Person;
 use App\Models\User;
+use App\Repositories\MedicalEvents\Repository as MedicalEventsRepository;
 use App\Services\MedicalEvents\MedicationRequestLifecycleService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -21,8 +22,8 @@ use Illuminate\Support\Str;
 use Mockery;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
-use Tests\Concerns\CreatesFhirRequestIdentifiers;
 use Tests\Concerns\CreatesFhirCarePlans;
+use Tests\Concerns\CreatesFhirRequestIdentifiers;
 use Tests\TestCase;
 
 #[RunClassInSeparateProcess]
@@ -365,6 +366,7 @@ class MedicationRequestLifecycleServiceTest extends TestCase
 
     public function test_find_eligible_encounters_requires_today_period_and_current_performer(): void
     {
+        $this->travelTo(now()->setTime(23, 30));
         $performer = \App\Models\MedicalEvents\Sql\Identifier::create([
             'value' => $this->employee->uuid,
         ]);
@@ -430,7 +432,7 @@ class MedicationRequestLifecycleServiceTest extends TestCase
         $performer = \App\Models\MedicalEvents\Sql\Identifier::create(['value' => $this->employee->uuid]);
         $this->encounter->update(['performer_id' => $performer->id]);
         $period = $this->encounter->period()->create(['start' => $startUtc, 'end' => $startUtc]);
-        $repository = app(\App\Repositories\MedicalEvents\MedicationRequestRepository::class);
+        $repository = MedicalEventsRepository::medicationRequest();
 
         $this->assertTrue($repository->eligibleEncounters($this->person->id, $this->employee->uuid)
             ->contains('id', $this->encounter->id));

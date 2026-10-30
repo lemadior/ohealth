@@ -5,17 +5,15 @@ declare(strict_types=1);
 namespace App\Livewire\DeviceRequest;
 
 use App\Classes\eHealth\EHealth;
-use App\Repositories\CarePlanActivityRepository;
+use App\Exceptions\EHealth\EHealthValidationException;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\DeviceRequestRequest;
 use App\Models\Person\Person;
-use App\Repositories\LegalEntityRepository;
-use App\Repositories\PersonRepository;
+use App\Repositories\MedicalEvents\Repository as MedicalEventsRepository;
+use App\Repositories\Repository;
+use App\Services\Dictionary\DictionaryManager;
 use App\Services\MedicalEvents\DeviceRequestLifecycleService;
 use App\Services\MedicalEvents\EHealthJobResolver;
-use App\Services\Dictionary\DictionaryManager;
-use App\Repositories\MedicalEvents\DeviceRequestRequestRepository;
-use App\Exceptions\EHealth\EHealthValidationException;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -24,8 +22,8 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Locked;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Throwable;
@@ -106,7 +104,7 @@ class DeviceRequestForm extends Component
                 'carePlan' => 'required|integer|min:1',
                 'activity' => 'required|integer|min:1',
             ])->validate();
-            $activity = app(CarePlanActivityRepository::class)->findOwned((int) $context['carePlan'], (int) $context['activity']);
+            $activity = Repository::carePlanActivity()->findOwned((int) $context['carePlan'], (int) $context['activity']);
             abort_unless($activity->carePlan->personId === $person->id, 404);
         }
         $this->request = [
@@ -123,7 +121,7 @@ class DeviceRequestForm extends Component
         $this->request['encounter_uuid'] = $this->encounters[0]['uuid'] ?? '';
 
         try {
-            $this->reasonOptions = app(DeviceRequestRequestRepository::class)->reasonOptions($person);
+            $this->reasonOptions = MedicalEventsRepository::deviceRequest()->reasonOptions($person);
             $basics = app(DictionaryManager::class)->basics();
             $this->units = $basics->byName('device_unit')->asCodeDescription()->all();
             $this->measurementUnits = $basics->contains('name', 'eHealth/ucum/units')
@@ -202,13 +200,13 @@ class DeviceRequestForm extends Component
     #[Computed]
     public function legalEntity(): LegalEntity
     {
-        return app(LegalEntityRepository::class)->getById($this->legalEntityId);
+        return Repository::legalEntity()->getById($this->legalEntityId);
     }
 
     #[Computed]
     public function person(): Person
     {
-        return app(PersonRepository::class)->getById($this->personId);
+        return Repository::person()->getById($this->personId);
     }
 
     public function updatedRequest(mixed $value, string $key): void
@@ -265,7 +263,11 @@ class DeviceRequestForm extends Component
 
     public function searchModels(): void
     {
-        $this->authorize('perform', [DeviceRequestRequest::class, $this->legalEntity, 'device_request:write']);
+        if (Auth::user()->cannot('create', DeviceRequestRequest::class)) {
+            Session::flash('error', __('device-requests.policy.create'));
+
+            return;
+        }
 
         try {
             $this->modelSearch = trim($this->modelSearch);
@@ -296,8 +298,13 @@ class DeviceRequestForm extends Component
 
     public function refreshOptions(): void
     {
+        if (Auth::user()->cannot('create', DeviceRequestRequest::class)) {
+            Session::flash('error', __('device-requests.policy.create'));
+
+            return;
+        }
+
         $service = app(DeviceRequestLifecycleService::class);
-        $this->authorize('perform', [DeviceRequestRequest::class, $this->legalEntity, 'device_request:write']);
 
         try {
             $this->options = $service->prescribingOptions($this->request);
@@ -361,8 +368,13 @@ class DeviceRequestForm extends Component
 
     public function confirmPhone(): void
     {
+        if (Auth::user()->cannot('create', DeviceRequestRequest::class)) {
+            Session::flash('error', __('device-requests.policy.create'));
+
+            return;
+        }
+
         $service = app(DeviceRequestLifecycleService::class);
-        $this->authorize('perform', [DeviceRequestRequest::class, $this->legalEntity, 'device_request:write']);
         $methods = $service->authMethods($this->person);
         $method = collect($methods)->firstWhere('id', $this->request['inform_with']);
 
@@ -406,7 +418,7 @@ class DeviceRequestForm extends Component
                     'requestPayload' => ['data' => $prepared['data'], 'carePlanUuid' => $this->carePlanUuid, 'activityUuid' => $this->activityUuid],
                 ]);
 
-                app(DeviceRequestRequestRepository::class)->store($prepared['data'] + [
+                MedicalEventsRepository::deviceRequest()->store($prepared['data'] + [
                     'employee_id' => $prepared['employee']->id, 'status' => 'draft',
                     'based_on_uuid' => $this->activityUuid, 'context_uuid' => $this->request['encounter_uuid'],
                 ], (int) $this->person->id);
@@ -467,7 +479,7 @@ class DeviceRequestForm extends Component
 
             $service->sync($this->person, $remote);
             Session::flash('success', $service->createdMessage($remote['requisition'], !empty($saved['data']['program_id']), $prepared['authType']));
-            $this->redirectRoute('device-requests.index', ['legalEntity' => $this->legalEntity, 'person' => $this->person]);
+            $this->redirectRoute('persons.device-requests', ['legalEntity' => $this->legalEntity, 'person' => $this->person]);
         } catch (Throwable $exception) {
             $this->refreshOptions();
             $this->reportError($exception);

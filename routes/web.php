@@ -26,7 +26,6 @@ use App\Livewire\ContractRequest\ContractRequestIndex;
 use App\Livewire\ContractRequest\ContractRequestShow;
 use App\Models\Contracts\ContractRequest;
 use App\Livewire\Dashboard;
-use App\Livewire\DeviceRequest\DeviceRequestForm;
 use App\Livewire\DeviceRequest\DeviceRequestIndex;
 use App\Models\MedicalEvents\Sql\DeviceRequestRequest;
 use App\Livewire\Declaration\DeclarationIndex;
@@ -83,6 +82,7 @@ use Illuminate\Support\Facades\Route;
 use App\Livewire\LegalEntity\Connections\LegalEntityConnectionShow;
 use App\Livewire\LegalEntity\Connections\LegalEntityConnectionIndex;
 use App\Livewire\LegalEntity\Connections\LegalEntityConnectionCreate;
+use App\Repositories\Repository;
 
 /*
 |--------------------------------------------------------------------------
@@ -283,12 +283,8 @@ Route::middleware(['auth:ehealth', 'verified'])->group(function () {
             });
 
             // --- Device Requests (Медичні Вироби) ---
-            Route::prefix('device-requests')->name('device-requests.')->group(function () {
-                Route::get('/{person}/create', DeviceRequestForm::class)
-                    ->middleware('can:create,'.DeviceRequestRequest::class.',legalEntity')->name('create');
-                Route::get('/{person?}', DeviceRequestIndex::class)
-                    ->middleware('can:viewAny,'.DeviceRequestRequest::class.',legalEntity')->name('index');
-            });
+            Route::get('/device-requests', DeviceRequestIndex::class)
+                ->can('viewAny', DeviceRequestRequest::class)->name('device-requests.index');
 
             // --- Group of Contracts (Already signed/active) ---
             Route::prefix('contract')->name('contract.')->group(function () {
@@ -340,7 +336,7 @@ Route::middleware(['auth:ehealth', 'verified'])->group(function () {
                 ->name('care-plans.create')
                 ->can('create', \App\Models\CarePlan::class);
             $redirectEncounterCarePlan = static function (\App\Models\LegalEntity $legalEntity, \App\Models\MedicalEvents\Sql\Encounter $encounter) {
-                $person = app(\App\Repositories\CarePlanRepository::class)->findPatient((int) $encounter->person_id) ?? abort(404);
+                $person = Repository::carePlan()->findPatient((int) $encounter->person_id) ?? abort(404);
                 \Illuminate\Support\Facades\Gate::authorize('view', [$encounter, $person]);
 
                 return redirect()->route('care-plans.create-by-encounter', ['legalEntity' => $legalEntity, 'person' => $person, 'encounter' => $encounter]);

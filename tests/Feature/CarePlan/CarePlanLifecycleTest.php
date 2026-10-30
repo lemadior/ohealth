@@ -7,13 +7,14 @@ namespace Tests\Feature\CarePlan;
 use App\Classes\eHealth\Api\Approval;
 use App\Models\CarePlan;
 use App\Models\CarePlanActivity;
-use App\Models\Person\Person;
 use App\Models\MedicalEvents\Sql\Encounter;
+use App\Models\Person\Person;
+use App\Repositories\Repository;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Livewire\Livewire;
-use Tests\TestCase;
-use Tests\Concerns\MocksBasicDictionaries;
 use Mockery;
+use Tests\Concerns\MocksBasicDictionaries;
+use Tests\TestCase;
 
 use Illuminate\Support\Str;
 
@@ -616,7 +617,7 @@ class CarePlanLifecycleTest extends TestCase
         $this->instance(\App\Services\SignatureService::class, $mockSignatureService);
         $this->instance(\App\Classes\eHealth\Api\Job::class, $mockJobApi);
 
-        $snapshot = \App\Core\Arr::toSnakeCase(app(\App\Repositories\CarePlanActivityRepository::class)->getResource($activity->id));
+        $snapshot = \App\Core\Arr::toSnakeCase(Repository::carePlanActivity()->getResource($activity->id));
         $snapshotResponse = Mockery::mock(\App\Classes\eHealth\EHealthResponse::class);
         $snapshotResponse->shouldReceive('getData', 'validate')->andReturn($snapshot);
         $mockActivityApi->shouldReceive('getDetails')->once()->with($this->person->uuid, $carePlan->uuid, $activity->uuid, true)->andReturn($snapshotResponse);
@@ -1367,7 +1368,7 @@ class CarePlanLifecycleTest extends TestCase
 
         Livewire::test(\App\Livewire\CarePlan\CarePlanShow::class, ['carePlan' => $carePlan->fresh()])
             ->call('initReferralForm', $activity->id)
-            ->assertRedirect(route('device-requests.create', [
+            ->assertRedirect(route('persons.device-requests.create', [
                 'legalEntity' => legalEntity(), 'person' => $this->person,
                 'carePlan' => $carePlan->id, 'activity' => $activity->id,
             ]));

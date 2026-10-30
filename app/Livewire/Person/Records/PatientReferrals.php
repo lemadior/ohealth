@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace App\Livewire\Person\Records;
 
-use App\Livewire\Concerns\SubmitsClinicalOperations;
 use App\Classes\eHealth\EHealth as SubmissionApi;
 use App\Core\Arr;
 use App\Core\BaseForm as Form;
 use App\Enums\Person\ServiceRequestStatus;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
+use App\Livewire\Concerns\SubmitsClinicalOperations;
 use App\Models\CarePlan;
 use App\Models\CarePlanActivity;
 use App\Models\MedicalEvents\Sql\DeviceRequestRequest;
 use App\Models\MedicalEvents\Sql\Encounter;
 use App\Models\MedicalEvents\Sql\ServiceRequestRequest;
-use App\Repositories\MedicalEvents\DeviceRequestRequestRepository;
-use App\Repositories\MedicalEvents\ServiceRequestRequestRepository;
+use App\Repositories\MedicalEvents\Repository as MedicalEventsRepository;
 use App\Services\MedicalEvents\Mappers\ServiceRequestMapper;
 use App\Services\MedicalEvents\ReferralRequestLifecycleService;
 use Illuminate\Contracts\View\View;
@@ -98,8 +97,8 @@ class PatientReferrals extends BasePatientComponent
         ];
 
         $rows = array_merge(
-            app(ServiceRequestRequestRepository::class)->searchByPersonId($this->personId, $filters),
-            app(DeviceRequestRequestRepository::class)->searchByPersonId($this->personId, $filters),
+            MedicalEventsRepository::serviceRequest()->searchByPersonId($this->personId, $filters),
+            MedicalEventsRepository::deviceRequest()->searchByPersonId($this->personId, $filters),
         );
 
         usort(
@@ -142,7 +141,7 @@ class PatientReferrals extends BasePatientComponent
     {
         $record = $this->ownedReferral($uuid);
         if ($record instanceof DeviceRequestRequest) {
-            $this->redirectRoute('device-requests.create', ['legalEntity' => legalEntity(), 'person' => $this->patient(), 'draft' => $uuid]);
+            $this->redirectRoute('persons.device-requests.create', ['legalEntity' => legalEntity(), 'person' => $this->patient(), 'draft' => $uuid]);
 
             return;
         }
@@ -192,7 +191,7 @@ class PatientReferrals extends BasePatientComponent
     {
         $record = $this->ownedReferral($uuid);
         if ($record instanceof DeviceRequestRequest) {
-            $this->redirectRoute('device-requests.index', ['legalEntity' => legalEntity(), 'person' => $this->patient()]);
+            $this->redirectRoute('persons.device-requests', ['legalEntity' => legalEntity(), 'person' => $this->patient()]);
 
             return;
         }
@@ -290,7 +289,7 @@ class PatientReferrals extends BasePatientComponent
 
         $record = $this->ownedReferral((string) $this->requestIdToSign);
         if ($record instanceof DeviceRequestRequest) {
-            $this->redirectRoute('device-requests.index', ['legalEntity' => legalEntity(), 'person' => $this->patient()]);
+            $this->redirectRoute('persons.device-requests', ['legalEntity' => legalEntity(), 'person' => $this->patient()]);
 
             return;
         }
@@ -341,7 +340,7 @@ class PatientReferrals extends BasePatientComponent
 
         $requestRecord = $this->ownedReferral((string) $this->requestIdToSign);
         if ($requestRecord instanceof DeviceRequestRequest) {
-            $this->redirectRoute('device-requests.create', ['legalEntity' => legalEntity(), 'person' => $this->patient(), 'draft' => $requestRecord->uuid]);
+            $this->redirectRoute('persons.device-requests.create', ['legalEntity' => legalEntity(), 'person' => $this->patient(), 'draft' => $requestRecord->uuid]);
 
             return;
         }
@@ -438,7 +437,7 @@ class PatientReferrals extends BasePatientComponent
     {
         $record = $this->ownedReferral($uuid);
         if ($record instanceof DeviceRequestRequest) {
-            $this->redirectRoute('device-requests.index', ['legalEntity' => legalEntity(), 'person' => $this->patient()]);
+            $this->redirectRoute('persons.device-requests', ['legalEntity' => legalEntity(), 'person' => $this->patient()]);
 
             return;
         }
