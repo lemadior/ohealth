@@ -10,6 +10,7 @@ use App\Models\Division;
 use App\Models\LegalEntity;
 use App\Models\Relations\Phone;
 use App\Repositories\DivisionRepository;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -84,9 +85,12 @@ class DivisionPersistenceTest extends TestCase
         $this->assertSame('original-license', $saved->dlsId);
     }
 
-    public function test_form_saving_returns_null_for_missing_existing_division(): void
+    public function test_form_saving_rejects_missing_existing_division(): void
     {
-        $this->assertNull($this->formComponent(['id' => PHP_INT_MAX])->saveForm());
+        $this->app->instance('legalEntity', $this->legalEntity());
+        $this->expectException(ModelNotFoundException::class);
+
+        $this->formComponent(['id' => PHP_INT_MAX])->saveForm();
     }
 
     public function test_saves_response_into_existing_draft_and_replaces_relations(): void
@@ -101,7 +105,13 @@ class DivisionPersistenceTest extends TestCase
         $division->addresses()->create($response['addresses'][0]);
         $division->phones()->create(['type' => 'MOBILE', 'number' => '+380501111111']);
 
-        $saved = (new DivisionRepository())->saveMappedDivision($this->mapResponse($response), $division, $entity);
+        $data = $this->mapResponse($response);
+        $saved = app(DivisionRepository::class)->saveMappedDivision(
+            $data->toModel($division),
+            array_map(fn ($address) => $address->toModel(), $data->addresses),
+            array_map(fn ($phone) => $phone->toModel(), $data->phones),
+            $entity
+        );
 
         $this->assertModelExists($saved);
         $this->assertSame($id, $saved->id);
@@ -140,7 +150,12 @@ class DivisionPersistenceTest extends TestCase
         }];
 
         try {
-            (new DivisionRepository())->saveMappedDivision($data, $division, $entity);
+            app(DivisionRepository::class)->saveMappedDivision(
+                $data->toModel($division),
+                array_map(fn ($address) => $address->toModel(), $data->addresses),
+                array_map(fn ($phone) => $phone->toModel(), $data->phones),
+                $entity
+            );
             $this->fail('Expected a related model save failure.');
         } catch (\RuntimeException $exception) {
             $this->assertSame('Cannot save division phone.', $exception->getMessage());

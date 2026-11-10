@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace App\Livewire\Division;
 
-use Arr;
 use Livewire\Component;
 use App\Models\Division;
 use App\Traits\FormTrait;
-use App\Repositories\Repository;
 use App\Traits\WorkTimeUtilities;
 use App\Livewire\Division\Forms\DivisionForm;
-use App\Classes\eHealth\Api\Division as DivisionApi;
+use App\Dto\Division\Ehealth as EhealthData;
+use App\Repositories\Repository;
 use App\Dto\Division\Model as DivisionData;
 use App\Dto\Division\Form as DivisionFormData;
 use App\Dto\Division\Location as DivisionLocationData;
+use App\Dto\Address\Model as AddressData;
+use App\Dto\Phone\Model as PhoneData;
 use App\Models\Relations\Address;
+use App\Models\Relations\Phone;
 use App\Traits\Addresses\AddressSearch;
 use App\Traits\Addresses\ReceptionAddressSearch;
+use Illuminate\Support\Collection;
 use Symfony\Component\ObjectMapper\ObjectMapper;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
@@ -27,24 +30,6 @@ class DivisionComponent extends Component
     use WorkTimeUtilities;
     use AddressSearch;
     use ReceptionAddressSearch;
-
-    /**
-     * The form model instance for handling division data.
-     *
-     * @var DivisionForm
-     */
-    public DivisionForm $divisionForm;
-
-    protected function setDivisionData(Division $division): void
-    {
-        $data = new ObjectMapper(propertyAccessor: PropertyAccess::createPropertyAccessor())
-            ->map($division, DivisionFormData::class);
-
-        $this->divisionForm->setDivision($data->toArray());
-        $this->address = $data->address(Address::DEFAULT_TYPE);
-        $this->receptionAddress = $data->address(Address::RECEPTION_TYPE);
-        $this->divisionForm->showReceptionAddress = $data->hasReceptionAddress();
-    }
 
     /**
      * Array containing dictionary names only used within the component.
@@ -69,6 +54,32 @@ class DivisionComponent extends Component
             $this->divisionForm->division['location'] ?? [],
             $location->toArray()
         );
+    }
+
+    protected function updateLocationCoordinate(string $axis, mixed $value): void
+    {
+        $location = new ObjectMapper(propertyAccessor: PropertyAccess::createPropertyAccessor())
+            ->map(new Collection([$axis => $value]), DivisionLocationData::class);
+
+        $this->divisionForm->division['location'][$axis] = $location->{$axis};
+    }
+
+    /**
+     * The form model instance for handling division data.
+     *
+     * @var DivisionForm
+     */
+    public DivisionForm $divisionForm;
+
+    protected function setDivisionData(Division $division): void
+    {
+        $data = new ObjectMapper(propertyAccessor: PropertyAccess::createPropertyAccessor())
+            ->map($division, DivisionFormData::class);
+
+        $this->divisionForm->setDivision($data->toArray());
+        $this->address = $data->address(Address::DEFAULT_TYPE);
+        $this->receptionAddress = $data->address(Address::RECEPTION_TYPE);
+        $this->divisionForm->showReceptionAddress = $data->hasReceptionAddress();
     }
 
     /**
@@ -103,36 +114,44 @@ class DivisionComponent extends Component
     }
 
     /**
-     * Prepares and normalizes division data for an outgoing API request.
-     *
-     * This method:
-     * - Removes the 'legal_entity_id' key from the division form data (as it is not needed in the request)
-     * - Passes the division data through the schema service for normalization and snake_case conversion
-     * - Removes any empty keys from the resulting array
+     * Map form data and normalize the payload before calling the HTTP client.
      *
      * @return array The normalized and cleaned division data ready for API request
      */
-    protected function prepareRequestData(): array
+    protected function prepareRequestData(?Division $division = null): array
     {
-        // This key as is don't need here. But schema has the same key means the legalEntity_uuid
-        Arr::forget($this->divisionForm->division, 'legal_entity_id');
+        $data = new ObjectMapper(propertyAccessor: PropertyAccess::createPropertyAccessor())
+            ->map($this->divisionForm, EhealthData::class);
 
-        $this->divisionForm->division['addresses'] = array_values($this->divisionForm->division['addresses']);
+        // An explicit empty value clears the external ID of a registered division.
+        if (!empty($division?->uuid) &&
+            \array_key_exists('externalId', $this->divisionForm->division) &&
+            blank($this->divisionForm->division['externalId'])
+        ) {
+            $data->externalId = '';
+        }
 
-        $divisionData = schemaService()
-            ->setDataSchema($this->divisionForm->division, app(DivisionApi::class))
-            ->requestSchemaNormalize('schemaRequest')
-            ->snakeCaseKeys(true)
-            ->getNormalizedData();
+        return $data->toArray();
+    }
 
-        return removeEmptyKeys($divisionData);
+    /**
+     * Prepare unsaved models before passing them to the repository.
+     *
+     * @return array{Division, list<Address>, list<Phone>}
+     */
+    protected function prepareDivisionModels(DivisionData $data, Division $division): array
+    {
+        return [
+            $data->toModel($division),
+            array_map(fn (AddressData $address) => $address->toModel(), $data->addresses),
+            array_map(fn (PhoneData $phone) => $phone->toModel(), $data->phones),
+        ];
     }
 
     /**
      * Store division data to the database
      *
      * @param  Division|null  $division  Existing authorized division, if already loaded
-     *
      * @return null|Division
      */
     protected function saveToDB(?Division $division = null): ?Division
@@ -158,7 +177,8 @@ class DivisionComponent extends Component
             $division ??= new Division();
         }
 
-        $division = Repository::division()->saveMappedDivision($divisionData, $division, legalEntity());
+        [$division, $addresses, $phones] = $this->prepareDivisionModels($divisionData, $division);
+        $division = Repository::division()->saveMappedDivision($division, $addresses, $phones, legalEntity());
         $this->divisionForm->division['id'] = $division->id;
 
         return $division;

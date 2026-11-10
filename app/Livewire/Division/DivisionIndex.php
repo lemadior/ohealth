@@ -9,13 +9,15 @@ use Exception;
 use App\Models\User;
 use App\Enums\JobStatus;
 use App\Models\Division;
+use App\Repositories\Repository;
+use App\Dto\Division\DivisionGetMany as DivisionListData;
 use Illuminate\Bus\Batch;
 use App\Jobs\DivisionSync;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 use App\Models\LegalEntity;
 use Livewire\WithPagination;
 use App\Classes\eHealth\EHealth;
-use App\Repositories\Repository;
 use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +32,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use App\Enums\Division\Status as DivisionStatus;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Exceptions\EHealth\EHealthValidationException;
+use Symfony\Component\ObjectMapper\ObjectMapper;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 
 class DivisionIndex extends DivisionComponent
 {
@@ -266,9 +270,13 @@ class DivisionIndex extends DivisionComponent
         try {
             $response = EHealth::division()->getMany(query: $syncQuery);
 
-            $divisions = $response->validate();
+            $validated = $response->validate();
+            $divisions = new ObjectMapper(propertyAccessor: PropertyAccess::createPropertyAccessorBuilder()
+                ->disableExceptionOnInvalidPropertyPath()
+                ->getPropertyAccessor())
+                ->map(new Collection(['divisions' => $validated]), DivisionListData::class);
 
-            Repository::division()->saveDivisionsList($divisions);
+            Repository::division()->saveDivisionsList($divisions, legalEntity());
         } catch (EHealthResponseException $err) {
             Log::channel('e_health_errors')->error(self::class . ':createDivision', ['error' => $err->getDetails()]);
             session()->flash('error', __('errors.ehealth.messages.server_error'));

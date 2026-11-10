@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Division;
 
 use App\Classes\eHealth\Api\Division as DivisionApi;
-use App\Dto\Division\Model as DivisionData;
 use App\Enums\Status;
 use App\Livewire\Division\DivisionIndex;
 use App\Livewire\Division\Forms\DivisionForm;
@@ -109,16 +108,21 @@ class DivisionDeactivationTest extends TestCase
 
         if ($status === Status::UNSYNCED) {
             $repository->shouldReceive('saveMappedDivision')->once()
-                ->with(Mockery::on(function (DivisionData $data) use ($response): bool {
-                    $this->assertSame('INACTIVE', $data->status);
-                    $this->assertSame('Name from eHealth', $data->name);
-                    $this->assertSame('synced@example.com', $data->email);
-                    $this->assertSame($response['addresses'][0]['settlement_id'], $data->addresses[0]->settlementId);
-                    $this->assertSame('+380501234567', $data->phones[0]->number);
-                    $this->assertEquals($response['working_hours'], $data->workingHours);
+                ->withArgs(function (Division $model, array $addresses, array $phones, LegalEntity $entity) use ($response, $component): bool {
+                    $this->assertSame($component->testDivision, $model);
+                    $this->assertSame(legalEntity(), $entity);
+                    $this->assertSame(Status::INACTIVE, $model->status);
+                    $this->assertSame('Name from eHealth', $model->name);
+                    $this->assertSame('synced@example.com', $model->email);
+                    $this->assertCount(1, $addresses);
+                    $this->assertCount(1, $phones);
+                    $this->assertSame($response['addresses'][0]['settlement_id'], $addresses[0]->settlementId);
+                    $this->assertSame('+380501234567', $phones[0]->number);
+                    $this->assertSame([['08:00', '17:30']], $model->workingHours['mon']);
+                    $this->assertSame([Division::getWorkingTimeTemplate()], $model->workingHours['sun']);
 
                     return true;
-                }), $component->testDivision, legalEntity())->andReturn($component->testDivision);
+                })->andReturn($component->testDivision);
             $repository->shouldNotReceive('setAction');
         } else {
             $repository->shouldReceive('setAction')->once()->with($component->testDivision, 'INACTIVE');
@@ -138,7 +142,7 @@ class DivisionDeactivationTest extends TestCase
         $component = $this->divisionComponent(Status::UNSYNCED);
         $this->mock(DivisionApi::class)->shouldReceive('deactivate')->once()->with('division-uuid')
             ->andThrow(new RuntimeException('eHealth unavailable'))->shouldNotReceive('getDetails');
-        $this->mock(DivisionRepository::class)->shouldNotReceive('saveMappedDivision')->shouldNotReceive('setAction');
+        $this->mock(DivisionRepository::class)->shouldNotReceive('setAction')->shouldNotReceive('saveMappedDivision');
         Log::shouldReceive('channel')->once()->with('e_health_errors')->andReturnSelf();
         Log::shouldReceive('error')->once();
 
@@ -167,7 +171,7 @@ class DivisionDeactivationTest extends TestCase
         $response = $this->response($overrides);
         $component->testDivision->uuid = $response['id'];
         $this->fakeDeactivationResponse($response);
-        $this->mock(DivisionRepository::class)->shouldNotReceive('saveMappedDivision')->shouldNotReceive('setAction');
+        $this->mock(DivisionRepository::class)->shouldNotReceive('setAction')->shouldNotReceive('saveMappedDivision');
 
         $component->deactivate(1);
 

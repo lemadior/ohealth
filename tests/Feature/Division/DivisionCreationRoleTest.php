@@ -9,7 +9,6 @@ use App\Classes\eHealth\Api\Responses\Collections\DivisionCreate as DivisionResp
 use App\Classes\eHealth\EHealthResponse;
 use App\Auth\EHealth\Services\TokenStorage;
 use App\Classes\eHealth\Middleware\CheckSessionToken;
-use App\Dto\Division\Model as DivisionData;
 use App\Enums\User\Role;
 use App\Livewire\Division\DivisionEdit;
 use App\Livewire\Division\Forms\DivisionForm;
@@ -259,7 +258,7 @@ class DivisionCreationRoleTest extends TestCase
         $this->mock(DivisionApi::class)->shouldReceive('update')->times($allowed ? 1 : 0)
             ->with(null, Mockery::type('array'))->andReturn($response);
         $this->mock(DivisionRepository::class)->shouldReceive('saveMappedDivision')->times($allowed ? 1 : 0)
-            ->with(Mockery::type(DivisionData::class), $division, legalEntity())->andReturn($division);
+            ->with($division, [], [], legalEntity())->andReturn($division);
 
         $component = new class extends DivisionEdit
         {

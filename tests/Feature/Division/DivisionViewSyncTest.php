@@ -7,7 +7,6 @@ namespace Tests\Feature\Division;
 use App\Classes\eHealth\Api\Division as DivisionApi;
 use App\Classes\eHealth\Api\Responses\Collections\DivisionCreate;
 use App\Classes\eHealth\EHealthResponse;
-use App\Dto\Division\Model as DivisionData;
 use App\Livewire\Division\DivisionView;
 use App\Models\Division;
 use App\Models\LegalEntity;
@@ -75,13 +74,19 @@ class DivisionViewSyncTest extends TestCase
         $division = Division::where('uuid', $component->divisionUuid)->firstOrFail();
         $this->mockResponse($component);
         $this->mock(DivisionRepository::class)->shouldReceive('saveMappedDivision')->once()
-            ->with(Mockery::on(function (DivisionData $data): bool {
-                $this->assertSame('Synchronized division', $data->name);
-                $this->assertSame('settlement-uuid', $data->addresses[0]->settlementId);
-                $this->assertSame('+380501234567', $data->phones[0]->number);
+            ->withArgs(function (Division $model, array $addresses, array $phones, LegalEntity $entity) use ($division): bool {
+                $this->assertTrue($model->is($division));
+                $this->assertSame(legalEntity(), $entity);
+                $this->assertSame('Synchronized division', $model->name);
+                $this->assertCount(1, $addresses);
+                $this->assertCount(1, $phones);
+                $this->assertSame('settlement-uuid', $addresses[0]->settlementId);
+                $this->assertSame('+380501234567', $phones[0]->number);
+                $this->assertFalse($addresses[0]->exists);
+                $this->assertFalse($phones[0]->exists);
 
                 return true;
-            }), Mockery::on(fn (Division $model): bool => $model->is($division)), legalEntity())
+            })
             ->andReturn($division)
             ->shouldNotReceive('syncDivisionData');
 

@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace Tests\Unit\eHealth\Api;
 
 use App\Classes\eHealth\Api\Division;
+use App\Dto\Division\Location;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
+use Symfony\Component\ObjectMapper\ObjectMapper;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 
 class DivisionCoordinatePayloadTest extends TestCase
 {
@@ -52,9 +56,12 @@ class DivisionCoordinatePayloadTest extends TestCase
             . '"location":{"latitude":' . $expectedLatitude . ',"longitude":' . $expectedLongitude . '}}';
         $api = $this->fakeApi($expected);
 
-        $api->create($data);
-        $api->update('division-uuid', $data);
-        $api->update(null, $data);
+        $location = new ObjectMapper(propertyAccessor: PropertyAccess::createPropertyAccessor())
+            ->map(new Collection($data['location']), Location::class);
+        $payload = array_replace($data, ['location' => $location->toArray()]);
+        $api->create($payload);
+        $api->update('division-uuid', $payload);
+        $api->update(null, $payload);
 
         Http::assertSentCount(3);
     }
@@ -71,6 +78,14 @@ class DivisionCoordinatePayloadTest extends TestCase
         ];
     }
 
+    public function test_http_client_serializes_decimal_numbers_without_applying_precision_rules(): void
+    {
+        $this->fakeApi('{"location":{"latitude":30.1234567890123456789,"longitude":50.324231234567890123456789}}')
+            ->create(['location' => ['latitude' => '30.1234567890123456789', 'longitude' => '50.324231234567890123456789']]);
+
+        Http::assertSentCount(1);
+    }
+
     #[DataProvider('optionalLocations')]
     public function test_preserves_optional_location_values(array $data, string $expected): void
     {
@@ -79,7 +94,7 @@ class DivisionCoordinatePayloadTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    private function fakeApi(string $expected): Division
+    protected function fakeApi(string $expected): Division
     {
         config(['ehealth.api.domain' => 'https://ehealth.example']);
         Http::fake(function (Request $request) use ($expected) {

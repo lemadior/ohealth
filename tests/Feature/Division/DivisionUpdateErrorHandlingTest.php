@@ -7,7 +7,6 @@ namespace Tests\Feature\Division;
 use App\Classes\eHealth\Api\Division as DivisionApi;
 use App\Classes\eHealth\Api\Responses\Collections\DivisionCreate as DivisionResponse;
 use App\Classes\eHealth\EHealthResponse;
-use App\Dto\Division\Model as DivisionData;
 use App\Exceptions\EHealth\EHealthValidationException;
 use App\Livewire\Division\DivisionEdit;
 use App\Livewire\Division\Forms\DivisionForm;
@@ -128,7 +127,7 @@ class DivisionUpdateErrorHandlingTest extends TestCase
                 return true;
             }))->andReturn($response);
         $this->mock(DivisionRepository::class)->shouldReceive('saveMappedDivision')->once()
-            ->with(Mockery::type(DivisionData::class), $division, legalEntity())->andReturn($division);
+            ->with($division, [], [], legalEntity())->andReturn($division);
 
         $component->runUpdate($division);
 
@@ -153,7 +152,7 @@ class DivisionUpdateErrorHandlingTest extends TestCase
         $this->mock(DivisionApi::class)->shouldReceive('update')->once()
             ->with('division-uuid', Mockery::on(function (array $payload): bool {
                 $this->assertSame('Updated division', $payload['name']);
-                $this->assertSame(['latitude' => 0, 'longitude' => 0], $payload['location']);
+                $this->assertSame(['latitude' => '0', 'longitude' => '0'], $payload['location']);
                 $this->assertSame([['08.00', '17.30']], $payload['working_hours']['mon']);
                 $this->assertSame([], $payload['working_hours']['sun']);
                 $this->assertSame('settlement-uuid', $payload['addresses'][0]['settlement_id']);
@@ -162,13 +161,19 @@ class DivisionUpdateErrorHandlingTest extends TestCase
                 return true;
             }))->andReturn($response);
         $this->mock(DivisionRepository::class)->shouldReceive('saveMappedDivision')->once()
-            ->with(Mockery::on(function (DivisionData $data): bool {
-                $this->assertSame('API division', $data->name);
-                $this->assertSame('settlement-uuid', $data->addresses[0]->settlementId);
-                $this->assertSame('+380501234567', $data->phones[0]->number);
+            ->withArgs(function (Division $model, array $addresses, array $phones, LegalEntity $entity) use ($division): bool {
+                $this->assertSame($division, $model);
+                $this->assertSame(legalEntity(), $entity);
+                $this->assertSame('API division', $model->name);
+                $this->assertCount(1, $addresses);
+                $this->assertCount(1, $phones);
+                $this->assertSame('settlement-uuid', $addresses[0]->settlementId);
+                $this->assertSame('+380501234567', $phones[0]->number);
+                $this->assertFalse($addresses[0]->exists);
+                $this->assertFalse($phones[0]->exists);
 
                 return true;
-            }), $division, legalEntity())->andReturn($division);
+            })->andReturn($division);
 
         $component->runUpdate($division);
 
@@ -191,7 +196,12 @@ class DivisionUpdateErrorHandlingTest extends TestCase
         $division->id = 42;
         $this->mockResponse(uuid: null);
         $this->mock(DivisionRepository::class)->shouldReceive('saveMappedDivision')->once()
-            ->with(Mockery::type(DivisionData::class), $division, legalEntity())->andReturn($division);
+            ->with(
+                $division,
+                Mockery::on(fn (array $addresses): bool => count($addresses) === 1 && $addresses[0]->settlementId === 'settlement-uuid'),
+                Mockery::on(fn (array $phones): bool => count($phones) === 1 && $phones[0]->number === '+380501234567'),
+                legalEntity()
+            )->andReturn($division);
 
         $component->runUpdate($division);
 

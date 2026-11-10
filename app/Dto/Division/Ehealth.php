@@ -8,8 +8,6 @@ use App\Models\Division;
 use App\Dto\EhealthMapping;
 use App\Livewire\Division\Forms\DivisionForm;
 use Symfony\Component\ObjectMapper\Attribute\Map;
-use Symfony\Component\ObjectMapper\ObjectMapper;
-use Symfony\Component\PropertyAccess\PropertyAccess;
 
 /**
  * Division payload in the format expected by the eHealth API.
@@ -40,27 +38,12 @@ class Ehealth
     public array $phones = [];
 
     /** @var array{latitude: float|int|string|null, longitude: float|int|string|null}|null */
-    #[Map(source: 'division[location]')]
+    #[Map(source: 'division[location]', transform: [Location::class, 'normalizeLocation'])]
     public ?array $location = null;
 
     /** @var array<string, array<int, array<int, string>>> */
     #[Map(source: 'division[workingHours]', transform: [self::class, 'transformWorkingHours'])]
     public array $workingHours = [];
-
-    public static function fromForm(DivisionForm $form, ?Division $division = null): self
-    {
-        $data = new ObjectMapper(propertyAccessor: PropertyAccess::createPropertyAccessor())->map($form, self::class);
-
-        // An explicit empty string clears the external ID of a registered division.
-        if (!empty($division?->uuid) &&
-            \array_key_exists('externalId', $form->division) &&
-            blank($form->division['externalId'])
-        ) {
-            $data->externalId = '';
-        }
-
-        return $data;
-    }
 
     public static function normalizeExternalId(?string $value): ?string
     {

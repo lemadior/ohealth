@@ -8,11 +8,11 @@ use Auth;
 use Exception;
 use Throwable;
 use App\Models\Division;
+use App\Repositories\Repository;
 use App\Models\LegalEntity;
 use App\Enums\Status;
 use Livewire\Attributes\Locked;
 use App\Classes\eHealth\EHealth;
-use App\Repositories\Repository;
 use App\Dto\Division\Model as DivisionData;
 use Symfony\Component\ObjectMapper\ObjectMapper;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -113,7 +113,8 @@ class DivisionView extends DivisionComponent
                 ->getPropertyAccessor())
                 ->map($divisionData, DivisionData::class);
 
-            Repository::division()->saveMappedDivision($divisionModelMapped, $division, legalEntity());
+            [$division, $addresses, $phones] = $this->prepareDivisionModels($divisionModelMapped, $division);
+            Repository::division()->saveMappedDivision($division, $addresses, $phones, legalEntity());
         } catch (Throwable $err) {
             Log::channel('db_errors')->error(self::class . ':sync', ['error' => $err->getMessage()]);
             session()->flash('error', __('errors.database.messages.save_error'));

@@ -7,7 +7,6 @@ namespace Tests\Feature\Division;
 use App\Classes\eHealth\Api\Division as DivisionApi;
 use App\Classes\eHealth\Api\Responses\Collections\DivisionCreate as DivisionResponse;
 use App\Classes\eHealth\EHealthResponse;
-use App\Dto\Division\Model as DivisionData;
 use App\Livewire\Division\DivisionCreate;
 use App\Livewire\Division\Forms\DivisionForm;
 use App\Models\Division;
@@ -137,7 +136,7 @@ class DivisionCreateErrorHandlingTest extends TestCase
         $division = new Division();
         $this->mockResponse();
         $this->mock(DivisionRepository::class)->shouldReceive('saveMappedDivision')->once()
-            ->with(Mockery::on(fn (DivisionData $data): bool => $data->uuid === 'division-uuid'), $division, legalEntity())
+            ->with(Mockery::on(fn (Division $model): bool => $model === $division && $model->uuid === 'division-uuid'), [], [], legalEntity())
             ->andReturn($division);
 
         $component->runCreation($division);

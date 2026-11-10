@@ -93,7 +93,7 @@ class Model implements ModelContract
     public array $phones = [];
 
     #[Map(if: false)]
-    private bool $isForm = false;
+    protected bool $isForm = false;
 
     public static function fromForm(self $value, DivisionForm $source): self
     {
@@ -124,6 +124,30 @@ class Model implements ModelContract
     public static function wrapFormItems(?array $items): array
     {
         return collect($items)->map(fn (array $item): FormCollection => new FormCollection($item))->values()->all();
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [
+            'uuid' => $this->uuid,
+            'name' => $this->name,
+            'type' => $this->type,
+            'email' => $this->email,
+            'status' => $this->status,
+            'external_id' => $this->externalId,
+            'mountain_group' => $this->mountainGroup,
+            'location' => $this->location,
+            'working_hours' => $this->workingHours,
+            'dls_id' => $this->dlsId,
+            'dls_verified' => $this->dlsVerified,
+            'ehealth_inserted_at' => $this->ehealthInsertedAt,
+            'inserted_by' => $this->insertedBy,
+            'ehealth_updated_at' => $this->ehealthUpdatedAt,
+            'updated_by' => $this->updatedBy,
+            'addresses' => array_map(fn (AddressData $address): array => $address->toArray(), $this->addresses),
+            'phones' => array_map(fn (PhoneData $phone): array => $phone->toArray(), $this->phones),
+        ];
     }
 
     public function toModel(?Division $division = null): Division

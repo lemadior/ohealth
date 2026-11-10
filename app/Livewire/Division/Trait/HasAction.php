@@ -151,7 +151,8 @@ trait HasAction
             // and apply the returned status, matching the data-loss warning shown to the user.
             if ($divisionData !== null) {
                 $divisionData->status = $responseData['status'];
-                Repository::division()->saveMappedDivision($divisionData, $division, legalEntity());
+                [$division, $addresses, $phones] = $this->prepareDivisionModels($divisionData, $division);
+                Repository::division()->saveMappedDivision($division, $addresses, $phones, legalEntity());
                 $this->setDivisionData($division);
             } else {
                 Repository::division()->setAction($division, $responseData['status']);
