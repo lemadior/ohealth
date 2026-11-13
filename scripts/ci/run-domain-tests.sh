@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run PHPUnit suites owned for:
-# Employee · Party · Care Plan · Care Plan Activity · ePrescription · Service Request · Device Request · Healthcare Service
+# Employee · Party · Declaration · Care Plan · Care Plan Activity · ePrescription · Service Request · Device Request · Healthcare Service
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -53,6 +53,7 @@ DOMAIN_PATHS=(
   tests/Unit/eHealth/Api/ConfigurationQueryTest.php
   tests/Feature/Employee
   tests/Feature/Party
+  tests/Feature/Declaration
   tests/Feature/CarePlan
   tests/Feature/CarePlanActivityPayloadTest.php
   tests/Feature/Encounter/EncounterDocumentPagesTest.php

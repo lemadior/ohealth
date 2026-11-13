@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Person\Person;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -11,17 +12,13 @@ use Illuminate\Support\Facades\Auth;
 class HomeController extends Controller
 {
     /**
-     * Map of scopes to routes.
+     * Fallback routes when the patient registry is unavailable.
      * The order defines priority: the script checks from top to bottom.
      *
      * Key: The eHealth scope to check.
      * Value: The route name to redirect to.
      */
     protected const array SCOPE_REDIRECT_MAP = [
-        // 1. Priority: Doctor / Specialist
-        // If user can create person requests (e.g., register patients) -> redirect to patient list.
-        'person_request:write' => 'persons.index',
-
         // 2. Priority: HR
         // If user can create/write employee requests -> redirect to employee list.
         'employee_request:write' => 'employee.index',
@@ -72,8 +69,11 @@ class HomeController extends Controller
             return redirect()->route('legalEntity.select');
         }
 
-        // 2. Iterate through the Priority Map
-        // We strictly check scopes. The first match determines the destination.
+        if ($user->can('viewAny', Person::class)) {
+            return redirect()->route('persons.index', ['legalEntity' => $le->id]);
+        }
+
+        // 2. Select the first fallback route supported by the user's scopes.
         foreach (self::SCOPE_REDIRECT_MAP as $scope => $route) {
             if ($user->can($scope)) {
                 return redirect()->route($route, ['legalEntity' => $le->id]);
