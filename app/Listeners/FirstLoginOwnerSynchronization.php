@@ -65,6 +65,7 @@ class FirstLoginOwnerSynchronization implements ShouldQueue
             ->withOption('legal_entity_id', $event->legalEntity->id)
             ->withOption('token', $event->token) // Here token is encrypted
             ->withOption('user', $user)
+            ->withOption('token_scopes', $event->scopes)
             ->withOption('sync_entity', '') // Complete the overall sync only after the final job.
             ->onQueue('sync')
             ->dispatch();

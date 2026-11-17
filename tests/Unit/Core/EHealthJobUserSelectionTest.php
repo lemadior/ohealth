@@ -145,7 +145,7 @@ class EHealthJobUserSelectionTest extends TestCase
 
     private function job(): DivisionSync
     {
-        return new class($this->legalEntity) extends DivisionSync {
+        return new class($this->legalEntity, standalone: true) extends DivisionSync {
             public function pick(User $user, ?string $revokedToken = null, array $rejectedTokenHashes = []): ?User
             {
                 return $this->getUserWithActiveSession($user, $revokedToken, $rejectedTokenHashes);

@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Classes\eHealth\Api\Contract as ApiContract;
 use App\Classes\eHealth\EHealthResponse;
 use App\Core\EHealthJob;
+use App\Policies\ContractPolicy;
 use App\Models\LegalEntity;
 use App\Repositories\Repository;
 use App\Traits\BatchLegalEntityQueries;
@@ -19,6 +20,7 @@ class ContractSync extends EHealthJob
 
     public const string BATCH_NAME = 'ContractSync';
     public const string SCOPE_REQUIRED = 'contract:read';
+    public const array SCOPES_REQUIRED = ContractPolicy::SYNC_SCOPES;
     public const string ENTITY = LegalEntity::ENTITY_CONTRACT;
 
     /**

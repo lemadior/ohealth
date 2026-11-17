@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\CarePlan\Concerns;
 
 use App\Traits\SynchronizesCarePlans;
+use App\Auth\EHealth\Services\TokenStorage;
 
 use App\Livewire\CarePlan\Forms\CarePlanActivityForm;
 use App\Livewire\CarePlan\Forms\CarePlanForm;
@@ -818,6 +819,9 @@ trait CarePlanManager
 
             return;
         }
+        $tokenScopes = app(TokenStorage::class)->getTokenScopes();
+        $syncApprovals = in_array('approval:read', $tokenScopes, true) && Auth::user()->can('approval:read');
+
         $batch = Bus::batch([new CarePlanFullSync(
             legalEntity(),
             standalone: true,
@@ -826,14 +830,15 @@ trait CarePlanManager
                 'patient_uuid' => $this->carePlan->person->uuid,
                 'person_id' => $this->carePlan->personId,
                 'patient_care_plan_registry' => true,
-                'care_plan_approvals' => true,
+                'care_plan_approvals' => $syncApprovals,
             ],
         )])
             ->withOption('legal_entity_id', legalEntity()->id)
             ->withOption('patient_uuid', $this->carePlan->person->uuid)
             ->withOption('person_id', $this->carePlan->personId)
             ->withOption('patient_care_plan_registry', true)
-            ->withOption('care_plan_approvals', true)
+            ->withOption('care_plan_approvals', $syncApprovals)
+            ->withOption('token_scopes', $tokenScopes)
             ->withOption('sync_entity', LegalEntity::ENTITY_CARE_PLAN)
             ->withOption('token', Crypt::encryptString($token))
             ->withOption('user', Auth::user())

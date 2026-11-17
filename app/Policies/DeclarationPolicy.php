@@ -17,10 +17,10 @@ use Illuminate\Auth\Access\Response;
 class DeclarationPolicy
 {
     // The full chain also reads declaration requests and patient authentication methods.
-    protected const array SYNC_SCOPES = [
+    public const array SYNC_SCOPES = [
         'declaration:read',
         'declaration_request:read',
-        'person:read'
+        'person:read',
     ];
 
     /**

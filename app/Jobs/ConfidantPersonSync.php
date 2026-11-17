@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Exceptions\EHealth\EHealthConnectionException;
 use Throwable;
 use App\Core\EHealthJob;
+use App\Policies\DeclarationPolicy;
 use App\Enums\JobStatus;
 use App\Models\LegalEntity;
 use App\Models\Person\Person;
@@ -29,6 +30,8 @@ class ConfidantPersonSync extends EHealthJob
     public const string BATCH_NAME = 'ConfidantPersonSync';
 
     public const string SCOPE_REQUIRED = 'person:read';
+
+    public const array SCOPES_REQUIRED = DeclarationPolicy::SYNC_SCOPES;
 
     public const string ENTITY = LegalEntity::ENTITY_DECLARATION;
 

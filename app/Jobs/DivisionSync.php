@@ -18,6 +18,8 @@ class DivisionSync extends EHealthJob
 
     public const string SCOPE_REQUIRED = 'division:read';
 
+    public const array SCOPES_REQUIRED = [self::SCOPE_REQUIRED, HealthcareServiceSync::SCOPE_REQUIRED];
+
     public const string ENTITY = LegalEntity::ENTITY_DIVISION;
 
     // Get data from EHealth API
@@ -70,5 +72,10 @@ class DivisionSync extends EHealthJob
                 $this->nextEntity,
                 $this->isFirstLogin
             );
+    }
+
+    protected function requiredScopes(): array
+    {
+        return $this->standalone ? [self::SCOPE_REQUIRED] : parent::requiredScopes();
     }
 }

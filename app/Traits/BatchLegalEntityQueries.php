@@ -9,6 +9,7 @@ use Closure;
 use Exception;
 use App\Models\User;
 use App\Core\EHealthJob;
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Enums\JobStatus;
 use App\Models\LegalEntity;
 use App\Models\EhealthLink;
@@ -19,6 +20,7 @@ use App\Models\Employee\Employee;
 use App\Jobs\ConnectionClientSync;
 use App\Models\DeclarationRequest;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use App\Jobs\PersonAuthMethodSync;
 use Illuminate\Support\Facades\Bus;
@@ -129,21 +131,29 @@ trait BatchLegalEntityQueries
      * @param  Closure|null  $beforeDispatch  Runs in the restart transaction before the new batch is dispatched, so the
      *                                        status it sets can't overwrite a completion made by a fast worker and is
      *                                        rolled back together with the restart on a dispatch error
+     * @param  array|null  $tokenScopes  Scopes granted to the replacement token (captured at login for queued calls)
      * @return bool False when the batch has no pending jobs and nothing was restarted
      */
-    protected function restartBatch(stdClass $batch, User $user, string $token, ?LegalEntity $legalEntity = null, ?Closure $beforeDispatch = null): bool
+    protected function restartBatch(
+        stdClass $batch,
+        User $user,
+        string $token,
+        ?LegalEntity $legalEntity = null,
+        ?Closure $beforeDispatch = null,
+        ?array $tokenScopes = null): bool
     {
         $legalEntity ??= legalEntity();
+        $tokenScopes ??= app(TokenStorage::class)->getTokenScopes();
 
         // Extraction of the failed payloads, dispatch of the new batch and removal of the old one are applied all together,
         // so a dispatch error doesn't lose the jobs
-        return DB::transaction(function () use ($batch, $user, $token, $legalEntity, $beforeDispatch): bool {
+        return DB::transaction(function () use ($batch, $user, $token, $legalEntity, $beforeDispatch, $tokenScopes): bool {
             // The lock prevents the same failed batch from being restarted twice concurrently
             if (!DB::table('job_batches')->where('id', $batch->id)->lockForUpdate()->exists()) {
                 return false;
             }
 
-            $pendingJobs = $this->extractPendingJobsFromBatches($batch);
+            $pendingJobs = $this->extractPendingJobsFromBatches($batch, delete: false);
 
             if (empty($pendingJobs)) {
                 // Here do echo only into the job context where legalEntity() is not set
@@ -154,9 +164,24 @@ trait BatchLegalEntityQueries
                 return false;
             }
 
+            foreach ($pendingJobs as $job) {
+                if ($job instanceof EHealthJob && $job->validatesTokenScopes() && !$job->canRunWithScopes($tokenScopes)) {
+                    Log::info('Sync batch not resumed: replacement token lacks required scopes.', [
+                        'batch_id' => $batch->id,
+                        'batch_name' => $batch->name,
+                        'legal_entity_id' => $legalEntity->id,
+                        'user_id' => $user->id,
+                    ]);
+
+                    return false;
+                }
+            }
+
             $beforeDispatch?->__invoke();
 
-            $this->restartFailedBatch($user, $batch, $token, $legalEntity, $pendingJobs);
+            $this->restartFailedBatch($user, $batch, $token, $legalEntity, $pendingJobs, $tokenScopes);
+
+            DB::table('failed_jobs')->whereIn('uuid', json_decode($batch->failed_job_ids, true) ?? [])->delete();
 
             return true;
         });
@@ -219,19 +244,27 @@ trait BatchLegalEntityQueries
      * @return void
      * @throws Exception If batch creation or deletion fails
      */
-    protected function restartFailedBatch(User $user, stdClass $batch, string $token, LegalEntity $legalEntity, array $pendingJobs): void
+    protected function restartFailedBatch(User $user, stdClass $batch, string $token, LegalEntity $legalEntity, array $pendingJobs, ?array $tokenScopes = null): void
     {
+        // Restored payloads may retain the old user; the replacement batch owns the execution context.
+        foreach ($pendingJobs as $job) {
+            if ($job instanceof EHealthJob) {
+                $job->user = null;
+            }
+        }
+
         $batchOptions = Bus::batch($pendingJobs)
             ->name($batch->name)
             ->withOption('legal_entity_id', $legalEntity->id)
             ->withOption('token', $token) // Here token is encrypted
             ->withOption('user', $user)
+            ->withOption('token_scopes', $tokenScopes)
             ->onQueue('sync');
 
         $oldOptions = app(BatchRepository::class)->find($batch->id)?->options ?? [];
 
         // The patient context is read by the patient jobs from the batch options, so it must survive the restart
-        foreach (['sync_entity', 'patient_uuid', 'person_id', 'preperson_id', 'has_patient_access'] as $option) {
+        foreach (['sync_entity', 'patient_uuid', 'person_id', 'preperson_id', 'has_patient_access', 'patient_care_plan_registry', 'care_plan_approvals'] as $option) {
             if (($oldOptions[$option] ?? null) !== null) {
                 $batchOptions->withOption($option, $oldOptions[$option]);
             }
@@ -266,9 +299,10 @@ trait BatchLegalEntityQueries
      * Extract pending jobs from failed batch by recreating job instances from failed_jobs table
      *
      * @param  stdClass  $batch  The batch record from job_batches table
+     * @param  bool  $delete  Remove extracted payloads; restartBatch defers this until authorization and dispatch succeed
      * @return array Array of unserialized job instances ready for re-dispatch
      */
-    protected function extractPendingJobsFromBatches(stdClass $batch): array
+    protected function extractPendingJobsFromBatches(stdClass $batch, bool $delete = true): array
     {
         $pendingJobs = [];
 
@@ -294,7 +328,9 @@ trait BatchLegalEntityQueries
             }
 
             // Remove the job from failed_jobs table to prevent reprocessing
-            DB::table('failed_jobs')->where('id', $job->id)->delete();
+            if ($delete) {
+                DB::table('failed_jobs')->where('id', $job->id)->delete();
+            }
         }
 
         return $pendingJobs;

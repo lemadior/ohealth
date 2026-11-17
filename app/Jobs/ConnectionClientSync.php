@@ -20,7 +20,9 @@ class ConnectionClientSync extends EHealthJob
 {
     public const string BATCH_NAME = 'ConnectionClientSync';
 
-    public const string SCOPE_REQUIRED = 'connection:read';
+    public const string SCOPE_REQUIRED = 'client:read';
+
+    public const array SCOPES_REQUIRED = [self::SCOPE_REQUIRED];
 
     public const string ENTITY = LegalEntity::ENTITY_CONNECTION;
 

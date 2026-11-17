@@ -7,6 +7,7 @@ namespace App\Jobs;
 use Throwable;
 use RuntimeException;
 use App\Core\EHealthJob;
+use App\Policies\ConnectionPolicy;
 use App\Models\LegalEntity;
 use App\Classes\eHealth\EHealth;
 use App\Repositories\Repository;
@@ -22,6 +23,8 @@ class ConnectionSync extends EHealthJob
     public const string BATCH_NAME = 'ConnectionSync';
 
     public const string SCOPE_REQUIRED = 'connection:read';
+
+    public const array SCOPES_REQUIRED = ConnectionPolicy::SYNC_SCOPES;
 
     public const string ENTITY = LegalEntity::ENTITY_CONNECTION;
 
@@ -89,5 +92,10 @@ class ConnectionSync extends EHealthJob
         return $this->standalone
             ? new CompleteSync($this->legalEntity, isFirstLogin: $this->isFirstLogin)
             : $this->getConnectionClientsDataJob($this->legalEntity, $this->nextEntity);
+    }
+
+    protected function requiredScopes(): array
+    {
+        return $this->standalone ? [self::SCOPE_REQUIRED] : parent::requiredScopes();
     }
 }

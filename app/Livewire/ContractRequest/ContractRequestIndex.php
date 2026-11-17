@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\ContractRequest;
 
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Classes\eHealth\EHealth;
 use App\Enums\JobStatus;
 use App\Jobs\ContractRequestDetailsUpsert;
@@ -139,6 +140,7 @@ class ContractRequestIndex extends Component
                 ->withOption('legal_entity_id', $currentLegalEntity->id)
                 ->withOption('token', $encryptedToken)
                 ->withOption('user', $user)
+                ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                 ->withOption('sync_entity', LegalEntity::ENTITY_CONTRACT_REQUEST)
                 ->catch(function (Batch $batch, \Throwable $e) use ($user) {
                     Log::error('ContractRequest batch failed.', ['err' => $e->getMessage()]);
@@ -160,6 +162,7 @@ class ContractRequestIndex extends Component
                     ->withOption('legal_entity_id', $currentLegalEntity->id)
                     ->withOption('token', $encryptedToken)
                     ->withOption('user', $user)
+                    ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                     ->withOption('sync_entity', LegalEntity::ENTITY_CONTRACT_REQUEST)
                     ->catch(function (Batch $batch, \Throwable $e) use ($user) {
                         Log::error('ContractRequest details batch failed.', ['err' => $e->getMessage()]);

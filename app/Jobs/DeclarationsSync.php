@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Core\EHealthJob;
+use App\Policies\DeclarationPolicy;
 use App\Enums\User\Role;
 use App\Models\LegalEntity;
 use App\Models\Employee\Employee;
@@ -19,6 +20,8 @@ class DeclarationsSync extends EHealthJob
     public const string BATCH_NAME = 'DeclarationsSync';
 
     public const string SCOPE_REQUIRED = 'declaration:read';
+
+    public const array SCOPES_REQUIRED = DeclarationPolicy::SYNC_SCOPES;
 
     public const string ENTITY = LegalEntity::ENTITY_DECLARATION;
 

@@ -29,7 +29,11 @@ class CarePlanSyncResumeContextTest extends TestCase
         $job = unserialize(serialize(new CarePlanFullSync($legalEntity, page: 2, standalone: true, patientContext: $context)));
         [$job, $batch] = $job->withFakeBatch();
         // The shared login restart only transfers credentials and the legal entity.
-        $batch->options = ['token' => Crypt::encryptString('fresh-token'), 'legal_entity_id' => 2];
+        $batch->options = [
+            'token' => Crypt::encryptString('fresh-token'),
+            'token_scopes' => ['care_plan:read'],
+            'legal_entity_id' => 2,
+        ];
 
         $response = Mockery::mock(EHealthResponse::class);
         $response->shouldReceive('validate')->once()->andReturn([['id' => 'plan-uuid']]);

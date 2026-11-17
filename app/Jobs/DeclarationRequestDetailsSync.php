@@ -7,6 +7,7 @@ namespace App\Jobs;
 use Throwable;
 use App\Core\Arr;
 use App\Core\EHealthJob;
+use App\Policies\DeclarationPolicy;
 use App\Enums\JobStatus;
 use App\Models\LegalEntity;
 use App\Models\Person\Person;
@@ -33,6 +34,8 @@ class DeclarationRequestDetailsSync extends EHealthJob
     public const string BATCH_NAME = 'DeclarationRequestDetailsSync';
 
     public const string SCOPE_REQUIRED = 'declaration_request:read';
+
+    public const array SCOPES_REQUIRED = DeclarationPolicy::SYNC_SCOPES;
 
     public const string ENTITY = LegalEntity::ENTITY_DECLARATION;
 

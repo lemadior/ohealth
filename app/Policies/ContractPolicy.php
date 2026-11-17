@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Models\Contracts\Contract;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
 class ContractPolicy
 {
+    public const array SYNC_SCOPES = ['contract:read', 'contract_request:read'];
+
     /**
      * Determine whether the user can view any contracts.
      */
@@ -54,10 +57,14 @@ class ContractPolicy
      */
     public function sync(User $user): Response
     {
-        if ($user->can('contract:read') || $user->can('contract_request:read')) {
-            return Response::allow();
+        $tokenScopes = app(TokenStorage::class)->getTokenScopes();
+
+        foreach (self::SYNC_SCOPES as $scope) {
+            if ($user->cannot($scope) || !in_array($scope, $tokenScopes, true)) {
+                return Response::deny(__('contracts.policy.sync_denied'));
+            }
         }
 
-        return Response::deny(__('contracts.policy.sync_denied'));
+        return Response::allow();
     }
 }

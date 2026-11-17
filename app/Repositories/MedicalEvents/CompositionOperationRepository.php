@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\MedicalEvents;
 
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Enums\Composition\CompositionAsyncOperation;
 use App\Enums\Composition\CompositionJobStatus;
 use App\Enums\JobStatus;
@@ -102,6 +103,7 @@ class CompositionOperationRepository extends BaseRepository
             ->withOption('legal_entity_id', $legalEntity->id)
             ->withOption('token', \Illuminate\Support\Facades\Crypt::encryptString($token))
             ->withOption('user', $user)
+            ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
             ->name(\App\Jobs\CompositionAsyncProcessing::BATCH_NAME)->onQueue('sync')->dispatch();
     }
 

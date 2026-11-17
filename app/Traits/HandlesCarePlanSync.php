@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Traits;
 
 use App\Classes\eHealth\EHealth;
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Exceptions\EHealth\EHealthResponseException;
 use App\Jobs\CarePlanFullSync;
 use App\Models\Person\Person;
@@ -75,6 +76,7 @@ trait HandlesCarePlanSync
                 ->withOption('patient_care_plan_registry', true)
                 ->withOption('token', Crypt::encryptString($token))
                 ->withOption('user', $user)
+                ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                 ->then(static function (Batch $batch) use ($userId): void {
                     $denied = (int) Cache::get('care-plan-sync-denied:'.$batch->id, 0);
                     User::find($userId)?->notify($denied > 0

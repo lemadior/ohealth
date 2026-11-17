@@ -14,6 +14,8 @@ use App\Auth\EHealth\Services\TokenStorage;
 
 class ConnectionPolicy
 {
+    public const array SYNC_SCOPES = ['connection:read', 'client:read'];
+
     /**
      * Determine whether the user can view any connection.
      */
@@ -118,14 +120,15 @@ class ConnectionPolicy
      */
     public function sync(User $user): Response
     {
-        if (
-            $user->can('connection:read') &&
-            $user->can('client:read')
-        ) {
-            return Response::allow();
+        $tokenScopes = app(TokenStorage::class)->getTokenScopes();
+
+        foreach (self::SYNC_SCOPES as $scope) {
+            if ($user->cannot($scope) || !in_array($scope, $tokenScopes, true)) {
+                return Response::denyWithStatus(404);
+            }
         }
 
-        return Response::denyWithStatus(404);
+        return Response::allow();
     }
 
     /**
@@ -134,8 +137,7 @@ class ConnectionPolicy
     public function syncConnection(User $user, Connection $connection): Response
     {
         if (
-            $user->can('connection:read') &&
-            $user->can('client:read') &&
+            $this->sync($user)->allowed() &&
             $connection->legalEntityId === legalEntity()->id &&
             $connection->status === ConnectionStatus::ACTIVE->value
         ) {

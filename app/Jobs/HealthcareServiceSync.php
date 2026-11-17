@@ -21,6 +21,8 @@ class HealthcareServiceSync extends EHealthJob
 
     public const string SCOPE_REQUIRED = 'healthcare_service:read';
 
+    public const array SCOPES_REQUIRED = [self::SCOPE_REQUIRED];
+
     public const string ENTITY = LegalEntity::ENTITY_HEALTHCARE_SERVICE;
 
     /**

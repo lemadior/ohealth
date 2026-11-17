@@ -34,6 +34,8 @@ class CarePlanFullSync extends PatientEHealthJob
 
     public const string SCOPE_REQUIRED = 'care_plan:read';
 
+    public const array SCOPES_REQUIRED = [self::SCOPE_REQUIRED];
+
     public const string ENTITY = LegalEntity::ENTITY_CARE_PLAN;
 
     public $queue = 'care-plans';
@@ -98,6 +100,12 @@ class CarePlanFullSync extends PatientEHealthJob
         $this->patientUuid = $options['patient_uuid'] ?? null;
         $this->personId = $options['person_id'] ?? null;
         $this->token = Crypt::decryptString($options['token'] ?? '');
+        $this->user ??= $options['user'] ?? null;
+
+        if (!$this->ensureTokenScopes()) {
+            return;
+        }
+
         $response = $this->sendRequest($this->token);
         $this->processResponse($response);
 
@@ -242,5 +250,14 @@ class CarePlanFullSync extends PatientEHealthJob
         return [
             new RateLimited('ehealth-encounter-get') // Or a specific rate limiter if we have one for care plans
         ];
+    }
+
+    protected function requiredScopes(): array
+    {
+        $options = ($this->batch()?->options ?? []) + $this->patientContext;
+
+        return ($options['care_plan_approvals'] ?? false)
+            ? [...parent::requiredScopes(), 'approval:read']
+            : parent::requiredScopes();
     }
 }

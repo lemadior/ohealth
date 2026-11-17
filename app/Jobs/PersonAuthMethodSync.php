@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Core\EHealthJob;
+use App\Policies\DeclarationPolicy;
 use App\Models\LegalEntity;
 use App\Models\Person\Person;
 use App\Classes\eHealth\EHealth;
@@ -18,6 +19,8 @@ class PersonAuthMethodSync extends EHealthJob
     public const string BATCH_NAME = 'PersonAuthMethodSync';
 
     public const string SCOPE_REQUIRED = 'person:read';
+
+    public const array SCOPES_REQUIRED = DeclarationPolicy::SYNC_SCOPES;
 
     public const string ENTITY = LegalEntity::ENTITY_DECLARATION;
 

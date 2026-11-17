@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Division\HealthcareService;
 
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Exceptions\EHealth\EHealthConnectionException;
 use App\Exceptions\EHealth\EHealthException;
 use Exception;
@@ -377,6 +378,7 @@ class HealthcareServiceIndex extends Component
             ->withOption('legal_entity_id', legalEntity()->id)
             ->withOption('token', Crypt::encryptString($token))
             ->withOption('user', $user)
+            ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
             ->withOption('sync_entity', LegalEntity::ENTITY_HEALTHCARE_SERVICE)
             ->catch(function (Batch $batch, Throwable $exception) use ($user) {
                 Log::error('Healthcare Service sync batch failed.', [

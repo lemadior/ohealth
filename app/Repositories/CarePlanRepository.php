@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Repositories\Repository;
 use App\Enums\CarePlanStatusFilter;
 use App\Enums\CarePlanCompletenessFilter;
@@ -1183,6 +1184,9 @@ class CarePlanRepository extends MedicalEventsBaseRepository
             ])->withOption('legal_entity_id', $legalEntity->id)
                 ->withOption('token', Crypt::encryptString($bearerToken))
                 ->withOption('user', $user)
+                ->withOption('token_scopes', app(TokenStorage::class)->getBearerToken() === $bearerToken
+                    ? app(TokenStorage::class)->getTokenScopes()
+                    : null)
                 ->name(CarePlanInpatientApprovalProcessing::BATCH_NAME)->onQueue('sync')->dispatch();
             $requestData['inpatientApproval'] = ['status' => 'queued', 'linkId' => null, 'batchId' => $batch->id];
             $job->update(['request_data' => $requestData]);

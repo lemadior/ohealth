@@ -9,6 +9,7 @@ use App\Classes\eHealth\EHealthResponse;
 use App\Core\EHealthJob;
 use App\Enums\JobStatus;
 use App\Enums\Composition\CompositionJobStatus;
+use App\Enums\Composition\CompositionAsyncOperation;
 use App\Models\LegalEntity;
 use App\Models\MedicalEvents\Sql\CompositionOperation;
 use App\Repositories\MedicalEvents\Repository;
@@ -23,6 +24,8 @@ class CompositionAsyncProcessing extends EHealthJob
     public const string BATCH_NAME = 'CompositionAsyncProcessing';
 
     public const string SCOPE_REQUIRED = 'composition:read';
+
+    public const array SCOPES_REQUIRED = [self::SCOPE_REQUIRED];
 
     public int $maxExceptions = 3;
 
@@ -69,7 +72,8 @@ class CompositionAsyncProcessing extends EHealthJob
 
     protected function setEntityStatus(JobStatus $status): void
     {
-        if (!in_array($status, [JobStatus::FAILED, JobStatus::PAUSED], true)) {
+        // Missing credentials leave the remote operation pending so a saved job can resume it.
+        if ($status !== JobStatus::FAILED) {
             return;
         }
 
@@ -81,5 +85,15 @@ class CompositionAsyncProcessing extends EHealthJob
         $response = $this->operation->job->response_data ?? [];
         $response['errors'] = ($response['errors'] ?? []) ?: [__('compositions.errors.async_processing_failed')];
         Repository::compositionOperation()->fail($this->operation, $response);
+    }
+
+    protected function requiredScopes(): array
+    {
+        $knownUuid = $this->operation->composition?->uuid
+            ?? ($this->operation->job?->response_data['compositionUuid'] ?? null);
+
+        return $this->operation->operation === CompositionAsyncOperation::CREATE && $knownUuid === null
+            ? [...parent::requiredScopes(), 'composition:search']
+            : parent::requiredScopes();
     }
 }

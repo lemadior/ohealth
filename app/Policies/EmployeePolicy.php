@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Enums\Status;
 use App\Enums\User\Role;
 use App\Models\Employee\Employee;
@@ -12,6 +13,8 @@ use Illuminate\Auth\Access\Response;
 
 class EmployeePolicy
 {
+    public const array SYNC_SCOPES = ['employee:read', 'employee:details'];
+
     public function viewAny(User $user): Response
     {
         return ($user->can('employee:read') || $user->hasElevatedEmployeeRole())
@@ -75,14 +78,19 @@ class EmployeePolicy
 
     /**
      * Determine whether the user can sync the employee with eHealth.
-     * This allows users with 'employee:read' permission only to sync employees
-     * (read an employees data from eHealth and save it to MIS database).
+     * The full synchronization reads both the employee list and employee details.
      */
     public function sync(User $user): Response
     {
-        return $user->can('employee:read')
-            ? Response::allow()
-            : Response::deny(__('employees.policy.emp.update_denied'));
+        $tokenScopes = app(TokenStorage::class)->getTokenScopes();
+
+        foreach (self::SYNC_SCOPES as $scope) {
+            if ($user->cannot($scope) || !in_array($scope, $tokenScopes, true)) {
+                return Response::deny(__('employees.policy.emp.update_denied'));
+            }
+        }
+
+        return Response::allow();
     }
 
     /**

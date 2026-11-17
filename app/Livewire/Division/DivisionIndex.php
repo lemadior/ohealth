@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use App\Models\LegalEntity;
 use Livewire\WithPagination;
 use App\Classes\eHealth\EHealth;
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Repositories\Repository;
 use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Bus;
@@ -301,6 +302,7 @@ class DivisionIndex extends DivisionComponent
                 ->withOption('legal_entity_id', legalEntity()->id)
                 ->withOption('token', Crypt::encryptString($token))
                 ->withOption('user', $user)
+                ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                 ->withOption('sync_entity', LegalEntity::ENTITY_DIVISION)
                 ->catch(callback: function (Batch $batch, Throwable $e) use ($user) {
                     Log::error('Division sync batch failed.', [

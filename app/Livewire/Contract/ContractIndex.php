@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Contract;
 
 use App\Classes\eHealth\EHealth;
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Enums\Contract\ContractStatus;
 use App\Enums\JobStatus;
 use App\Jobs\ContractSync;
@@ -59,6 +60,12 @@ class ContractIndex extends Component
 
     public function sync(): void
     {
+        if (Auth::user()->cannot('sync', Contract::class)) {
+            Session::flash('error', __('contracts.policy.sync_denied'));
+
+            return;
+        }
+
         $currentLegalEntity = legalEntity();
 
         if ($currentLegalEntity->getEntityStatus(LegalEntity::ENTITY_CONTRACT) === JobStatus::PROCESSING) {
@@ -98,6 +105,7 @@ class ContractIndex extends Component
                     ->withOption('legal_entity_id', $currentLegalEntity->id)
                     ->withOption('token', Crypt::encryptString($token))
                     ->withOption('user', $user)
+                    ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                     ->then(function (Batch $batch) use ($user) {
                         $user->notify(new SyncNotification('contract', 'completed'));
                     })

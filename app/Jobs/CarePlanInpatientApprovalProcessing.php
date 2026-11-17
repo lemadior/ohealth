@@ -21,6 +21,9 @@ class CarePlanInpatientApprovalProcessing extends EHealthJob
 
     public const string SCOPE_REQUIRED = 'approval:create';
 
+    // Creation can reuse an approval or read it back while confirming without an OTP.
+    public const array SCOPES_REQUIRED = [self::SCOPE_REQUIRED, 'approval:read'];
+
     public function __construct(public EhealthLink $submission, LegalEntity $legalEntity, public ?string $employeeUuid = null)
     {
         parent::__construct(legalEntity: $legalEntity, standalone: true);

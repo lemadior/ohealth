@@ -32,6 +32,8 @@ class EmployeeDetailsUpsert extends EHealthJob
 
     public const string SCOPE_REQUIRED = 'employee:details';
 
+    public const array SCOPES_REQUIRED = [self::SCOPE_REQUIRED];
+
     public const string ENTITY = LegalEntity::ENTITY_EMPLOYEE;
 
     public function __construct(

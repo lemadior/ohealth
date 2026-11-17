@@ -9,6 +9,7 @@ use App\Core\Arr;
 use Carbon\Carbon;
 use App\Enums\Status;
 use App\Core\EHealthJob;
+use App\Policies\DeclarationPolicy;
 use App\Enums\JobStatus;
 use App\Models\LegalEntity;
 use App\Models\Declaration;
@@ -37,6 +38,8 @@ class DeclarationDetailsSync extends EHealthJob
     public const string BATCH_NAME = 'DeclarationDetailsSync';
 
     public const string SCOPE_REQUIRED = 'declaration:read';
+
+    public const array SCOPES_REQUIRED = DeclarationPolicy::SYNC_SCOPES;
 
     public const string ENTITY = LegalEntity::ENTITY_DECLARATION;
 

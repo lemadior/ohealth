@@ -18,6 +18,7 @@ use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Locked;
 use App\Classes\eHealth\EHealth;
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Repositories\Repository;
 use App\Exceptions\Signature\SignatureException;
 use Livewire\Attributes\Computed;
@@ -324,6 +325,7 @@ class LegalEntityConnectionIndex extends LegalEntityConnectionComponent
                     ->withOption('legal_entity_id', $this->legalEntityId)
                     ->withOption('token', Crypt::encryptString($token))
                     ->withOption('user', $user)
+                    ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                     ->withOption('sync_entity', LegalEntity::ENTITY_CONNECTION)
                     ->catch(function (Batch $batch, Throwable $exception) use ($user) {
                         Log::error('Connection Client sync batch failed.', [
@@ -404,6 +406,7 @@ class LegalEntityConnectionIndex extends LegalEntityConnectionComponent
             ->withOption('legal_entity_id', $legalEntity->id)
             ->withOption('token', Crypt::encryptString($token))
             ->withOption('user', $user)
+            ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
             ->withOption('sync_entity', LegalEntity::ENTITY_CONNECTION)
             ->catch(function (Batch $batch, Throwable $exception) use ($user) {
                 Log::error('Connection Client sync batch failed.', [

@@ -23,6 +23,7 @@ use App\Jobs\DeclarationsSync;
 use App\Jobs\DeclarationRequestsSync;
 use App\Repositories\Repository;
 use App\Classes\eHealth\EHealth;
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Enums\Declaration\Channel;
 use App\Enums\Declaration\Status;
 use App\Enums\Declaration\RequestStatus;
@@ -528,6 +529,7 @@ class DeclarationIndex extends Component
 
         $user = Auth::user();
         $token = Session::get(config('ehealth.api.oauth.bearer_token'));
+        $tokenScopes = app(TokenStorage::class)->getTokenScopes();
         $user->notify(new SyncNotification('declaration', 'started'));
 
         // Try to resume previous sync if it was paused or failed
@@ -594,6 +596,7 @@ class DeclarationIndex extends Component
                 ->withOption('legal_entity_id', $legalEntity->id)
                 ->withOption('token', Crypt::encryptString($token))
                 ->withOption('user', $user)
+                ->withOption('token_scopes', $tokenScopes)
                 ->withOption('sync_entity', LegalEntity::ENTITY_DECLARATION)
                 ->catch(callback: function (Batch $batch, Throwable $err) use ($user) {
                     $message = __('declarations.sync.failed');
@@ -618,6 +621,7 @@ class DeclarationIndex extends Component
                 ->withOption('legal_entity_id', $legalEntity->id)
                 ->withOption('token', Crypt::encryptString($token))
                 ->withOption('user', $user)
+                ->withOption('token_scopes', $tokenScopes)
                 ->withOption('sync_entity', LegalEntity::ENTITY_DECLARATION)
                 ->catch(callback: function (Batch $batch, Throwable $err) use ($user) {
                     $message = __('declarations.sync.failed');

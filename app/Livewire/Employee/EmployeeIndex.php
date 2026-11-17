@@ -6,6 +6,7 @@ namespace App\Livewire\Employee;
 
 use AllowDynamicProperties;
 use App\Classes\eHealth\EHealth;
+use App\Auth\EHealth\Services\TokenStorage;
 use App\Enums\JobStatus;
 use App\Enums\Status;
 use App\Enums\User\Role;
@@ -549,6 +550,12 @@ class EmployeeIndex extends EmployeeComponent
      */
     public function sync(): void
     {
+        if (Auth::user()->cannot('sync', Employee::class)) {
+            Session::flash('error', __('employees.policy.emp.update_denied'));
+
+            return;
+        }
+
         if ($this->isSyncProcessing()) {
             Session::flash('error', __('forms.errors.sync_already_running'));
 
@@ -632,6 +639,7 @@ class EmployeeIndex extends EmployeeComponent
                 ->withOption('legal_entity_id', $this->legalEntity->id)
                 ->withOption('token', Crypt::encryptString($token))
                 ->withOption('user', $user)
+                ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                 ->withOption('sync_entity', LegalEntity::ENTITY_EMPLOYEE)
                 ->then(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions())
                 ->catch(callback: function (Batch $batch, \Throwable $e) use ($user) {
@@ -647,6 +655,7 @@ class EmployeeIndex extends EmployeeComponent
                 ->withOption('legal_entity_id', $this->legalEntity->id)
                 ->withOption('token', Crypt::encryptString($token))
                 ->withOption('user', $user)
+                ->withOption('token_scopes', app(TokenStorage::class)->getTokenScopes())
                 ->withOption('sync_entity', LegalEntity::ENTITY_EMPLOYEE)
                 ->catch(callback: function (Batch $batch, \Throwable $e) use ($user) {
                     $message = __('employees.sync.failed');

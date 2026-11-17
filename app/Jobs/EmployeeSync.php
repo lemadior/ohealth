@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Core\EHealthJob;
+use App\Policies\EmployeePolicy;
 use App\Enums\JobStatus;
 use App\Models\LegalEntity;
 use App\Classes\eHealth\EHealth;
@@ -23,6 +24,8 @@ class EmployeeSync extends EHealthJob
     public const string BATCH_NAME = 'EmployeeFullSync';
 
     public const string SCOPE_REQUIRED = 'employee:read';
+
+    public const array SCOPES_REQUIRED = EmployeePolicy::SYNC_SCOPES;
 
     public const string ENTITY = LegalEntity::ENTITY_EMPLOYEE;
 
@@ -96,5 +99,10 @@ class EmployeeSync extends EHealthJob
         return $this->standalone
             ? new CompleteSync($this->legalEntity, isFirstLogin: $this->isFirstLogin)
             : $this->getEmployeeDetailsStartJob($this->legalEntity, $this->nextEntity);
+    }
+
+    protected function requiredScopes(): array
+    {
+        return $this->standalone ? [self::SCOPE_REQUIRED] : parent::requiredScopes();
     }
 }

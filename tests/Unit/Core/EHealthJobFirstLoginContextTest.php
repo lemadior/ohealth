@@ -14,6 +14,7 @@ use App\Livewire\LegalEntity\LegalEntityDetails;
 use App\Models\Employee\Employee;
 use App\Models\LegalEntity;
 use App\Models\User;
+use App\Policies\EmployeePolicy;
 use Closure;
 use Illuminate\Bus\BatchRepository;
 use Illuminate\Queue\MaxAttemptsExceededException;
@@ -53,8 +54,12 @@ class EHealthJobFirstLoginContextTest extends TestCase
             )
         );
         $this->app->instance('legalEntity', $this->legalEntity);
-        $this->user = new User();
+        $this->user = Mockery::mock(User::class)->makePartial();
         $this->user->id = 1;
+        $this->user->shouldReceive('checkPermissionTo')->andReturnUsing(
+            fn (string $ability): bool => in_array($ability, EmployeePolicy::SYNC_SCOPES, true)
+        );
+        session()->put(config('ehealth.api.oauth.token_scopes'), EmployeePolicy::SYNC_SCOPES);
     }
 
     public function test_exhausted_detail_job_can_be_resumed_from_employees_without_relogin(): void
@@ -146,6 +151,7 @@ class EHealthJobFirstLoginContextTest extends TestCase
         $job->withFakeBatch(options: [
             'user' => $this->user,
             'token' => Crypt::encryptString('token'),
+            'token_scopes' => EmployeeDetailsUpsert::SCOPES_REQUIRED,
             'sync_entity' => '',
         ]);
         $job->middleware();

@@ -12,6 +12,7 @@ use Illuminate\Bus\Batch;
 use App\Traits\FormTrait;
 use App\Jobs\CompleteSync;
 use App\Models\LegalEntity;
+use App\Exceptions\EHealth\EHealthSyncScopeException;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,9 @@ abstract class EHealthJob implements ShouldQueue
     public const string BATCH_NAME = 'FirstLoginSync';
 
     public const string SCOPE_REQUIRED = '';
+
+    // Jobs with an explicit scope set validate it before execution and batch resume.
+    public const array SCOPES_REQUIRED = [];
 
     /**
      * The type/name of entity this job is related to.
@@ -127,6 +131,10 @@ abstract class EHealthJob implements ShouldQueue
 
         $this->token = Crypt::decryptString($this->batch()->options['token'] ?? '');
 
+        if (!$this->ensureTokenScopes()) {
+            return;
+        }
+
         $response = $this->sendRequest($this->token);
 
         $this->processResponse($response);
@@ -166,6 +174,7 @@ abstract class EHealthJob implements ShouldQueue
                 ->withOption('legal_entity_id', $this->legalEntity->id)
                 ->withOption('token', Crypt::encryptString($this->token)) // Passing the same token to the next job
                 ->withOption('user', $this->user) // Passing the same user to the next job
+                ->withOption('token_scopes', $this->batch()->options['token_scopes'] ?? null)
                 ->withOption('sync_entity', $syncEntity)
                 ->onQueue('sync')
                 ->dispatch();
@@ -184,6 +193,7 @@ abstract class EHealthJob implements ShouldQueue
         Log::channel('e_health_errors')->error('Sync job failed: ', [
             'EXCEPTION' => $exception::class,
             'message' => $exception->getMessage(),
+            'code' => $exception->getCode(),
             'attempts' => $this->attempts(),
             'batch_id' => $this->batch()?->id,
             'batch_name' => static::BATCH_NAME,
@@ -201,14 +211,19 @@ abstract class EHealthJob implements ShouldQueue
             return;
         }
 
-        // A revoked token (401) does not spoil the same user's new login, unlike 403 or 429 that follow the user
-        $revokedToken = $exception->getCode() === 401 ? $this->getBatchToken() : null;
+        // A new login may fix a revoked token or a legacy batch with missing scope metadata.
+        $revokedToken = $exception->getCode() === 401 || $exception instanceof EHealthSyncScopeException
+            ? $this->getBatchToken()
+            : null;
 
         // Hashes of the tokens rejected along the retry chain, so the A -> B -> A loop of rejected tokens is impossible
         $rejectedTokenHashes = $this->batch()?->options['rejected_tokens'] ?? [];
 
-        if ($revokedToken !== null) {
-            $rejectedTokenHashes[] = hash('sha256', $revokedToken);
+        // 403 and 429 must not bounce between the same rejected tokens either.
+        $rejectedToken = $this->getBatchToken();
+
+        if ($rejectedToken !== null) {
+            $rejectedTokenHashes[] = hash('sha256', $rejectedToken);
         }
 
         $rejectedTokenHashes = array_values(array_unique($rejectedTokenHashes));
@@ -247,6 +262,7 @@ abstract class EHealthJob implements ShouldQueue
                 ->withOption('legal_entity_id', $this->legalEntity->id)
                 ->withOption('token', Crypt::encryptString($this->token)) // Passing the same token to the next job
                 ->withOption('user', $this->user)
+                ->withOption('token_scopes', $this->getSessionTokenScopes($this->user, $this->token))
                 ->withOption('rejected_tokens', $rejectedTokenHashes)
                 ->withOption('sync_entity', $this->batch()?->options['sync_entity'] ?? null)
                 ->withOption('patient_uuid', $this->batch()?->options['patient_uuid'] ?? null)
@@ -308,10 +324,41 @@ abstract class EHealthJob implements ShouldQueue
      */
     protected function getSessionToken(User $user): string
     {
+        $payload = $this->getSessionPayload($user);
+
+        return $this->canRunWithScopes((array) ($payload[config('ehealth.api.oauth.token_scopes')] ?? []))
+            ? ($payload[config('ehealth.api.oauth.bearer_token')] ?? '')
+            : '';
+    }
+
+    /**
+     * Read scopes only from the session that holds the token used by this batch.
+     */
+    protected function getSessionTokenScopes(User $user, string $token): array
+    {
+        $payload = $this->getSessionPayload($user);
+
+        return ($payload[config('ehealth.api.oauth.bearer_token')] ?? null) === $token
+            ? (array) ($payload[config('ehealth.api.oauth.token_scopes')] ?? [])
+            : [];
+    }
+
+    protected function getBatchTokenScopes(): array
+    {
+        $scopes = $this->batch()?->options['token_scopes'] ?? null;
+
+        // Old batches have no scope snapshot. Never use scopes belonging to a different token.
+        return $scopes !== null
+            ? (array) $scopes
+            : ($this->user ? $this->getSessionTokenScopes($this->user, $this->token) : []);
+    }
+
+    protected function getSessionPayload(User $user): array
+    {
         $sessionId = $user->getAttribute('session_id');
 
         if (!$sessionId) {
-            return '';
+            return [];
         }
 
         $session = DB::table('sessions')
@@ -320,24 +367,21 @@ abstract class EHealthJob implements ShouldQueue
             ->first();
 
         if (!$session) {
-            return '';
+            return [];
         }
 
         $payload = unserialize(base64_decode($session->payload));
 
         if (!\is_array($payload)) {
-            return '';
+            return [];
         }
 
         $token = $payload[config('ehealth.api.oauth.bearer_token')] ?? '';
-        $scopes = $payload[config('ehealth.api.oauth.token_scopes')] ?? [];
-
         $isValid = $token !== ''
             && ($payload['ehealth_legal_entity_uuid'] ?? null) === $this->legalEntity->uuid
-            && (int)($payload['auth_token_expires_at'] ?? 0) > time()
-            && ($this->requiredScope() === '' || \in_array($this->requiredScope(), (array)$scopes, true));
+            && (int)($payload['auth_token_expires_at'] ?? 0) > time();
 
-        return $isValid ? $token : '';
+        return $isValid ? $payload : [];
     }
 
     /**
@@ -440,9 +484,49 @@ abstract class EHealthJob implements ShouldQueue
 
         // $users here is a Collection of User models. Take the first user that has the required scope/permission,
         // or null when there is none
-        return empty($this->requiredScope())
-            ? $users->first()
-            : $users->first(fn (User $user) => $user->hasPermissionTo($this->requiredScope(), 'ehealth'));
+        return $users->first(function (User $user): bool {
+            foreach ($this->requiredScopes() as $scope) {
+                if (!$user->hasPermissionTo($scope, 'ehealth')) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    protected function requiredScopes(): array
+    {
+        return static::SCOPES_REQUIRED !== []
+            ? static::SCOPES_REQUIRED
+            : array_values(array_filter([$this->requiredScope()]));
+    }
+
+    public function validatesTokenScopes(): bool
+    {
+        return static::SCOPES_REQUIRED !== [];
+    }
+
+    public function canRunWithScopes(array $scopes): bool
+    {
+        return array_diff($this->requiredScopes(), $scopes) === [];
+    }
+
+    protected function ensureTokenScopes(): bool
+    {
+        if (!$this->validatesTokenScopes()) {
+            return true;
+        }
+
+        $missingScopes = array_diff($this->requiredScopes(), $this->getBatchTokenScopes());
+
+        if ($missingScopes !== []) {
+            $this->fail(new EHealthSyncScopeException($missingScopes));
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
