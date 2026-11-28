@@ -132,7 +132,7 @@ class Install extends MigrationsCommand
     {
         try {
             DB::statement(
-                "SELECT setval(pg_get_serial_sequence('{$tableName}', 'id'), COALESCE((SELECT MAX(id) FROM \"{$tableName}\"), 0));"
+                "SELECT setval(pg_get_serial_sequence('{$tableName}', 'id'), COALESCE(MAX(id), 1), MAX(id) IS NOT NULL) FROM \"{$tableName}\";"
             );
         } catch (Exception $e) {
             Log::warning("Could not reset sequence for table '{$tableName}': " . $e->getMessage());

@@ -186,10 +186,7 @@ return new class extends Migration
 
         $rolesToInsert = [];
 
-        // Get all specified guards from section 'guards' from file config/auth.php (except sanctum)
-        $guards = collect(array_keys((array) config('auth.guards')))
-            ->reject(fn ($guard) => $guard === 'sanctum')
-            ->values();
+        $guards = $this->scopeGuards();
 
         $roleList = array_keys(config('ehealth.roles'));
 
@@ -234,10 +231,7 @@ return new class extends Migration
             ->unique()
             ->values();
 
-        // Get available guards except sanctum
-        $guards = collect(array_keys((array) config('auth.guards')))
-            ->reject(fn ($g) => $g === 'sanctum')
-            ->values();
+        $guards = $this->scopeGuards();
 
         $now = now();
         $dataToInsert = [];
@@ -272,10 +266,7 @@ return new class extends Migration
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Get all guards except sanctum
-        $guards = collect(array_keys((array) config('auth.guards')))
-            ->reject(fn ($g) => $g === 'sanctum')
-            ->values();
+        $guards = $this->scopeGuards();
 
         // Get roles from config
         $rolesData = (array) config('ehealth.roles');
@@ -337,5 +328,14 @@ return new class extends Migration
 
         // Clear permission cache
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    /** @return list<string> */
+    protected function scopeGuards(): array
+    {
+        return array_values(array_diff(
+            array_keys((array) config('auth.guards', [])),
+            (array) config('auth.scope_sync_excluded_guards', [])
+        ));
     }
 };

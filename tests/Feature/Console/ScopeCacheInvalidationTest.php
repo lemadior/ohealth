@@ -42,6 +42,8 @@ class ScopeCacheInvalidationTest extends TestCase
             'database.connections.sqlite.url' => null,
             'cache.default' => 'array',
             'permission.cache.store' => 'array',
+            // This test exercises the legacy synchronizer with every guard enabled.
+            'auth.scope_sync_excluded_guards' => [],
         ]);
 
         foreach ([

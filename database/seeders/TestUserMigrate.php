@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use Exception;
+use RuntimeException;
 use App\Models\User;
 use App\Enums\JobStatus;
 use App\Enums\User\Role;
@@ -25,7 +26,26 @@ class TestUserMigrate extends Seeder
 
         try {
             DB::transaction(function () {
+                $guards = $this->scopeGuards();
+
+                $ownerRoles = DB::table('roles')
+                    ->where('name', Role::OWNER->value)
+                    ->whereIn('guard_name', $guards)
+                    ->pluck('id', 'guard_name');
+
+                $missingGuards = array_diff($guards, $ownerRoles->keys()->all());
+
+                if ($guards === [] || $missingGuards !== []) {
+                    throw new RuntimeException(__('OWNER role is missing for the required guards: :guards', [
+                        'guards' => implode(', ', $missingGuards) ?: __('none configured'),
+                    ]));
+                }
+
                 $legalEntityType = DB::table('legal_entity_types')->where('name', 'PRIMARY_CARE')->first();
+
+                if (!$legalEntityType) {
+                    throw new RuntimeException(__('The PRIMARY_CARE legal entity type is missing.'));
+                }
 
                 $legalEntityId = DB::table('legal_entities')->insertGetId([
                     'uuid' => config('ehealth.test.client_id'),
@@ -268,8 +288,7 @@ class TestUserMigrate extends Seeder
 
                 $this->command->info("\tINFO: A new User entry has been successfully inserted into the database");
 
-                $ownerRoleIds = DB::table('roles')->where('name', Role::OWNER)->pluck('id');
-                foreach ($ownerRoleIds as $ownerRoleId) {
+                foreach ($ownerRoles as $ownerRoleId) {
                     DB::table('model_has_roles')->insert([
                         'role_id' => $ownerRoleId,
                         'model_type' => 'App\Models\User',
@@ -394,5 +413,14 @@ class TestUserMigrate extends Seeder
 
             throw $err;
         }
+    }
+
+    /** @return list<string> */
+    protected function scopeGuards(): array
+    {
+        return array_values(array_diff(
+            array_keys((array) config('auth.guards', [])),
+            (array) config('auth.scope_sync_excluded_guards', [])
+        ));
     }
 }

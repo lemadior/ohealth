@@ -52,6 +52,9 @@ return [
         ]
     ],
 
+    // Guards excluded from scope synchronization and initial scope setup.
+    'scope_sync_excluded_guards' => ['api', 'sanctum'],
+
     /*
     |--------------------------------------------------------------------------
     | User Providers

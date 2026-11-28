@@ -15,6 +15,7 @@ DOMAIN_PATHS=(
   tests/Feature/SharedCodingPersistenceTest.php
   tests/Feature/Auth/DashboardRedirectTest.php
   tests/Feature/Auth/DashboardRoleRedirectTest.php
+  tests/Feature/Console/FirstRunScopesTest.php
   tests/Feature/Console/ScopeCacheInvalidationTest.php
   tests/Feature/Equipment/EquipmentSyncPolicyContextTest.php
   tests/Feature/LegalEntity/LegalEntityDetailsReloadTest.php
